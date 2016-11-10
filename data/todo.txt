@@ -1,0 +1,7 @@
+[Done] Attach labels to sampling
+[] Improve speed and efficiency of cropping in TF
+[] Implement an evaluation function
+[] Do illumination correction and generate new images
+[] Test image scaling in TF
+[] Compute new empty patch threshold
+[Done] Join the MoA ground truth data with the larger set
