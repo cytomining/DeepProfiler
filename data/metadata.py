@@ -8,15 +8,39 @@ def replicate(df, value):
     else:
         return df.Replicate < 3
 
-class ImageMetadata():
+def parseDelimiter(delimiter):
+    if delimiter == "blanks":
+        return '\s+'
+    else:
+        return ','
 
-    def __init__(self, filename=None):
+class Metadata():
+
+    def __init__(self, filename=None, csvMode="single", delimiter="default"):
         if filename is not None:
-            self.load(filename)
+            if csvMode == "single":
+                self.loadSingle(filename, delimiter)
+            elif csvMode == "multi":
+                self.loadMultiple(filename, delimiter)
+            print self.data.info()
 
-    def load(self, filename):
-        print 'Reading metadata form',filename
-        self.data = pd.read_csv(filename)
+    def loadSingle(self, filename, delim):
+        print "Reading metadata form",filename
+        delimiter = parseDelimiter(delim)
+        self.data = pd.read_csv(filename, delimiter)
+
+    def loadMultiple(self, filename, delim):
+        frames = []
+        delimiter = parseDelimiter(delim)
+        with open(filename, "r") as filelist:
+            for line in filelist:
+                csvPath = line.replace("\n","")
+                print "Reading from",csvPath
+                frames.append( pd.read_csv(csvPath, delimiter) )
+        self.data = pd.concat(frames)
+        print "Multiple CSV files loaded"
+            
+    ### SPECIFIC TO AZ DATASET. Consider moving to another module
 
     def splitByReplicate(self, records):
         # One replicate for validation, two for training
