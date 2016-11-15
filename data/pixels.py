@@ -1,9 +1,13 @@
 import os
 import sys
-import numpy as np
-import libtiff
 import argparse
 import utils
+import skimage
+import skimage.io
+import skimage.transform
+import skimage.exposure
+import scipy.misc
+import numpy as np
 import metadata as meta
 import dataset as ds
 import cPickle as pickle
@@ -12,22 +16,11 @@ import cPickle as pickle
 ## COMMON IMAGE HANDLING OPPERATIONS
 #################################################
 
-def openTIFF(path):
-    tif = libtiff.TIFF.open(path)
-    img = tif.read_image()
-    data = np.asarray(img, dtype=np.float32)
-    return data
-
 def openImage(paths, pixelProcessor):
-    dna = openTIFF(paths['DNA'])
-    tub = openTIFF(paths['Tubulin'])
-    act = openTIFF(paths['Actin'])
-    assert dna.shape[0] == tub.shape[0] == act.shape[0]
-    assert dna.shape[1] == tub.shape[1] == act.shape[1]
-    img = np.zeros((dna.shape[0],dna.shape[1],3))
-    img[:,:,0] = tub
-    img[:,:,1] = act
-    img[:,:,2] = dna
+    channels = [ skimage.io.imread(p) for p in paths ]
+    img = np.zeros( (channels[0].shape[0], channels[0].shape[1], len(channels)) )
+    for c in range(len(channels)):
+        img[:,:,c] = channels[c]
     return pixelProcessor.run(img)
 
 #################################################
@@ -128,7 +121,7 @@ class Histogram():
         self.count = 0
         self.expected = 1
         
-    def processImage(self, img):
+    def processImage(self, index, img, meta):
         self.count += 1
         utils.printProgress(self.count, self.expected)
         for i in range(self.channels):
@@ -139,36 +132,52 @@ class Histogram():
             if minval < self.mins[i]: self.mins[i] = minval
             if maxval > self.maxs[i]: self.maxs[i] = maxval
 
+    def percentile(self, prob, p):
+        cum = np.cumsum(prob)
+        pos = cum > p
+        return np.argmax(pos)
+
     def computeStats(self):
         bins = np.linspace(0,self.depth-1,self.depth)
         mean = np.zeros((self.channels))
         std = np.zeros((self.channels))
+        p98 = np.zeros((self.channels))
         for i in range(self.channels):
             probs = self.hist[i]/self.hist[i].sum()
             mean[i] = (bins * probs).sum()
             sigma2 = ((bins - mean[i])**2)*(probs)
             std[i] = np.sqrt( sigma2.sum() )
-            print 'Mean',mean[i],'Std',std[i],'Min',self.mins[i],'Max',self.maxs[i]
-        stats = {'mean':mean, 'std':std, 'min':self.mins, 'max':self.maxs}
+            p98[i] = self.percentile(probs, 0.98)
+            print 'Mean {:8.2f} Std {:8.2f} Min {:5.0f} Max {:5.0f} P98 {:5.0f}'.format(mean[i],std[i],self.mins[i],self.maxs[i],p98[i])
+        stats = {'mean':mean, 'std':std, 'min':self.mins, 'max':self.maxs, 'p98':p98, 'hist':self.hist}
         return stats
 
-def computeMeanAndStd(metadataFilename, datasetDir, outputFile):
-    metadata = meta.ImageMetadata(metadataFilename)
-    metadata.makeMonastrolSplit()
-    dataset = ds.Dataset(metadata, dataRoot=datasetDir)
-    hist = Histogram(16, 3)
-    hist.expected = dataset.numberOfRecords('val')
-    dataset.scan(hist.processImage, frame='val')
-    stats = hist.computeStats()
-    with open(outputFile, 'wb') as output:
-        pickle.dump(stats, output, protocol=pickle.HIGHEST_PROTOCOL)
-    return hist
+#################################################
+## COMPRESSION OF TIFF IMAGES INTO PNGs
+#################################################
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("metadata", help="Filename of the CSV metadata file")
-    parser.add_argument("datadir", help="Directory containing images listed in the CSV")
-    parser.add_argument("outfile", help="Filename of the resulting pickle file with the mean an std")
-    args = parser.parse_args()
-    computeMeanAndStd(args.metadata, args.datadir, args.outfile)
+class Compress():
+    def __init__(self, stats, channels, outDir):
+        self.stats = stats
+        self.channels = channels
+        self.outDir = outDir
+        self.count = 0
+        self.expected = 1
+
+    def targetPath(self, origPath):
+        basePath = "/".join( origPath.split("/")[0:-1] )
+        os.system("mkdir -p " + self.outDir + basePath)
+        return self.outDir + origPath.replace("tiff","png")
+
+    def processImage(self, index, img, meta):
+        self.count += 1
+        utils.printProgress(self.count, self.expected)
+        for c in range(len(self.channels)):
+            floatim = skimage.img_as_float(img[:,:,c], force_copy=True)
+            limits = (self.stats["min"][c], self.stats["p98"][c])
+            rescale = skimage.exposure.rescale_intensity(floatim, in_range=limits)
+            sampled = skimage.transform.downscale_local_mean(rescale, factors=(2,2))
+            scipy.misc.imsave(self.targetPath(meta[self.channels[c]]), sampled)
+        return
+            
 
