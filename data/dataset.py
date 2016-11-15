@@ -6,26 +6,23 @@ import utils as u
 
 class Dataset():
 
-    def __init__(self, metadata, dataRoot='./'):
-        self.meta = metadata
-        self.labels = {}
-        for i in range(len(self.meta.categories)):
-            self.labels[self.meta.categories[i]] = i
-        self.root = dataRoot
+    def __init__(self, metadata, category, channels, dataRoot):
+        self.meta = metadata       # Metadata object with a valid dataframe
+        self.category = category   # Column in the metadata that has category labels
+        self.channels = channels   # List of column names corresponding to each channel file
+        self.root = dataRoot       # Path to the directory of images 
         self.pixelProcessor = px.PixelProcessor()
+        self.labels = self.meta.data[self.category].unique()
 
     def getImagePaths(self, r):
-        image = { 'DNA': self.root + r['Image_PathName_DAPI'] + '/' + r['Image_FileName_DAPI'],
-                  'Tubulin': self.root + r['Image_PathName_Tubulin'] + '/' + r['Image_FileName_Tubulin'], 
-                  'Actin': self.root + r['Image_PathName_Actin'] + '/' + r['Image_FileName_Actin']
-                }
+        image = [ self.root + '/' + r[ch] for ch in self.channels]
         return image
 
     def sampleImages(self, categ, nImgCat):
         images = []
         labels = []
         for c in categ:
-            mask = self.meta.train['Label'] == c
+            mask = self.meta.train[self.category] == c
             rec = self.meta.train[mask].sample(n=nImgCat, replace=True)
             for i,r in rec.iterrows():
                 image = self.getImagePaths(r)
@@ -36,7 +33,7 @@ class Dataset():
     def getTrainBatch(self, N):
         s = u.tic()
         # Batch size is N
-        categ = self.meta.labels.values()
+        categ = self.labels.values()
         # 1. Sample categories
         if len(categ) > N:
             np.random.shuffle(categ)
@@ -63,9 +60,12 @@ class Dataset():
         elif frame == 'val': frame = self.meta.val.iterrows()
         else: frame = self.meta.train.iterrows()
 
-        images = [self.getImagePaths(r) for i,r in frame]
+        images = [ (i, self.getImagePaths(r), r) for i,r in frame]
         for img in images:
-            f(px.openImage(img, self.pixelProcessor))
+            index = img[0]
+            image = px.openImage(img[1], self.pixelProcessor)
+            meta = img[2]
+            f(index, image, meta)
         return
 
     def numberOfRecords(self, dataset):
@@ -78,10 +78,5 @@ class Dataset():
         else:
             return 0
 
-    def nameOfLabel(self, label):
-        keys = self.meta.labels.keys()
-        values = self.meta.labels.values()
-        idx = values.index(label)
-        return keys[idx]
 
 
