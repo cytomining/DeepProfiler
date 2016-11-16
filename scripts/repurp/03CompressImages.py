@@ -13,8 +13,8 @@ def readMetadata(metaFile):
     metadata = meta.Metadata(metaFile)
     plates = metadata.data["Metadata_Plate"].unique()
     print "Total plates:",len(plates)
-    #plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[0]) & (df.Metadata_Well == "A01"), copy=True)
-    plate = metadata.filterRecords(lambda df: df.Metadata_Plate == plates[0], copy=True)
+    plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[0]) & (df.Metadata_Well == "A01"), copy=True)
+    #plate = metadata.filterRecords(lambda df: df.Metadata_Plate == plates[0], copy=True)
     ## TODO: Iterate over plates and yield each
     return plate
 
@@ -23,6 +23,7 @@ def compressBatch(plate, imgsDir, statsDir, outDir):
     stats = pickle.load( open(statsfile, "r") )
     dataset = ds.Dataset(plate, "Treatment", CHANNELS, imgsDir)
     compress = px.Compress(stats, CHANNELS, outDir)
+    compress.recomputePercentile(0.9999)
     compress.expected = dataset.numberOfRecords("all")
     dataset.scan(compress.processImage, frame="all")
 

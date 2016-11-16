@@ -147,9 +147,9 @@ class Histogram():
             mean[i] = (bins * probs).sum()
             sigma2 = ((bins - mean[i])**2)*(probs)
             std[i] = np.sqrt( sigma2.sum() )
-            p98[i] = self.percentile(probs, 0.98)
-            print 'Mean {:8.2f} Std {:8.2f} Min {:5.0f} Max {:5.0f} P98 {:5.0f}'.format(mean[i],std[i],self.mins[i],self.maxs[i],p98[i])
-        stats = {'mean':mean, 'std':std, 'min':self.mins, 'max':self.maxs, 'p98':p98, 'hist':self.hist}
+            per[i] = self.percentile(probs, 0.9999)
+            print 'Mean {:8.2f} Std {:8.2f} Min {:5.0f} Max {:5.0f} P98 {:5.0f}'.format(mean[i],std[i],self.mins[i],self.maxs[i],per[i])
+        stats = {'mean':mean, 'std':std, 'min':self.mins, 'max':self.maxs, 'per':per, 'hist':self.hist}
         return stats
 
 #################################################
@@ -163,21 +163,33 @@ class Compress():
         self.outDir = outDir
         self.count = 0
         self.expected = 1
+        self.setFormats()
+
+    def recomputePercentile(self, p):
+        self.stats["per"] = np.zeros((len(self.channels)))
+        for i in range(len(self.channels)):
+            probs = self.stats["hist"][i]/self.stats["hist"][i].sum()
+            cum = np.cumsum(probs)
+            pos = cum > p
+            self.stats["per"][i] = np.argmax(pos)
+            print self.channels[i],self.stats["per"][i]
+
+    def setFormats(self, sourceFormat="tiff", targetFormat="png"):
+        self.sourceFormat = sourceFormat
+        self.targetFormat = targetFormat
 
     def targetPath(self, origPath):
         basePath = "/".join( origPath.split("/")[0:-1] )
         os.system("mkdir -p " + self.outDir + basePath)
-        return self.outDir + origPath.replace("tiff","png")
+        return self.outDir + origPath.replace(self.sourceFormat,self.targetFormat)
 
     def processImage(self, index, img, meta):
         self.count += 1
         utils.printProgress(self.count, self.expected)
         for c in range(len(self.channels)):
-            floatim = skimage.img_as_float(img[:,:,c], force_copy=True)
-            limits = (self.stats["min"][c], self.stats["p98"][c])
-            rescale = skimage.exposure.rescale_intensity(floatim, in_range=limits)
-            sampled = skimage.transform.downscale_local_mean(rescale, factors=(2,2))
-            scipy.misc.imsave(self.targetPath(meta[self.channels[c]]), sampled)
+            image = skimage.transform.downscale_local_mean(img[:,:,c], factors=(2,2))
+            image[image > self.stats["per"][c]] = self.stats["per"][c]
+            scipy.misc.imsave(self.targetPath(meta[self.channels[c]]), image)
         return
             
 
