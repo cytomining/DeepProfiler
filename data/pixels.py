@@ -111,7 +111,7 @@ class PixelLogNorm(PixelProcessor):
 #################################################
 
 # Build pixel histogram for each channel
-class Histogram():
+class ImageStatistics():
     def __init__(self, bits, channels):
         self.depth = 2**bits
         self.channels = channels
@@ -120,9 +120,10 @@ class Histogram():
         self.maxs = np.zeros((channels))
         self.count = 0
         self.expected = 1
+        self.meanImage = None
         
     def processImage(self, index, img, meta):
-        self.count += 1
+        self.addToMean(img)
         utils.printProgress(self.count, self.expected)
         for i in range(self.channels):
             counts = np.histogram(img[:,:,i], bins=self.depth, range=(0,self.depth))[0]
@@ -131,6 +132,13 @@ class Histogram():
             maxval = np.max(img[:,:,i])
             if minval < self.mins[i]: self.mins[i] = minval
             if maxval > self.maxs[i]: self.maxs[i] = maxval
+
+    def addToMean(self, img):
+        if self.meanImage is None:
+            self.meanImage = np.zeros_like(img, dtype=np.float64)
+        self.count += 1
+        self.meanImage += img
+        return
 
     def percentile(self, prob, p):
         cum = np.cumsum(prob)
@@ -141,15 +149,20 @@ class Histogram():
         bins = np.linspace(0,self.depth-1,self.depth)
         mean = np.zeros((self.channels))
         std = np.zeros((self.channels))
-        p98 = np.zeros((self.channels))
+        lower = np.zeros((self.channels))
+        upper = np.zeros((self.channels))
+        self.meanImage /= self.count
         for i in range(self.channels):
             probs = self.hist[i]/self.hist[i].sum()
             mean[i] = (bins * probs).sum()
             sigma2 = ((bins - mean[i])**2)*(probs)
             std[i] = np.sqrt( sigma2.sum() )
-            per[i] = self.percentile(probs, 0.9999)
-            print 'Mean {:8.2f} Std {:8.2f} Min {:5.0f} Max {:5.0f} P98 {:5.0f}'.format(mean[i],std[i],self.mins[i],self.maxs[i],per[i])
-        stats = {'mean':mean, 'std':std, 'min':self.mins, 'max':self.maxs, 'per':per, 'hist':self.hist}
+            lower[i] = self.percentile(probs, 0.0001)
+            upper[i] = self.percentile(probs, 0.9999)
+            msg = 'Mean {:8.2f} Std {:8.2f} Min {:5.0f} Max {:5.0f} Upper {:5.0f} Lower {:5.0f}'
+            print msg.format(mean[i],std[i],self.mins[i],self.maxs[i],upper[i],lower[i])
+        stats = {'mean':mean, 'std':std, 'min':self.mins, 'max':self.maxs, 'upper':upper, 'lower':lower, 
+                 'hist':self.hist, "MeanImg":self.meanImage}
         return stats
 
 #################################################
@@ -165,14 +178,16 @@ class Compress():
         self.expected = 1
         self.setFormats()
 
-    def recomputePercentile(self, p):
-        self.stats["per"] = np.zeros((len(self.channels)))
+    def recomputePercentile(self, p, side="upper"):
+        print "Percentiles for the",side," >> ",
+        self.stats[side] = np.zeros((len(self.channels)))
         for i in range(len(self.channels)):
             probs = self.stats["hist"][i]/self.stats["hist"][i].sum()
             cum = np.cumsum(probs)
             pos = cum > p
-            self.stats["per"][i] = np.argmax(pos)
-            print self.channels[i],self.stats["per"][i]
+            self.stats[side][i] = np.argmax(pos)
+            print self.channels[i],':',self.stats[side][i],
+        print ''
 
     def setFormats(self, sourceFormat="tiff", targetFormat="png"):
         self.sourceFormat = sourceFormat
@@ -188,7 +203,8 @@ class Compress():
         utils.printProgress(self.count, self.expected)
         for c in range(len(self.channels)):
             image = skimage.transform.downscale_local_mean(img[:,:,c], factors=(2,2))
-            image[image > self.stats["per"][c]] = self.stats["per"][c]
+            image[image < self.stats["lower"][c]] = self.stats["lower"][c]
+            image[image > self.stats["upper"][c]] = self.stats["upper"][c]
             scipy.misc.imsave(self.targetPath(meta[self.channels[c]]), image)
         return
             

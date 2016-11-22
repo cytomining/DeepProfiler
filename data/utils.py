@@ -1,5 +1,6 @@
 import sys
 import time
+import multiprocessing
 
 # From: http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
 # Print iterations progress
@@ -32,3 +33,18 @@ def toc(msg, begin):
     elapsed = end - begin
     print msg,': {:.2f} secs'.format(elapsed)
     return end
+
+class Parallel():
+
+    def __init__(self, numProcs=None):
+        cpus =  multiprocessing.cpu_count()
+        if numProcs is None or numProcs > cpus or numProcs < 1:
+            numProcs = cpus
+        self.pool = multiprocessing.Pool(numProcs)
+
+    def compute(self, operation, data, fixed_args):
+        iterable = [ [d] + fixed_args[:] for d in data ]
+        self.pool.map(operation, iterable)
+        return
+    
+
