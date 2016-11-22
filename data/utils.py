@@ -1,6 +1,8 @@
 import sys
 import time
+import logging
 import multiprocessing
+
 
 # From: http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
 # Print iterations progress
@@ -25,6 +27,11 @@ def printProgress (iteration, total, prefix='Progress', suffix='Complete', decim
         sys.stdout.write('\n')
         sys.stdout.flush()
 
+
+################################################################################
+## Timing utilities
+################################################################################
+
 def tic():
     return time.time()
 
@@ -33,6 +40,10 @@ def toc(msg, begin):
     elapsed = end - begin
     print msg,': {:.2f} secs'.format(elapsed)
     return end
+
+################################################################################
+## Parallel utilities using multiprocessing
+################################################################################
 
 class Parallel():
 
@@ -47,4 +58,27 @@ class Parallel():
         self.pool.map(operation, iterable)
         return
     
+################################################################################
+## Logging utilities
+################################################################################
+
+class Logger():
+
+    def __init__(self):
+        self.root = logging.getLogger()
+        self.root.setLevel(logging.DEBUG)
+        ch = logging.StreamHandler(sys.stdout)
+        ch.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(message)s')
+        ch.setFormatter(formatter)
+        self.root.addHandler(ch)
+
+    def log(self, level, msg):
+        self.root.log(level, msg)
+
+
+    def info(self, msg):
+        self.root.info(msg)
+
+logger = Logger()
 

@@ -112,9 +112,10 @@ class PixelLogNorm(PixelProcessor):
 
 # Build pixel histogram for each channel
 class ImageStatistics():
-    def __init__(self, bits, channels):
+    def __init__(self, bits, channels, name=""):
         self.depth = 2**bits
         self.channels = channels
+        self.name = name
         self.hist = np.zeros((channels, self.depth), dtype=np.float64)
         self.mins = 2**bits * np.ones((channels))
         self.maxs = np.zeros((channels))
@@ -124,7 +125,8 @@ class ImageStatistics():
         
     def processImage(self, index, img, meta):
         self.addToMean(img)
-        utils.printProgress(self.count, self.expected)
+        utils.logger.info("{} Image {} of {} ({:4.2f}%)".format(self.name, 
+                          self.count, self.expected, 100*float(self.count)/self.expected))
         for i in range(self.channels):
             counts = np.histogram(img[:,:,i], bins=self.depth, range=(0,self.depth))[0]
             self.hist[i] += counts.astype(np.float64)
@@ -134,10 +136,11 @@ class ImageStatistics():
             if maxval > self.maxs[i]: self.maxs[i] = maxval
 
     def addToMean(self, img):
+        thumb = skimage.transform.resize(img, (540,540)) 
         if self.meanImage is None:
-            self.meanImage = np.zeros_like(img, dtype=np.float64)
+            self.meanImage = np.zeros_like(thumb, dtype=np.float64)
         self.count += 1
-        self.meanImage += img
+        self.meanImage += thumb
         return
 
     def percentile(self, prob, p):
@@ -152,6 +155,7 @@ class ImageStatistics():
         lower = np.zeros((self.channels))
         upper = np.zeros((self.channels))
         self.meanImage /= self.count
+        print "Plate:",self.name
         for i in range(self.channels):
             probs = self.hist[i]/self.hist[i].sum()
             mean[i] = (bins * probs).sum()
