@@ -1,3 +1,8 @@
+################################################################################
+## Script for computing intensity statistics on the repurp dataset
+## Calculates intensity distributions, percentiles and mean image
+## 11/22/2016. Broad Institute of MIT and Harvard
+################################################################################
 
 import argparse
 import data.metadata as meta
@@ -7,29 +12,34 @@ import data.pixels as px
 import pandas as pd
 import cPickle as pickle
 
+## Channels used in this dataset (order is important)
 CHANNELS = ["RNA","ER","AGP","Mito","DNA"]
 
-def readMetadata(metaFile, i):
+## Generator of plates. Reads metadata and yields plates
+def readPlates(metaFile):
     metadata = meta.Metadata(metaFile)
     plates = metadata.data["Metadata_Plate"].unique()
-    print "Total plates:",len(plates)
-    plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[i]) & (df.Metadata_Well == "A01"), copy=True)
-    #plate = metadata.filterRecords(lambda df: df.Metadata_Plate == plates[0], copy=True)
-    ## TODO: Iterate over plates and yield each
-    return plate
+    utils.logger.info("Total plates: " + str(len(plates)))
+    for i in range(len(plates)):
+        plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[i]), copy=True)
+        yield plate
+    return
 
-def maxIntensity(args):
+## Computation of intensity stats per plate
+def intensityStats(args):
     plate, root, outDir = args
+    plateName = plate.data["Metadata_Plate"].iloc[0]
     dataset = ds.Dataset(plate, "Treatment", CHANNELS, root)
-    hist = px.ImageStatistics(16, 5)
+    hist = px.ImageStatistics(16, 5, name=plateName)
     hist.expected = dataset.numberOfRecords("all")
     dataset.scan(hist.processImage, frame="all")
     stats = hist.computeStats()
-    outfile = outDir + plate.data["Metadata_Plate"].iloc[0] + ".pkl"
+    outfile = outDir + plateName + ".pkl"
     with open(outfile,"wb") as output:
         pickle.dump(stats, output)
-    print 'Plate',plate.data["Metadata_Plate"].iloc[0],'done'
+    utils.logger.info('Plate ' + plateName + ' done')
 
+## Main script
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("metadata", help="Metadata csv file with paths to all images")
@@ -37,7 +47,6 @@ if __name__ == "__main__":
     parser.add_argument("output_dir", help="Directory to store the statistics")
     args = parser.parse_args()
 
-    plates = [ readMetadata(args.metadata, i) for i in range(4) ]
     manager = utils.Parallel()
-    manager.compute(maxIntensity, plates, [args.root_dir, args.output_dir])
+    manager.compute(intensityStats, readPlates(args.metadata), [args.root_dir, args.output_dir])
 
