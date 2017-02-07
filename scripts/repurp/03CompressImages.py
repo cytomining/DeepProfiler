@@ -23,8 +23,8 @@ def compressBatch(plate, imgsDir, statsDir, outDir):
     stats = pickle.load( open(statsfile, "r") )
     dataset = ds.Dataset(plate, "Treatment", CHANNELS, imgsDir)
     compress = px.Compress(stats, CHANNELS, outDir)
-    compress.recomputePercentile(0.0001, side="lower")
-    compress.recomputePercentile(0.9999, side="upper")
+    compress.recomputePercentile(0.00005, side="lower")
+    compress.recomputePercentile(0.99995, side="upper")
     compress.expected = dataset.numberOfRecords("all")
     dataset.scan(compress.processImage, frame="all")
 
