@@ -13,7 +13,7 @@ import pandas as pd
 import cPickle as pickle
 
 ## Channels used in this dataset (order is important)
-CHANNELS = ["RNA","ER","AGP","Mito","DNA"]
+CHANNELS = ["DNA","ER","RNA","AGP","Mito"]
 
 ## Generator of plates. Reads metadata and yields plates
 def readPlates(metaFile):
@@ -37,7 +37,7 @@ def intensityStats(args):
     outfile = outDir + plateName + ".pkl"
     with open(outfile,"wb") as output:
         pickle.dump(stats, output)
-    utils.logger.info('Plate ' + plateName + ' done')
+    return
 
 ## Main script
 if __name__ == "__main__":

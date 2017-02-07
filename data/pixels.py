@@ -117,30 +117,25 @@ class ImageStatistics():
         self.channels = channels
         self.name = name
         self.hist = np.zeros((channels, self.depth), dtype=np.float64)
-        self.mins = 2**bits * np.ones((channels))
-        self.maxs = np.zeros((channels))
         self.count = 0
         self.expected = 1
         self.meanImage = None
         
     def processImage(self, index, img, meta):
         self.addToMean(img)
-        utils.logger.info("{} Image {} of {} ({:4.2f}%)".format(self.name, 
+        self.count += 1
+        utils.logger.info("Plate {} Image {} of {} ({:4.2f}%)".format(self.name, 
                           self.count, self.expected, 100*float(self.count)/self.expected))
         for i in range(self.channels):
             counts = np.histogram(img[:,:,i], bins=self.depth, range=(0,self.depth))[0]
             self.hist[i] += counts.astype(np.float64)
-            minval = np.min(img[:,:,i][ img[:,:,i]>0 ]) 
-            maxval = np.max(img[:,:,i])
-            if minval < self.mins[i]: self.mins[i] = minval
-            if maxval > self.maxs[i]: self.maxs[i] = maxval
 
     def addToMean(self, img):
-        thumb = skimage.transform.resize(img, (540,540)) 
+        scale = 540
+        thumb = skimage.transform.resize(img, (scale,scale))
         if self.meanImage is None:
             self.meanImage = np.zeros_like(thumb, dtype=np.float64)
-        self.count += 1
-        self.meanImage += thumb
+        self.meanImage += thumb.astype(np.float64)
         return
 
     def percentile(self, prob, p):
@@ -151,23 +146,18 @@ class ImageStatistics():
     def computeStats(self):
         bins = np.linspace(0,self.depth-1,self.depth)
         mean = np.zeros((self.channels))
-        std = np.zeros((self.channels))
         lower = np.zeros((self.channels))
         upper = np.zeros((self.channels))
         self.meanImage /= self.count
-        print "Plate:",self.name
         for i in range(self.channels):
             probs = self.hist[i]/self.hist[i].sum()
             mean[i] = (bins * probs).sum()
-            sigma2 = ((bins - mean[i])**2)*(probs)
-            std[i] = np.sqrt( sigma2.sum() )
             lower[i] = self.percentile(probs, 0.0001)
             upper[i] = self.percentile(probs, 0.9999)
-            msg = 'Mean {:8.2f} Std {:8.2f} Min {:5.0f} Max {:5.0f} Upper {:5.0f} Lower {:5.0f}'
-            print msg.format(mean[i],std[i],self.mins[i],self.maxs[i],upper[i],lower[i])
-        stats = {'mean':mean, 'std':std, 'min':self.mins, 'max':self.maxs, 'upper':upper, 'lower':lower, 
-                 'hist':self.hist, "MeanImg":self.meanImage}
+        stats = {'mean':mean, 'upper':upper, 'lower':lower, 'hist':self.hist, "MeanImg":self.meanImage}
+        utils.logger.info('Plate ' + self.name + ' done')
         return stats
+
 
 #################################################
 ## COMPRESSION OF TIFF IMAGES INTO PNGs
