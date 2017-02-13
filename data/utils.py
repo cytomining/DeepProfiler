@@ -38,7 +38,7 @@ def tic():
 def toc(msg, begin):
     end = time.time()
     elapsed = end - begin
-    print msg,': {:.2f} secs'.format(elapsed)
+    print(msg, ': {:.2f} secs'.format(elapsed))
     return end
 
 ################################################################################
