@@ -16,10 +16,10 @@ class Metadata():
                 self.loadSingle(filename, delimiter)
             elif csvMode == "multi":
                 self.loadMultiple(filename, delimiter)
-            print self.data.info()
+            print(self.data.info())
 
     def loadSingle(self, filename, delim):
-        print "Reading metadata form",filename
+        print("Reading metadata form", filename)
         delimiter = parseDelimiter(delim)
         self.data = pd.read_csv(filename, delimiter)
 
@@ -29,10 +29,10 @@ class Metadata():
         with open(filename, "r") as filelist:
             for line in filelist:
                 csvPath = line.replace("\n","")
-                print "Reading from",csvPath
+                print("Reading from", csvPath)
                 frames.append( pd.read_csv(csvPath, delimiter) )
         self.data = pd.concat(frames)
-        print "Multiple CSV files loaded"
+        print("Multiple CSV files loaded")
 
     def filterRecords(self, filteringRule, copy=False):
         if copy:

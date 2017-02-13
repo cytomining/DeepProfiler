@@ -21,11 +21,11 @@ def processMetadata(plate_maps, barcode_file, csv_list, root):
     maps["Compound"] = 0
     treatments = maps["Treatment"].unique()
     compounds = maps["broad_sample"].unique()
-    print "Unique treatments:",len(treatments)
+    print("Unique treatments:", len(treatments))
     for i in range(len(treatments)):
         maps.loc[lambda df: df.Treatment == treatments[i], "Treatment"] = i
         utils.printProgress (i+1,len(treatments), prefix="Treatments")
-    print "Unique compounds:",len(compounds)
+    print("Unique compounds:", len(compounds))
     for i in range(len(compounds)):
         maps.loc[lambda df: df.broad_sample == compounds[i], "Compound"] = i
         utils.printProgress (i+1,len(compounds), prefix="Compounds")
@@ -47,11 +47,11 @@ def processMetadata(plate_maps, barcode_file, csv_list, root):
     metadata = relativePaths(metadata, "AGP", "PathName_OrigAGP", "FileName_OrigAGP", root)
     metadata = relativePaths(metadata, "Mito", "PathName_OrigMito", "FileName_OrigMito", root)
     metadata = relativePaths(metadata, "DNA", "PathName_OrigDNA", "FileName_OrigDNA", root)
-    print metadata.info()
+    print(metadata.info())
 
     # Merge two frames: metadata + plateMaps to attach treatment info to each image
     metadata = pd.merge(metadata, maps, 
-                        left_on=["Compound_Plate_Map_Name", "Metadata_Well"], 
+                        left_on=["Plate_Map_Name", "Metadata_Well"], 
                         right_on=["plate_map_name", "well_position"], how="left")
     metadata = metadata.drop(["plate_map_name","well_position","broad_sample","mg_per_ml","mmoles_per_liter","solvent"], axis=1)
     metadata["plate_well"] = metadata["Metadata_Plate"] + metadata["Metadata_Well"]
@@ -62,7 +62,7 @@ def processMetadata(plate_maps, barcode_file, csv_list, root):
     for i in range(len(treatments)):
         mask1 = metadata["Treatment"] == i
         wells = metadata[mask1]["plate_well"].unique()
-        utils.printProgress (i+1,len(treatments), "Replicates")
+        utils.printProgress(i + 1, len(treatments), "Replicates")
         replicate = 1
         for j in range(len(wells)):
             mask2 = metadata["plate_well"] == wells[j]
@@ -71,8 +71,8 @@ def processMetadata(plate_maps, barcode_file, csv_list, root):
         try: replicateDistribution[replicate] += 1
         except: replicateDistribution[replicate] = 1
     metadata = metadata.drop(["plate_well"], axis=1)
-    print replicateDistribution
-    print metadata.info()
+    print(replicateDistribution)
+    print(metadata.info())
 
     # Save resulting metadata
     metadata.to_csv("metadata.csv", index=False)
