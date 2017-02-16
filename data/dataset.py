@@ -1,8 +1,8 @@
 import os
 import sys
 import numpy as np
-import pixels as px
-import utils as u
+import data.pixels as px
+import data.utils as u
 
 class Dataset():
 

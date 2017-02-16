@@ -10,10 +10,16 @@ import data.dataset as ds
 import data.utils as utils
 import data.pixels as px
 import pandas as pd
-import cPickle as pickle
+import pickle as pickle
 
-## Channels used in this dataset (order is important)
+## Settings for this dataset
+# Channels used in this dataset (order is important)
 CHANNELS = ["DNA","ER","RNA","AGP","Mito"]
+# Pixel depth
+BITS = 16
+# Parameters for illumination correction
+DOWN_SCALE_FACTOR = 4    # Make images 4 times smaller for aggregation
+MEDIAN_FILTER_SIZE = 50  # Create a filter of 50 pixels in diameter
 
 ## Generator of plates. Reads metadata and yields plates
 def readPlates(metaFile):
@@ -30,7 +36,7 @@ def intensityStats(args):
     plate, root, outDir = args
     plateName = plate.data["Metadata_Plate"].iloc[0]
     dataset = ds.Dataset(plate, "Treatment", CHANNELS, root)
-    hist = px.ImageStatistics(16, 5, name=plateName)
+    hist = px.ImageStatistics(BITS, CHANNELS, DOWN_SCALE_FACTOR, MEDIAN_FILTER_SIZE, name=plateName)
     hist.expected = dataset.numberOfRecords("all")
     dataset.scan(hist.processImage, frame="all")
     stats = hist.computeStats()
