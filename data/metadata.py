@@ -5,6 +5,8 @@ import pandas as pd
 def parseDelimiter(delimiter):
     if delimiter == "blanks":
         return '\s+'
+    elif delimiter == "tabs":
+        return '\t'
     else:
         return ','
 
@@ -21,7 +23,8 @@ class Metadata():
     def loadSingle(self, filename, delim):
         print("Reading metadata form", filename)
         delimiter = parseDelimiter(delim)
-        self.data = pd.read_csv(filename, delimiter)
+        # Read csv files as strings without dropping NA symbols
+        self.data = pd.read_csv(filename, delimiter, dtype=object, keep_default_na=False)
 
     def loadMultiple(self, filename, delim):
         frames = []
@@ -30,7 +33,7 @@ class Metadata():
             for line in filelist:
                 csvPath = line.replace("\n","")
                 print("Reading from", csvPath)
-                frames.append( pd.read_csv(csvPath, delimiter) )
+                frames.append( pd.read_csv(csvPath, delimiter, dtype=object, keep_default_na=False) )
         self.data = pd.concat(frames)
         print("Multiple CSV files loaded")
 
