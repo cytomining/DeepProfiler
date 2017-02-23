@@ -35,9 +35,9 @@ def printProgress (iteration, total, prefix='Progress', suffix='Complete', decim
 def tic():
     return time.time()
 
-def toc(msg, begin):
+def toc(msg, beginning):
     end = time.time()
-    elapsed = end - begin
+    elapsed = end - beginning
     print(msg, ': {:.2f} secs'.format(elapsed))
     return end
 
