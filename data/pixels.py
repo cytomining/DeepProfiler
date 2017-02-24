@@ -169,6 +169,7 @@ class Compress():
         self.count = 0
         self.expected = 1
         self.setFormats()
+        self.setScalingFactor(1.0)
 
     # Allows to recalculate the percentiles computed by default in the ImageStatistics class
     def recomputePercentile(self, p, side="upper"):
@@ -179,12 +180,20 @@ class Compress():
             cum = np.cumsum(probs)
             pos = cum > p
             self.stats[side][i] = np.argmax(pos)
-            print(self.channels[i], ':', self.stats[side][i], end='')
+            print(self.channels[i], ':', self.stats[side][i], ' ', end='')
         print('')
 
+    # If the sourceFormat is the same as the target, no compression should be applied.
     def setFormats(self, sourceFormat="tiff", targetFormat="png"):
         self.sourceFormat = sourceFormat
         self.targetFormat = targetFormat
+
+    # Takes a percent factor to rescale the image preserving aspect ratio
+    # If the number is between 0 and 1, the image is downscaled, otherwise is upscaled
+    def setScalingFactor(self, factor):
+        self.outputShape = [0,0]
+        self.outputShape[0] = int(factor * self.stats["original_size"][0])
+        self.outputShape[1] = int(factor * self.stats["original_size"][1])
 
     def targetPath(self, origPath):
         basePath = "/".join( origPath.split("/")[0:-1] )
@@ -196,12 +205,13 @@ class Compress():
         self.count += 1
         utils.printProgress(self.count, self.expected)
         for c in range(len(self.channels)):
-            # Downscale (TODO: Parameterize the resizing factor)
-            image = skimage.transform.downscale_local_mean(img[:,:,c], factors=(2,2))
+            # Illumination correction
+            image = img[:,:,c] / self.stats["illum_correction_function"][:,:,c]
+            # Downscale
+            image = skimage.transform.resize(image, self.outputShape) 
             # Stretch illumination values
             image[image < self.stats["lower_percentiles"][c]] = self.stats["lower_percentiles"][c]
             image[image > self.stats["upper_percentiles"][c]] = self.stats["upper_percentiles"][c]
-            # TODO: add illumination correction here
             # Save as PNG (#TODO: use ImageMagick for saving it to PNG-16bit)
             scipy.misc.imsave(self.targetPath(meta[self.channels[c]]), image)
         return
