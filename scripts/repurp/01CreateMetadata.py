@@ -68,8 +68,8 @@ def processMetadata(plate_maps, barcode_file, csv_list, root):
             mask2 = metadata["plate_well"] == wells[j]
             metadata.loc[mask1 & mask2, "Treatment_Replicate"] = replicate
             replicate += 1
-        try: replicateDistribution[replicate] += 1
-        except: replicateDistribution[replicate] = 1
+        try: replicateDistribution[replicate-1] += 1
+        except: replicateDistribution[replicate-1] = 1
     metadata = metadata.drop(["plate_well"], axis=1)
     print(replicateDistribution)
     print(metadata.info())
