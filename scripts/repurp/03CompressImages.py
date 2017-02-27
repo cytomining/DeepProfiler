@@ -1,30 +1,39 @@
-
+################################################################################
+## Script for compressing images in the LINCS Cell Painting Pilot dataset
+## Applies illumination correction, stretches histogram and converts to png
+## Does not rescale images. Preserves same dimensions
+## 02/27/2017. Broad Institute of MIT and Harvard
+################################################################################
 import argparse
 import data.metadata as meta
 import data.dataset as ds
 import data.utils as utils
 import data.pixels as px
 import pandas as pd
-import cPickle as pickle
+import pickle as pickle
 
 CHANNELS = ["RNA","ER","AGP","Mito","DNA"]
 
 def readMetadata(metaFile):
     metadata = meta.Metadata(metaFile)
     plates = metadata.data["Metadata_Plate"].unique()
-    print "Total plates:",len(plates)
-    plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[0]) & (df.Metadata_Well == "A01"), copy=True)
-    #plate = metadata.filterRecords(lambda df: df.Metadata_Plate == plates[0], copy=True)
-    ## TODO: Iterate over plates and yield each
-    return plate
+    print("Total plates:",len(plates))
+    for i in range(len(plates)):
+        #plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[i]) & (df.Metadata_Well == "A01"), copy=True)
+        plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[i]), copy=True)
+        yield plate
+    return
 
-def compressBatch(plate, imgsDir, statsDir, outDir):
-    statsfile = statsDir + plate.data["Metadata_Plate"][0] + ".pkl"
-    stats = pickle.load( open(statsfile, "r") )
+def compressBatch(args):
+    plate, imgsDir, statsDir, outDir = args
+    statsfile = statsDir + plate.data.iloc[0]["Metadata_Plate"] + ".pkl"
+    stats = pickle.load( open(statsfile, "rb") )
     dataset = ds.Dataset(plate, "Treatment", CHANNELS, imgsDir)
     compress = px.Compress(stats, CHANNELS, outDir)
-    compress.recomputePercentile(0.00005, side="lower")
-    compress.recomputePercentile(0.99995, side="upper")
+    compress.setFormats(sourceFormat="tiff", targetFormat="png")
+    compress.setScalingFactor(0.5)
+    compress.recomputePercentile(0.0001, side="lower")
+    compress.recomputePercentile(0.9999, side="upper")
     compress.expected = dataset.numberOfRecords("all")
     dataset.scan(compress.processImage, frame="all")
 
@@ -36,5 +45,6 @@ if __name__ == "__main__":
     parser.add_argument("output_dir", help="Directory to store the compressed images")
     args = parser.parse_args()
 
-    plate = readMetadata(args.metadata)
-    compressBatch(plate, args.root_dir, args.stats_dir, args.output_dir)
+    manager = utils.Parallel()
+    manager.compute(compressBatch, readMetadata(args.metadata), [args.root_dir, args.stats_dir, args.output_dir])
+
