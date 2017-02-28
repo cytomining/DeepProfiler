@@ -23,13 +23,19 @@ def readMetadata(metaFile):
         yield plate
     return
 
+def conditionalWellName(row):
+    if row["Metadata_Plate"] in ["52650", "52661"]:
+        return row["Metadata_Well"]
+    else:
+        return row["Metadata_Well"].upper()
+
 def createCellFiles(args):
     plate, featuresDir, outDir = args
     os.system("mkdir -p " + outDir + plate.data.iloc[0]["Metadata_Plate"])
     iteration = 1
     for index, row in plate.data.iterrows():
         # Read cells file for each image
-        features_file = row["Metadata_Plate"] + "/analysis/" + row["Metadata_Well"].upper() + "-" + row["Metadata_Site"] + "/Cells.csv"
+        features_file = row["Metadata_Plate"] + "/analysis/" + conditionalWellName(row) + "-" + row["Metadata_Site"] + "/Cells.csv"
         features = pd.read_csv(featuresDir + features_file)
         # Keep center coordinates only, remove NaNs, and transform to integers
         cell_locations = features[["Location_Center_X","Location_Center_Y"]].copy()
