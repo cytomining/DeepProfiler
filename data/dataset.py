@@ -6,34 +6,38 @@ import data.utils as u
 
 class Dataset():
 
-    def __init__(self, metadata, category, channels, dataRoot):
+    def __init__(self, metadata, category, channels, dataRoot, keyGen):
         self.meta = metadata       # Metadata object with a valid dataframe
         self.category = category   # Column in the metadata that has category labels
         self.channels = channels   # List of column names corresponding to each channel file
         self.root = dataRoot       # Path to the directory of images 
+        self.keyGen = keyGen       # Function that returns the image key given its record in the metadata
         self.pixelProcessor = px.PixelProcessor()
         self.labels = self.meta.data[self.category].unique()
 
     def getImagePaths(self, r):
+        key = self.keyGen(r)
         image = [ self.root + '/' + r[ch] for ch in self.channels]
-        return image
+        return (key,image)
 
     def sampleImages(self, categ, nImgCat):
+        keys = []
         images = []
         labels = []
         for c in categ:
             mask = self.meta.train[self.category] == c
             rec = self.meta.train[mask].sample(n=nImgCat, replace=True)
             for i,r in rec.iterrows():
-                image = self.getImagePaths(r)
+                key, image = self.getImagePaths(r)
+                keys.append(key)
                 images.append(image)
                 labels.append(c)
-        return images, labels
+        return keys, images, labels
 
     def getTrainBatch(self, N):
         s = u.tic()
         # Batch size is N
-        categ = self.labels.values()
+        categ = self.labels.copy()
         # 1. Sample categories
         if len(categ) > N:
             np.random.shuffle(categ)
@@ -42,14 +46,15 @@ class Dataset():
         nImgCat = int(N/len(categ))
         residual = N % len(categ)
         # 3. Select images per category
-        images, labels = self.sampleImages(categ, nImgCat)
+        keys, images, labels = self.sampleImages(categ, nImgCat)
         if residual > 0:
             np.random.shuffle(categ)
-            ri,rl = self.sampleImages(categ[0:residual],1)
+            rk,ri,rl = self.sampleImages(categ[0:residual],1)
+            keys += rk
             images += ri
             labels += rl
         # 4. Open images
-        batch = {'images':[], 'labels':labels}
+        batch = {'keys':keys, 'images':[], 'labels':labels}
         for img in images:
             batch['images'].append(px.openImage(img, self.pixelProcessor))
         u.toc('Loading batch', s)
@@ -63,7 +68,7 @@ class Dataset():
         images = [ (i, self.getImagePaths(r), r) for i,r in frame]
         for img in images:
             index = img[0]
-            image = px.openImage(img[1], self.pixelProcessor)
+            image = px.openImage(img[1][1], self.pixelProcessor)
             meta = img[2]
             f(index, image, meta)
         return
