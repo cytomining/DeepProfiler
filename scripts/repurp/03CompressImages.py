@@ -28,7 +28,8 @@ def compressBatch(args):
     plate, imgsDir, statsDir, outDir = args
     statsfile = statsDir + plate.data.iloc[0]["Metadata_Plate"] + ".pkl"
     stats = pickle.load( open(statsfile, "rb") )
-    dataset = ds.Dataset(plate, "Treatment", CHANNELS, imgsDir)
+    keyGen = lambda x: x["Metadata_Plate"]+ "/" + x["Metadata_Well"] + "-" + x["Metadata_Site"]
+    dataset = ds.Dataset(plate, "Treatment", CHANNELS, imgsDir, keyGen)
     compress = px.Compress(stats, CHANNELS, outDir)
     compress.setFormats(sourceFormat="tiff", targetFormat="png")
     compress.setScalingFactor(0.5)
