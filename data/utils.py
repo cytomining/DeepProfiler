@@ -66,7 +66,7 @@ class Logger():
 
     def __init__(self):
         self.root = logging.getLogger()
-        self.root.setLevel(logging.DEBUG)
+        self.root.setLevel(logging.INFO)
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
