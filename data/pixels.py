@@ -187,6 +187,8 @@ class Compress():
     def setFormats(self, sourceFormat="tiff", targetFormat="png"):
         self.sourceFormat = sourceFormat
         self.targetFormat = targetFormat
+        if targetFormat != "png":
+            raise ValueError("Only PNG compression is supported (target format should be png)")
 
     # Takes a percent factor to rescale the image preserving aspect ratio
     # If the number is between 0 and 1, the image is downscaled, otherwise is upscaled
@@ -209,11 +211,14 @@ class Compress():
             image = img[:,:,c] / self.stats["illum_correction_function"][:,:,c]
             # Downscale
             image = skimage.transform.resize(image, self.outputShape) 
-            # Stretch illumination values
+            # Clip illumination values
             image[image < self.stats["lower_percentiles"][c]] = self.stats["lower_percentiles"][c]
             image[image > self.stats["upper_percentiles"][c]] = self.stats["upper_percentiles"][c]
-            # Save as PNG (#TODO: use ImageMagick for saving it to PNG-16bit)
-            scipy.misc.imsave(self.targetPath(meta[self.channels[c]]), image)
+            # Save resulting image in 8-bits PNG format
+            #scipy.misc.imsave(self.targetPath(meta[self.channels[c]]), image)
+            image = scipy.misc.toimage(image, low=0, high=255, mode="L",
+                        cmin=self.stats["lower_percentiles"][c], cmax=self.stats["upper_percentiles"][c])
+            image.save(self.targetPath(meta[self.channels[c]]))
         return
             
 

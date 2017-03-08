@@ -6,7 +6,6 @@
 ################################################################################
 import argparse
 import data.metadata as meta
-import data.dataset as ds
 import data.utils as utils
 import pandas as pd
 import os

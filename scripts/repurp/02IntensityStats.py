@@ -35,7 +35,8 @@ def readPlates(metaFile):
 def intensityStats(args):
     plate, root, outDir = args
     plateName = plate.data["Metadata_Plate"].iloc[0]
-    dataset = ds.Dataset(plate, "Treatment", CHANNELS, root)
+    keyGen = lambda x: x["Metadata_Plate"]+ "/" + x["Metadata_Well"] + "-" + x["Metadata_Site"]
+    dataset = ds.Dataset(plate, "Treatment", CHANNELS, root, keyGen)
     hist = px.ImageStatistics(BITS, CHANNELS, DOWN_SCALE_FACTOR, MEDIAN_FILTER_SIZE, name=plateName)
     hist.expected = dataset.numberOfRecords("all")
     dataset.scan(hist.processImage, frame="all")
