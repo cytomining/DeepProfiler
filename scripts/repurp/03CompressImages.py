@@ -26,17 +26,26 @@ def readMetadata(metaFile):
 
 def compressBatch(args):
     plate, imgsDir, statsDir, outDir = args
+    # Dataset parameters 
     statsfile = statsDir + plate.data.iloc[0]["Metadata_Plate"] + ".pkl"
     stats = pickle.load( open(statsfile, "rb") )
     keyGen = lambda x: x["Metadata_Plate"]+ "/" + x["Metadata_Well"] + "-" + x["Metadata_Site"]
     dataset = ds.Dataset(plate, "Treatment", CHANNELS, imgsDir, keyGen)
+    # Configure compression object
     compress = px.Compress(stats, CHANNELS, outDir)
     compress.setFormats(sourceFormat="tiff", targetFormat="png")
     compress.setScalingFactor(0.5)
     compress.recomputePercentile(0.0001, side="lower")
     compress.recomputePercentile(0.9999, side="upper")
     compress.expected = dataset.numberOfRecords("all")
+    # Treatment 0 is DMSO in the treatments.csv metadata file
+    compress.setControlSamplesFilter(lambda x: x["Treatment"]=="0")
+    # Run compression and save results
     dataset.scan(compress.processImage, frame="all")
+    new_stats = compress.getUpdatedStats()
+    with open(statsfile,"wb") as output:
+        pickle.dump(new_stats, output)
+    return
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

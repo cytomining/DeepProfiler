@@ -89,7 +89,7 @@ class ImageStatistics():
         pos = cum > p
         return np.argmax(pos)
 
-    # Compute global statistics on pixels. Useful for contrast/brightness adjustment (a.k.a histogram stretching)
+    # Compute global statistics on pixels. 
     def computeStats(self):
         # Initialize counters
         bins = np.linspace(0,self.depth-1,self.depth)
@@ -170,6 +170,8 @@ class Compress():
         self.expected = 1
         self.setFormats()
         self.setScalingFactor(1.0)
+        self.metadataControlFilter = lambda x:False
+        self.controls_distribution = np.zeros((len(channels), 2**8), dtype=np.float64)
 
     # Allows to recalculate the percentiles computed by default in the ImageStatistics class
     def recomputePercentile(self, p, side="upper"):
@@ -182,6 +184,11 @@ class Compress():
             self.stats[side][i] = np.argmax(pos)
             print(self.channels[i], ':', self.stats[side][i], ' ', end='')
         print('')
+
+    # Filter images that belong to control samples, to compute their histogram distribution
+    def setControlSamplesFilter(self, filterFunc):
+        self.metadataControlFilter = filterFunc
+        self.controls_distribution = np.zeros((len(self.channels), 2**8), dtype=np.float64)
 
     # If the sourceFormat is the same as the target, no compression should be applied.
     def setFormats(self, sourceFormat="tiff", targetFormat="png"):
@@ -215,10 +222,14 @@ class Compress():
             image[image < self.stats["lower_percentiles"][c]] = self.stats["lower_percentiles"][c]
             image[image > self.stats["upper_percentiles"][c]] = self.stats["upper_percentiles"][c]
             # Save resulting image in 8-bits PNG format
-            #scipy.misc.imsave(self.targetPath(meta[self.channels[c]]), image)
             image = scipy.misc.toimage(image, low=0, high=255, mode="L",
                         cmin=self.stats["lower_percentiles"][c], cmax=self.stats["upper_percentiles"][c])
+            if self.metadataControlFilter(meta):
+                self.controls_distribution[c] += image.histogram()
             image.save(self.targetPath(meta[self.channels[c]]))
         return
-            
+
+    def getUpdatedStats(self):
+        self.stats["controls_distribution"] = self.controls_distribution
+        return self.stats
 
