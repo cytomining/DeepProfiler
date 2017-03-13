@@ -47,15 +47,16 @@ def toc(msg, beginning):
 
 class Parallel():
 
-    def __init__(self, numProcs=None):
+    def __init__(self, fixed_args, numProcs=None):
+        self.fixed_args = fixed_args
         cpus =  multiprocessing.cpu_count()
         if numProcs is None or numProcs > cpus or numProcs < 1:
             numProcs = cpus
         self.pool = multiprocessing.Pool(numProcs)
 
-    def compute(self, operation, data, fixed_args):
-        iterable = [ [d] + fixed_args[:] for d in data ]
-        self.pool.map(operation, iterable)
+    def compute(self, operation, data):
+        iterable = [ [d, self.fixed_args] for d in data ]
+        self.pool.map(self.operation, iterable)
         return
     
 ################################################################################

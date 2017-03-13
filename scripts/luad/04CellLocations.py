@@ -12,16 +12,6 @@ import os
 
 CHANNELS = ["RNA","ER","AGP","Mito","DNA"]
 
-def readMetadata(metaFile):
-    metadata = meta.Metadata(metaFile)
-    plates = metadata.data["Metadata_Plate"].unique()
-    print("Total plates:",len(plates))
-    for i in range(len(plates)):
-        #plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[0]) & (df.Metadata_Well == "a01"), copy=True)
-        plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[i]), copy=True)
-        yield plate
-    return
-
 def conditionalWellName(row):
     if row["Metadata_Plate"] in ["52650", "52661"]:
         return row["Metadata_Well"]
@@ -56,5 +46,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     manager = utils.Parallel()
-    manager.compute(createCellFiles, readMetadata(args.metadata), [args.features_dir, args.output_dir])
+    manager.compute(createCellFiles, meta.readPlates(args.metadata), [args.features_dir, args.output_dir])
 

@@ -10,6 +10,17 @@ def parseDelimiter(delimiter):
     else:
         return ','
 
+## Generator of plates. Reads metadata and yields plates
+def readPlates(metaFile):
+    metadata = meta.Metadata(metaFile)
+    plates = metadata.data["Metadata_Plate"].unique()
+    utils.logger.info("Total plates: " + str(len(plates)))
+    #plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[0]) & (df.Metadata_Well == "a01"), copy=True)
+    for i in range(len(plates)):
+        plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[i]), copy=True)
+        yield plate
+    return
+
 class Metadata():
 
     # The dtype argument indicates whether the data should be read as strings (object) 
