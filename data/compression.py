@@ -3,6 +3,7 @@ import sys
 import data.utils as utils
 import skimage.transform
 import scipy.misc
+import numpy as np
 
 #################################################
 ## COMPRESSION OF TIFF IMAGES INTO PNGs
@@ -52,9 +53,10 @@ class Compress():
         self.outputShape[1] = int(factor * self.stats["original_size"][1])
 
     def targetPath(self, origPath):
-        basePath = "/".join( origPath.split("/")[0:-1] )
-        os.system("mkdir -p " + self.outDir + basePath)
-        return self.outDir + origPath.replace(self.sourceFormat,self.targetFormat)
+        image_name = origPath.split("/")[-1]
+        filename = self.outDir + image_name.replace(self.sourceFormat,self.targetFormat)
+        utils.check_path(filename)
+        return filename
 
     # Main method. Downscales, stretches histogram, and saves as PNG
     def processImage(self, index, img, meta):

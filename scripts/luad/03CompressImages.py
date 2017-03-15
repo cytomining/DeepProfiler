@@ -5,27 +5,17 @@
 ## 02/24/2017. Broad Institute of MIT and Harvard
 ################################################################################
 import argparse
-import pandas as pd
-import pickle as pickle
 import data.metadata as meta
-import data.dataset as ds
 import data.utils as utils
-import data.compression as cmpr
 import scripts.processing as prs
-
-CHANNELS = ["RNA","ER","AGP","Mito","DNA"]
+import json
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("metadata", help="Metadata csv file with paths to all images")
-    parser.add_argument("root_dir", help="Path where the images directory is stored")
-    parser.add_argument("stats_dir", help="Path where stats files are stored")
-    parser.add_argument("output_dir", help="Directory to store the compressed images")
+    parser.add_argument("config", help="JSON configuration file")
     args = parser.parse_args()
 
-    params = {"images_dir":args.root_dir, "stats_dir":args.stats_dir, "output_dir":args.output_dir,
-              "channels": CHANNELS, "source_format":"tif", "scaling_factor":1.0, "label_field":"Alleles" 
-              "control_field":"Allele", "control_value":"17"}
+    params = json.load(open(args.config, "r"))
     processor = utils.Parallel(params)
-    processor.compute(prs.compressBatch, meta.readPlates(args.metadata))
+    processor.compute(prs.compressBatch, meta.readPlates(params["metadata"]["filename"]))
 

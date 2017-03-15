@@ -1,28 +1,44 @@
 import pickle as pickle
+import data.utils as utils
 import data.dataset as ds
 import data.image_statistics as ists
 import data.compression as cmpr
 
+
+## Basic functionalities
+
+def illum_stats_filename(output_dir, plate_name):
+    return output_dir + "/" + plate_name + "/intensities/" + plate_name + ".pkl"
+
+def png_dir(output_dir, plate_name):
+    return output_dir + "/" + plate_name + "/pngs/"
+
 ## The following functions are compatible with utils.Parallel
 ## These functions only accept one parameter with the args needed for computation
-## Expected args: [plate, params] where plate is a dataframe, and params a dictionary
+## Expected args: [plate, config] where plate is a dataframe, and config a dictionary
+## The metadata is assumed to be produced by CellProfiler and Cytominer, hence the field names
+## Parameterizing these field names might be required in the future
 
 ## STEP 02
 ## Computation of intensity stats per plate
-## Required params: bits, channels, down_scale_factor, median_filter_size, output_dir, 
-##                  image_dir, label_field
 def intensityStats(args):
     # Load input parameters
-    plate, params = args
+    plate, config = args
     plateName = plate.data["Metadata_Plate"].iloc[0]
 
     # Create Dataset object
     keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dataset = ds.Dataset(plate, params["label_field"], params["channels"], params["image_dir"], keyGen)
+    dataset = ds.Dataset(plate, config["metadata"]["label_field"], 
+                                config["original_images"]["channels"], 
+                                config["original_images"]["path"], 
+                                keyGen)
 
     # Prepare ImageStatistics object
-    hist = ists.ImageStatistics(params["bits"], params["channels"], params["down_scale_factor"], 
-                                params["median_filter_size"], name=plateName)
+    hist = ists.ImageStatistics(config["original_images"]["bits"], 
+                                config["original_images"]["channels"], 
+                                config["illumination_correction"]["down_scale_factor"], 
+                                config["illumination_correction"]["median_filter_size"], 
+                                name=plateName)
     hist.expected = dataset.numberOfRecords("all")
 
     # Run the intensity computation
@@ -30,7 +46,8 @@ def intensityStats(args):
 
     # Retrieve and store results
     stats = hist.computeStats()
-    outfile = params["output_dir"] + plateName + ".pkl"
+    outfile = illum_stats_filename(config["compression"]["output_dir"], plateName) 
+    utils.check_path(outfile)
     with open(outfile,"wb") as output:
         pickle.dump(stats, output)
 
@@ -38,28 +55,33 @@ def intensityStats(args):
 
 ## STEP 03
 ## Compression of images in a batch
-## Required params: images_dir, stats_dir, output_dir, channels, source_format, scaling_factor
-##                  label_field, control_field, control_value
 def compressBatch(args):
     # Load parameters
-    plate, params = args
+    plate, config = args
+    plate_name = plate.data.iloc[0]["Metadata_Plate"]
 
     # Dataset configuration
-    statsfile = params["stats_dir"] + plate.data.iloc[0]["Metadata_Plate"] + ".pkl"
+    statsfile = illum_stats_filename(config["compression"]["output_dir"], plate_name)
     stats = pickle.load( open(statsfile, "rb") )
     keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dataset = ds.Dataset(plate, params["label_field"], params["channels"], params["images_dir"], keyGen)
+    dataset = ds.Dataset(plate, 
+                         config["metadata"]["label_field"], 
+                         config["original_images"]["channels"], 
+                         config["original_images"]["path"], 
+                         keyGen)
 
     # Configure compression object
-    compress = cmpr.Compress(stats, params["channels"], params["output_dir"])
-    compress.setFormats(sourceFormat=params["source_format"], targetFormat="png")
-    compress.setScalingFactor(params["scaling_factor"])
+    plate_output_dir = png_dir(config["compression"]["output_dir"], plate_name)
+    compress = cmpr.Compress(stats, config["original_images"]["channels"], plate_output_dir)
+    compress.setFormats(sourceFormat=config["original_images"]["file_format"], targetFormat="png")
+    compress.setScalingFactor(config["compression"]["scaling_factor"])
     compress.recomputePercentile(0.0001, side="lower")
     compress.recomputePercentile(0.9999, side="upper")
     compress.expected = dataset.numberOfRecords("all")
 
     # Setup control samples filter (for computing control illumination statistics)
-    compress.setControlSamplesFilter(lambda x: x[params["control_field"]]==params["control_value"])
+    filter_func = lambda x: x[config["metadata"]["control_field"]]==config["metadata"]["control_value"]
+    compress.setControlSamplesFilter(filter_func)
 
     # Run compression
     dataset.scan(compress.processImage, frame="all")

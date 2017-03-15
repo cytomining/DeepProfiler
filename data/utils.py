@@ -1,8 +1,8 @@
+import os
 import sys
 import time
 import logging
 import multiprocessing
-
 
 # From: http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
 # Print iterations progress
@@ -27,6 +27,9 @@ def printProgress (iteration, total, prefix='Progress', suffix='Complete', decim
         sys.stdout.write('\n')
         sys.stdout.flush()
 
+def check_path(filename):
+    path = "/".join( filename.split("/")[0:-1] )
+    os.system("mkdir -p " + path)
 
 ################################################################################
 ## Timing utilities
@@ -56,7 +59,7 @@ class Parallel():
 
     def compute(self, operation, data):
         iterable = [ [d, self.fixed_args] for d in data ]
-        self.pool.map(self.operation, iterable)
+        self.pool.map(operation, iterable)
         return
     
 ################################################################################
