@@ -1,8 +1,10 @@
 import data.utils as utils
+import data.dataset
 import skimage.transform
 import numpy as np
 import pickle as pickle
 from .illumination_correction import IlluminationCorrection
+
 
 #################################################
 ## COMPUTATION OF ILLUMINATION STATISTICS
@@ -10,7 +12,6 @@ from .illumination_correction import IlluminationCorrection
 
 # Build pixel histogram for each channel
 class ImageStatistics():
-
     def __init__(self, bits, channels, downScaleFactor, medianFilterSize, name=""):
         self.depth = 2**bits
         self.channels = channels
@@ -82,3 +83,51 @@ class ImageStatistics():
         utils.logger.info('Plate ' + self.name + ' done')
         return stats
 
+
+def illum_stats_filename(output_dir, plate_name):
+    return output_dir + "/" + plate_name + "/intensities/" + plate_name + ".pkl"
+
+
+# TODO: try def calculate_stats(plate, config) DOES IT WORK???? I DUNNO
+def calculate_statistics(args):
+    # Load input parameters
+    plate, config = args
+
+    plateName = plate.data["Metadata_Plate"].iloc[0]
+
+    # Create Dataset object
+    keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
+
+    dataset = data.dataset.Dataset(
+        plate,
+        config["metadata"]["label_field"],
+        config["original_images"]["channels"],
+        config["original_images"]["path"],
+        keyGen
+    )
+
+    # Prepare ImageStatistics object
+    hist = data.image_statistics.ImageStatistics(
+        config["original_images"]["bits"],
+        config["original_images"]["channels"],
+        config["illumination_correction"]["down_scale_factor"],
+        config["illumination_correction"]["median_filter_size"],
+        name=plateName
+    )
+
+    hist.expected = dataset.numberOfRecords("all")
+
+    # Run the intensity computation
+    dataset.scan(hist.processImage, frame="all")
+
+    # Retrieve and store results
+    stats = hist.computeStats()
+
+    outfile = illum_stats_filename(config["compression"]["output_dir"], plateName)
+
+    utils.check_path(outfile)
+
+    with open(outfile,"wb") as output:
+        pickle.dump(stats, output)
+
+    return  # TODO: is an explicit return necessary?
