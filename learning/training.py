@@ -1,9 +1,10 @@
-import data.metadata as meta
-import tensorflow as tf
-import numpy as np
-import learn.cropping as crp
 import threading
 import time
+
+import learn.cropping as crp
+import numpy as np
+import tensorflow as tf
+
 
 #################################################
 ## AUXILIARY FUNCTIONS
@@ -45,7 +46,7 @@ def learnCNN(config, dataset, cells_dir, output_dir):
     daug_enqueue_op = daug_queue.enqueue_many([crop_op, labels_ph])
     labeled_crops = daug_queue.dequeue()
 
-    # Outputs and queue of the data augmentation graph
+    # Outputs and queue of the dataset augmentation graph
     augmented_op = crp.augment(labeled_crops[0])
     crop_shape = [(config["box_size"], config["box_size"], len(config["channels"])), ()]
     train_queue = tf.RandomShuffleQueue(config["random_queue_size"], config["sample_cells"], [tf.float32, tf.int32], shapes=crop_shape)

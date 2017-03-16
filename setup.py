@@ -11,7 +11,7 @@ setuptools.setup(
     license="BSD",
     keywords="",
     url="https://github.com/jccaicedo/DeepProfiler",
-    packages=["data"],
+    packages=["dataset"],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",

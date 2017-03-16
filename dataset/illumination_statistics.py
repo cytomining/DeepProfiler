@@ -1,5 +1,5 @@
-import data.utils as utils
-import data.dataset
+import dataset.utils as utils
+import dataset.image_dataset
 import skimage.transform
 import numpy as np
 import pickle as pickle
@@ -15,7 +15,7 @@ def illum_stats_filename(output_dir, plate_name):
 #################################################
 
 # Build pixel histogram for each channel
-class ImageStatistics():
+class IlluminationStatistics():
     def __init__(self, bits, channels, downScaleFactor, medianFilterSize, name=""):
         self.depth = 2 ** bits
         self.channels = channels
@@ -103,7 +103,7 @@ def calculate_statistics(args):
     # Create Dataset object
     keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
 
-    dataset = data.dataset.Dataset(
+    dset = dataset.image_dataset.ImageDataset(
         plate,
         config["metadata"]["label_field"],
         config["original_images"]["channels"],
@@ -112,7 +112,7 @@ def calculate_statistics(args):
     )
 
     # Prepare ImageStatistics object
-    hist = data.image_statistics.ImageStatistics(
+    hist = IlluminationStatistics(
         config["original_images"]["bits"],
         config["original_images"]["channels"],
         config["illumination_correction"]["down_scale_factor"],
@@ -120,10 +120,10 @@ def calculate_statistics(args):
         name=plateName
     )
 
-    hist.expected = dataset.numberOfRecords("all")
+    hist.expected = dset.numberOfRecords("all")
 
     # Run the intensity computation
-    dataset.scan(hist.processImage, frame="all")
+    dset.scan(hist.processImage, frame="all")
 
     # Retrieve and store results
     stats = hist.computeStats()

@@ -5,8 +5,8 @@
 ################################################################################
 
 import argparse
-import data.metadata as meta
-import data.utils as utils
+import dataset.metadata as meta
+import dataset.utils as utils
 import pandas as pd
 
 def relativePaths(df, target, path, filename, root):
@@ -14,7 +14,7 @@ def relativePaths(df, target, path, filename, root):
     return df.drop([path, filename], axis=1)
 
 def processMetadata(plate_maps, barcode_file, csv_list, root):
-    # Load plate maps data and create labels
+    # Load plate maps dataset and create labels
     plateMaps = meta.Metadata(plate_maps, "multi", "blanks")
     maps = plateMaps.data
     maps["Treatment"] = maps["broad_sample"] + "@" + maps["mmoles_per_liter"].astype(str)

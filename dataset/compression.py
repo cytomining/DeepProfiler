@@ -4,10 +4,9 @@ import numpy as np
 import scipy.misc
 import skimage.transform
 
-import data.dataset
-import data.image_statistics
-import data.utils
-
+import dataset.utils
+import dataset.illumination_statistics
+import dataset.image_dataset
 
 def png_dir(output_dir, plate_name):
     return output_dir + "/" + plate_name + "/pngs/"
@@ -62,13 +61,13 @@ class Compress():
     def targetPath(self, origPath):
         image_name = origPath.split("/")[-1]
         filename = self.outDir + image_name.replace(self.sourceFormat,self.targetFormat)
-        data.utils.check_path(filename)
+        dataset.utils.check_path(filename)
         return filename
 
     # Main method. Downscales, stretches histogram, and saves as PNG
     def processImage(self, index, img, meta):
         self.count += 1
-        data.utils.printProgress(self.count, self.expected)
+        dataset.utils.printProgress(self.count, self.expected)
         for c in range(len(self.channels)):
             # Illumination correction
             image = img[:,:,c] / self.stats["illum_correction_function"][:,:,c]
@@ -99,10 +98,10 @@ def compress_plate(args):
     plate_name = plate.data.iloc[0]["Metadata_Plate"]
 
     # Dataset configuration
-    statsfile = data.image_statistics.illum_stats_filename(config["compression"]["output_dir"], plate_name)
+    statsfile = dataset.illumination_statistics.illum_stats_filename(config["compression"]["output_dir"], plate_name)
     stats = pickle.load( open(statsfile, "rb") )
     keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dataset = data.dataset.Dataset(
+    dset = dataset.image_dataset.ImageDataset(
         plate,
         config["metadata"]["label_field"],
         config["original_images"]["channels"],
@@ -121,14 +120,14 @@ def compress_plate(args):
     compress.setScalingFactor(config["compression"]["scaling_factor"])
     compress.recomputePercentile(0.0001, side="lower")
     compress.recomputePercentile(0.9999, side="upper")
-    compress.expected = dataset.numberOfRecords("all")
+    compress.expected = dset.numberOfRecords("all")
 
     # Setup control samples filter (for computing control illumination statistics)
     filter_func = lambda x: x[config["metadata"]["control_field"]] == config["metadata"]["control_value"]
     compress.setControlSamplesFilter(filter_func)
 
     # Run compression
-    dataset.scan(compress.processImage, frame="all")
+    dset.scan(compress.processImage, frame="all")
 
     # Retrieve and store results
     new_stats = compress.getUpdatedStats()

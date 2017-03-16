@@ -1,6 +1,6 @@
-import skimage.io
 import numpy as np
-import pickle as pickle
+import skimage.io
+
 
 #################################################
 ## COMMON IMAGE HANDLING OPPERATIONS
