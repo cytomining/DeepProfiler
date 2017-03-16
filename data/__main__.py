@@ -2,6 +2,7 @@ import json
 
 import click
 
+import data.compression
 import data.dataset
 import data.image_statistics
 import data.metadata
@@ -9,10 +10,12 @@ import data.utils
 
 
 @click.group()
-@click.option("--config")  # TODO: use a file argument http://click.pocoo.org/5/arguments/#file-arguments
+@click.option("--config", prompt="Configuration file for the compression pipeline",
+              help="The configuration file, written in JSON format",
+              type=click.File('r'))  # TODO: use a file argument http://click.pocoo.org/5/arguments/#file-arguments
 @click.pass_context
 def cli(context, config):
-    params = json.load(open(config))
+    params = json.load(config)
 
     process = data.utils.Parallel(params)
 

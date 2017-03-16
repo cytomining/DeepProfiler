@@ -4,6 +4,7 @@ import numpy as np
 import scipy.misc
 import skimage.transform
 
+import data.dataset
 import data.image_statistics
 import data.utils
 
@@ -101,7 +102,7 @@ def compress_plate(args):
     statsfile = data.image_statistics.illum_stats_filename(config["compression"]["output_dir"], plate_name)
     stats = pickle.load( open(statsfile, "rb") )
     keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dataset = data.Dataset(
+    dataset = data.dataset.Dataset(
         plate,
         config["metadata"]["label_field"],
         config["original_images"]["channels"],
