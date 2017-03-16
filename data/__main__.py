@@ -36,7 +36,11 @@ def stats(context):
 @cli.command()
 @click.pass_context
 def compress(context):
-    raise NotImplementedError("oops, implement me!")
+    process = context.obj["process"]
+
+    metadata = context.obj["metadata"]
+
+    process.compute(data.compression.compress_plate, metadata)
 
 
 if __name__ == "__main__":

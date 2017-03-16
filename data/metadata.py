@@ -1,7 +1,7 @@
-import os
-import sys
 import pandas as pd
-import data.utils as utils
+
+import data.utils
+
 
 def parseDelimiter(delimiter):
     if delimiter == "blanks":
@@ -15,7 +15,7 @@ def parseDelimiter(delimiter):
 def readPlates(metaFile):
     metadata = Metadata(metaFile)
     plates = metadata.data["Metadata_Plate"].unique()
-    utils.logger.info("Total plates: " + str(len(plates)))
+    data.utils.logger.info("Total plates: " + str(len(plates)))
     #plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[0]) & (df.Metadata_Well == "a01"), copy=True)
     for i in range(2): #len(plates)):
         plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[i]) & (df.Metadata_Well == "a01"), copy=True)
