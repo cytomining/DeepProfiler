@@ -112,7 +112,11 @@ def compress_plate(args):
 
     # Configure compression object
     plate_output_dir = png_dir(config["compression"]["output_dir"], plate_name)
-    compress = Compress(stats, config["original_images"]["channels"], plate_output_dir)
+    compress = Compress(
+        stats,
+        config["original_images"]["channels"],
+        plate_output_dir
+    )
     compress.setFormats(sourceFormat=config["original_images"]["file_format"], targetFormat="png")
     compress.setScalingFactor(config["compression"]["scaling_factor"])
     compress.recomputePercentile(0.0001, side="lower")
