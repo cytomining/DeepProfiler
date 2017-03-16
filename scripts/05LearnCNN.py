@@ -5,8 +5,8 @@
 ## 02/28/2017. Broad Institute of MIT and Harvard
 ################################################################################
 import argparse
-import data.metadata as meta
-import data.dataset as ds
+import dataset.metadata as meta
+import dataset.image_dataset as ds
 import learn.training as training
 
 CHANNELS = ["RNA","ER","AGP","Mito","DNA"]
@@ -17,14 +17,14 @@ IMAGE_WIDTH = 1080
 IMAGE_HEIGHT = 1080
 
 def readDataset(metaFile, images_dir):
-    # Read metadata and split data in training and validation
+    # Read metadata and split dataset in training and validation
     metadata = meta.Metadata(metaFile, dtype=None)
     trainingFilter = lambda df: df["Allele_Replicate"] <= 5
     validationFilter = lambda df: df["Allele_Replicate"] > 5
     metadata.splitMetadata(trainingFilter, validationFilter)
     # Create a dataset
     keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dataset = ds.Dataset(metadata, "Allele", CHANNELS, images_dir, keyGen)
+    dataset = ds.ImageDataset(metadata, "Allele", CHANNELS, images_dir, keyGen)
     print(metadata.data.iloc[100])
     return dataset
 

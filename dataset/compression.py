@@ -1,9 +1,15 @@
-import os
-import sys
-import data.utils as utils
-import skimage.transform
-import scipy.misc
+import pickle as pickle
+
 import numpy as np
+import scipy.misc
+import skimage.transform
+
+import dataset.utils
+import dataset.illumination_statistics
+import dataset.image_dataset
+
+def png_dir(output_dir, plate_name):
+    return output_dir + "/" + plate_name + "/pngs/"
 
 #################################################
 ## COMPRESSION OF TIFF IMAGES INTO PNGs
@@ -55,13 +61,13 @@ class Compress():
     def targetPath(self, origPath):
         image_name = origPath.split("/")[-1]
         filename = self.outDir + image_name.replace(self.sourceFormat,self.targetFormat)
-        utils.check_path(filename)
+        dataset.utils.check_path(filename)
         return filename
 
     # Main method. Downscales, stretches histogram, and saves as PNG
     def processImage(self, index, img, meta):
         self.count += 1
-        utils.printProgress(self.count, self.expected)
+        dataset.utils.printProgress(self.count, self.expected)
         for c in range(len(self.channels)):
             # Illumination correction
             image = img[:,:,c] / self.stats["illum_correction_function"][:,:,c]
@@ -82,3 +88,48 @@ class Compress():
         self.stats["controls_distribution"] = self.controls_distribution
         return self.stats
 
+#################################################
+## COMPRESS IMAGES IN A PLATE
+#################################################
+
+def compress_plate(args):
+    # Load parameters
+    plate, config = args
+    plate_name = plate.data.iloc[0]["Metadata_Plate"]
+
+    # Dataset configuration
+    statsfile = dataset.illumination_statistics.illum_stats_filename(config["compression"]["output_dir"], plate_name)
+    stats = pickle.load( open(statsfile, "rb") )
+    keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
+    dset = dataset.image_dataset.ImageDataset(
+        plate,
+        config["metadata"]["label_field"],
+        config["original_images"]["channels"],
+        config["original_images"]["path"],
+        keyGen
+    )
+
+    # Configure compression object
+    plate_output_dir = png_dir(config["compression"]["output_dir"], plate_name)
+    compress = Compress(
+        stats,
+        config["original_images"]["channels"],
+        plate_output_dir
+    )
+    compress.setFormats(sourceFormat=config["original_images"]["file_format"], targetFormat="png")
+    compress.setScalingFactor(config["compression"]["scaling_factor"])
+    compress.recomputePercentile(0.0001, side="lower")
+    compress.recomputePercentile(0.9999, side="upper")
+    compress.expected = dset.numberOfRecords("all")
+
+    # Setup control samples filter (for computing control illumination statistics)
+    filter_func = lambda x: x[config["metadata"]["control_field"]] == config["metadata"]["control_value"]
+    compress.setControlSamplesFilter(filter_func)
+
+    # Run compression
+    dset.scan(compress.processImage, frame="all")
+
+    # Retrieve and store results
+    new_stats = compress.getUpdatedStats()
+    with open(statsfile,"wb") as output:
+        pickle.dump(new_stats, output)

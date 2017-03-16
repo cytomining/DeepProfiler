@@ -27,6 +27,10 @@ def printProgress (iteration, total, prefix='Progress', suffix='Complete', decim
         sys.stdout.write('\n')
         sys.stdout.flush()
 
+################################################################################
+## Make sure directory exist for storing a file
+################################################################################
+
 def check_path(filename):
     path = "/".join( filename.split("/")[0:-1] )
     os.system("mkdir -p " + path)
