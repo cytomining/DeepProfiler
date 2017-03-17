@@ -4,7 +4,7 @@ import dataset.utils
 import sqlite3
 
 
-def parseDelimiter(delimiter):
+def parse_delimiter(delimiter):
     if delimiter == "blanks":
         return '\s+'
     elif delimiter == "tabs":
@@ -19,7 +19,7 @@ def conditionalWellName(row):
         return row["Metadata_Well"].upper()
 
 ## Generator of plates. Reads metadata and yields plates
-def readPlates(metaFile):
+def read_plates(metaFile):
     metadata = Metadata(metaFile)
     plates = metadata.data["Metadata_Plate"].unique()
     dataset.utils.logger.info("Total plates: {}".format(len(plates)))
@@ -42,13 +42,13 @@ class Metadata():
 
     def loadSingle(self, filename, delim, dtype):
         print("Reading metadata form", filename)
-        delimiter = parseDelimiter(delim)
+        delimiter = parse_delimiter(delim)
         # Read csv files as strings without dropping NA symbols
         self.data = pd.read_csv(filename, delimiter, dtype=dtype, keep_default_na=False)
 
     def loadMultiple(self, filename, delim, dtype):
         frames = []
-        delimiter = parseDelimiter(delim)
+        delimiter = parse_delimiter(delim)
         with open(filename, "r") as filelist:
             for line in filelist:
                 csvPath = line.replace("\n","")
@@ -69,7 +69,7 @@ class Metadata():
         self.train = self.data[trainingRule(self.data)].copy()
         self.val = self.data[validationRule(self.data)].copy()
 
-def createCellFiles(args):
+def create_cell_indices(args):
     plate, config = args
 
     plate_name = plate.data.iloc[0]["Metadata_Plate"]
