@@ -77,11 +77,14 @@ def create_cell_indices(args):
 
     conn = sqlite3.connect(database_file)
     query_template = "SELECT Cells.Cells_Location_Center_X,Cells_Location_Center_Y " +\
-                     " FROM Cells LEFT JOIN Image " +\
+                     " FROM Cells INNER JOIN Image " +\
                      "    ON Image.ImageNumber = Cells.ImageNumber " +\
+                     "    AND Image.TableNumber = Cells.TableNumber " +\
                      " WHERE Image.Image_Metadata_Plate = '{}' " +\
                      "    AND Image.Image_Metadata_Well = '{}' " +\
-                     "    AND Image.Image_Metadata_Site = '{}' "
+                     "    AND Image.Image_Metadata_Site = '{}' " +\
+                     "    AND Cells.Cells_Location_Center_X NOT LIKE 'NaN' " +\
+                     "    AND Cells.Cells_Location_Center_Y NOT LIKE 'NaN' "
 
     iteration = 1
     for index, row in plate.data.iterrows():
@@ -95,7 +98,8 @@ def create_cell_indices(args):
 
         # Keep center coordinates only, remove NaNs, and transform to integers
         cell_locations = cell_locations.dropna(axis=0, how="any")
-        cell_locations *= config["compression"]["scaling_factor"]
+        cell_locations["Cells_Location_Center_X"] = cell_locations["Cells_Location_Center_X"]*config["compression"]["scaling_factor"]
+        cell_locations["Cells_Location_Center_Y"] = cell_locations["Cells_Location_Center_Y"]*config["compression"]["scaling_factor"]
         cell_locations["Cells_Location_Center_X"] = cell_locations["Cells_Location_Center_X"].astype(int)
         cell_locations["Cells_Location_Center_Y"] = cell_locations["Cells_Location_Center_Y"].astype(int)
 
