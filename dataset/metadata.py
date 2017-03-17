@@ -12,6 +12,7 @@ def parse_delimiter(delimiter):
     else:
         return ','
 
+#TODO: This function is only useful for the LUAD dataset
 def conditionalWellName(row):
     if row["Metadata_Plate"] in ["52650", "52661"]:
         return row["Metadata_Well"]
@@ -24,7 +25,7 @@ def read_plates(metaFile):
     plates = metadata.data["Metadata_Plate"].unique()
     dataset.utils.logger.info("Total plates: {}".format(len(plates)))
     for i in range(len(plates)):  #  & (df.Metadata_Well == "a01")
-        plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[i]) & (df.Metadata_Well == "a01"), copy=True)
+        plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[i]), copy=True)
         yield plate
     return
 
