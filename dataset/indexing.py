@@ -95,3 +95,12 @@ def create_metadata_index(config):
     metadata.to_csv(config["metadata"]["filename"], index=False)
     dframe = pd.DataFrame({"ID":pd.Series(range(len(label_values))), "Treatment":pd.Series(label_values)})
     dframe.to_csv(config["metadata"]["labels_file"], index=False)
+
+def write_compression_index(config):
+    metadata = dataset.metadata.Metadata(config["metadata"]["filename"], dtype=None)
+    new_index = metadata.data
+    for ch in config["original_images"]["channels"]:
+        new_index[ch] = new_index[ch].str.split("/").str[-1]
+        png_path = lambda x: "/pngs/" + x.replace("."+config["original_images"]["file_format"], ".png")
+        new_index[ch] = new_index["Metadata_Plate"].astype(str) + new_index[ch].map(png_path)
+    new_index.to_csv(config["metadata"]["path"] + "/index.csv")

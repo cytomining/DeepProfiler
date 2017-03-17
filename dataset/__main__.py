@@ -5,7 +5,7 @@ import click
 
 import dataset.compression
 import dataset.image_dataset
-import indexing
+import dataset.indexing
 import dataset.illumination_statistics
 import dataset.metadata
 import dataset.utils
@@ -32,7 +32,7 @@ def cli(context, config):
 @cli.command()
 @click.pass_context
 def metadata(context):
-    indexing.create_metadata_index(context.obj["config"])
+    dataset.indexing.create_metadata_index(context.obj["config"])
 
 
 # Second dataset tool: Compute illumination statistics
@@ -51,6 +51,7 @@ def compression(context):
     process = context.obj["process"]
     metadata = dataset.metadata.read_plates(context.obj["config"]["metadata"]["filename"])
     process.compute(dataset.compression.compress_plate, metadata)
+    dataset.indexing.write_compression_index(context.obj["config"])
 
 
 # Fourth dataset tool: Find cell locations
