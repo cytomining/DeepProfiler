@@ -70,50 +70,60 @@ class Metadata():
         self.train = self.data[trainingRule(self.data)].copy()
         self.val = self.data[validationRule(self.data)].copy()
 
-def create_cell_indices(args):
-    plate, config = args
 
-    plate_name = plate.data.iloc[0]["Metadata_Plate"]
-    database_file = "{}/{}/{}.sqlite".format(config["original_images"]["backend"], plate_name, plate_name)
-
-    conn = sqlite3.connect(database_file)
-    query_template = "SELECT Cells.Cells_Location_Center_X,Cells_Location_Center_Y " +\
-                     " FROM Cells INNER JOIN Image " +\
-                     "    ON Image.ImageNumber = Cells.ImageNumber " +\
-                     "    AND Image.TableNumber = Cells.TableNumber " +\
-                     " WHERE Image.Image_Metadata_Plate = '{}' " +\
-                     "    AND Image.Image_Metadata_Well = '{}' " +\
-                     "    AND Image.Image_Metadata_Site = '{}' " +\
-                     "    AND Cells.Cells_Location_Center_X NOT LIKE 'NaN' " +\
-                     "    AND Cells.Cells_Location_Center_Y NOT LIKE 'NaN' "
-
-    iteration = 1
-    for index, row in plate.data.iterrows():
-        # Read cells file for each image
-        query = query_template.format(
+def write_locations(field, query_template, plate_name, row, conn, config):
+    # Read cells file for each image
+    query = query_template.replace("@@@",field).format(
             plate_name,
             row["Metadata_Well"],
             row["Metadata_Site"]
-        )
-        cell_locations = pd.read_sql_query(query, conn)
+    )
+    locations = pd.read_sql_query(query, conn)
 
-        # Keep center coordinates only, remove NaNs, and transform to integers
-        cell_locations = cell_locations.dropna(axis=0, how="any")
-        cell_locations["Cells_Location_Center_X"] = cell_locations["Cells_Location_Center_X"]*config["compression"]["scaling_factor"]
-        cell_locations["Cells_Location_Center_Y"] = cell_locations["Cells_Location_Center_Y"]*config["compression"]["scaling_factor"]
-        cell_locations["Cells_Location_Center_X"] = cell_locations["Cells_Location_Center_X"].astype(int)
-        cell_locations["Cells_Location_Center_Y"] = cell_locations["Cells_Location_Center_Y"].astype(int)
+    # Keep center coordinates only, remove NaNs, and transform to integers
+    locations = locations.dropna(axis=0, how="any")
+    locations[field+"_Location_Center_X"] = locations[field+"_Location_Center_X"]*config["compression"]["scaling_factor"]
+    locations[field+"_Location_Center_Y"] = locations[field+"_Location_Center_Y"]*config["compression"]["scaling_factor"]
+    locations[field+"_Location_Center_X"] = locations[field+"_Location_Center_X"].astype(int)
+    locations[field+"_Location_Center_Y"] = locations[field+"_Location_Center_Y"].astype(int)
 
-        # Save the resulting dataset frame in the output directory
-        cells_file = "{}/{}/cells/{}-{}.csv".format(
-            config["compression"]["output_dir"],
-            row["Metadata_Plate"],
-            row["Metadata_Well"],
-            row["Metadata_Site"]
-        )
-        dataset.utils.check_path(cells_file)
-        cell_locations.to_csv(cells_file, index=False)
-        dataset.utils.printProgress(iteration, len(plate.data), prefix='Cell locations in plate')
+    # Save the resulting dataset frame in the output directory
+    loc_file = "{}/{}/locations/{}-{}-{}.csv".format(
+        config["compression"]["output_dir"],
+        row["Metadata_Plate"],
+        row["Metadata_Well"],
+        row["Metadata_Site"],
+        field
+    )
+    dataset.utils.check_path(loc_file)
+    locations.to_csv(loc_file, index=False)
+
+
+def create_cell_indices(args):
+    plate, config = args
+ 
+    # Open database
+    plate_name = plate.data.iloc[0]["Metadata_Plate"]
+    database_file = "{}/{}/{}.sqlite".format(config["original_images"]["backend"], plate_name, plate_name)
+    conn = sqlite3.connect(database_file)
+
+    # Define query template: @@@ is either Cells or Nuclei
+    query_template = "SELECT @@@_Location_Center_X, @@@_Location_Center_Y " +\
+                     " FROM @@@ INNER JOIN Image " +\
+                     "    ON Image.ImageNumber = @@@.ImageNumber " +\
+                     "    AND Image.TableNumber = @@@.TableNumber " +\
+                     " WHERE Image.Image_Metadata_Plate = '{}' " +\
+                     "    AND Image.Image_Metadata_Well = '{}' " +\
+                     "    AND Image.Image_Metadata_Site = '{}' " +\
+                     "    AND @@@_Location_Center_X NOT LIKE 'NaN' " +\
+                     "    AND @@@_Location_Center_Y NOT LIKE 'NaN' "
+
+    # Extract cells and nuclei locations for each image
+    iteration = 1
+    for index, row in plate.data.iterrows():
+        write_locations("Cells", query_template, plate_name, row, conn, config)
+        write_locations("Nuclei", query_template, plate_name, row, conn, config)
+        dataset.utils.printProgress(iteration, len(plate.data), prefix='Locations in plate ' + str(plate_name))
         iteration += 1
-
     print("")
+

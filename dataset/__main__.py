@@ -14,16 +14,19 @@ import dataset.utils
 # Main interaction point
 @click.group()
 @click.option("--config", prompt="Configuration file for the compression pipeline",
-              help="The configuration file, written in JSON format",
+              help="Configuration file, written in JSON format",
               type=click.File('r'))
+@click.option("--cores", default=0,
+              help="Number of CPU cores for parallel processing (all=0)",
+              type=click.INT)
 @click.pass_context
-def cli(context, config):
+def cli(context, config, cores):
     params = json.load(config)
     params["metadata"]["plate_maps"] = os.path.join(params["metadata"]["path"], params["metadata"]["plate_maps"])
     params["metadata"]["csv_list"] = os.path.join(params["metadata"]["path"], params["metadata"]["csv_list"])
     params["metadata"]["filename"] = os.path.join(params["metadata"]["path"], "metadata.csv")
     params["metadata"]["labels_file"] = os.path.join(params["metadata"]["path"], params["metadata"]["label_field"]+".csv")
-    process = dataset.utils.Parallel(params)
+    process = dataset.utils.Parallel(params, numProcs=cores)
     context.obj["config"] = params
     context.obj["process"] = process
 
