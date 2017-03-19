@@ -1,7 +1,8 @@
 import numpy as np
 
-import dataset.pixels as px
-import dataset.utils as u
+import dataset.pixels
+import dataset.utils
+import dataset.metadata
 
 
 class ImageDataset():
@@ -11,7 +12,7 @@ class ImageDataset():
         self.channels = channels  # List of column names corresponding to each channel file
         self.root = dataRoot  # Path to the directory of images
         self.keyGen = keyGen  # Function that returns the image key given its record in the metadata
-        self.pixelProcessor = px.PixelProcessor()
+        self.pixelProcessor = dataset.pixels.PixelProcessor()
         self.labels = self.meta.data[self.category].unique()
 
     def getImagePaths(self, r):
@@ -34,7 +35,7 @@ class ImageDataset():
         return keys, images, labels
 
     def getTrainBatch(self, N):
-        s = u.tic()
+        s = dataset.utils.tic()
         # Batch size is N
         categ = self.labels.copy()
         # 1. Sample categories
@@ -55,8 +56,8 @@ class ImageDataset():
         # 4. Open images
         batch = {'keys': keys, 'images': [], 'labels': labels}
         for img in images:
-            batch['images'].append(px.openImage(img, self.pixelProcessor))
-        u.toc('Loading batch', s)
+            batch['images'].append(dataset.pixels.openImage(img, self.pixelProcessor))
+        dataset.utils.toc('Loading batch', s)
         return batch
 
     def scan(self, f, frame='train'):
@@ -70,7 +71,7 @@ class ImageDataset():
         images = [(i, self.getImagePaths(r), r) for i, r in frame]
         for img in images:
             index = img[0]
-            image = px.openImage(img[1][1], self.pixelProcessor)
+            image = dataset.pixels.openImage(img[1][1], self.pixelProcessor)
             meta = img[2]
             f(index, image, meta)
         return
@@ -84,3 +85,21 @@ class ImageDataset():
             return len(self.meta.train)
         else:
             return 0
+
+def read_dataset(config):
+    # Read metadata and split dataset in training and validation
+    metadata = dataset.metadata.Metadata(config["image_set"]["index"], dtype=None)
+    trainingFilter = lambda df: df[config["training"]["split_field"]] <= 5
+    validationFilter = lambda df: df[config["training"]["split_field"]] > 5
+    metadata.splitMetadata(trainingFilter, validationFilter)
+
+    # Create a dataset
+    keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
+    dset = ImageDataset(
+        metadata,
+        config["training"]["label_field"],
+        config["image_set"]["channels"],
+        config["image_set"]["path"],
+        keyGen
+    )
+    return dset

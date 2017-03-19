@@ -21,12 +21,12 @@ def prepareBoxes(cellsBatch, imageLabels, config):
     index = 0
     for cells in cellsBatch:
         boxes = np.zeros((len(cells), 4), np.float32)
-        boxes[:,0] = cells["Location_Center_Y"] - config["box_size"]/2
-        boxes[:,1] = cells["Location_Center_X"] - config["box_size"]/2
-        boxes[:,2] = cells["Location_Center_Y"] + config["box_size"]/2
-        boxes[:,3] = cells["Location_Center_X"] + config["box_size"]/2
-        boxes[:,[0,2]] /= config["image_height"]
-        boxes[:,[1,3]] /= config["image_width"]
+        boxes[:,0] = cells["Location_Center_Y"] - config["sampling"]["box_size"]/2
+        boxes[:,1] = cells["Location_Center_X"] - config["sampling"]["box_size"]/2
+        boxes[:,2] = cells["Location_Center_Y"] + config["sampling"]["box_size"]/2
+        boxes[:,3] = cells["Location_Center_X"] + config["sampling"]["box_size"]/2
+        boxes[:,[0,2]] /= config["image_set"]["height"]
+        boxes[:,[1,3]] /= config["image_set"]["width"]
         box_ind = index * np.ones((len(cells)), np.int32)
         labels = imageLabels[index] * np.ones((len(cells)), np.int32)
         all_boxes.append(boxes)
@@ -36,8 +36,8 @@ def prepareBoxes(cellsBatch, imageLabels, config):
     return np.concatenate(all_boxes), np.concatenate(all_indices), np.concatenate(all_labels)
 
 def loadBatch(dataset, cells_dir, config):
-    batch = dataset.getTrainBatch(config["image_batch_size"])
-    batch["cells"] = [getCellLocations(cells_dir, x, config["sample_cells"]) for x in batch["keys"]]
+    batch = dataset.getTrainBatch(config["sampling"]["images"])
+    batch["cells"] = [getCellLocations(cells_dir, x, config["sampling"]["locations"]) for x in batch["keys"]]
     return batch
 
 #################################################
