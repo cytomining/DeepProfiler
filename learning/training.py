@@ -1,89 +1,120 @@
 import threading
 import time
 
-import learning.cropping
 import numpy as np
 import tensorflow as tf
+from tensorflow.python.client import timeline
+
+import dataset.utils
+import learning.cropping
+import learning.models
 
 
 #################################################
-## AUXILIARY FUNCTIONS
+## QUEUES FOR DATA LOADING
 #################################################
 
-def checkConfig(config):
-    required_fields = []
-    # Image geometry
-    required_fields += ["image_height", "image_width", "box_size", "channels"]
-    # Batch size
-    required_fields += ["image_batch_size", "sample_cells", "minibatch_size"]
-    # Queue size
-    required_fields += ["fifo_queue_size", "random_queue_size"]
-    # Number of workers
-    required_fields += ["cropping_workers", "augmentation_workers"]
-    # Learning
-    required_fields += ["training_iterations"]
-    # Field verification
-    for field in required_fields:
-        assert field in config.keys()
-    return True
-
-#################################################
-## MAIN TRAINING ROUTINE
-#################################################
-
-def learnCNN(config, dataset):
-    #checkConfig(config)
-    # Inputs to the graph
+def start_data_queues(config, dset, sess, coord):
+    # Data shapes
+    crop_shape = [(config["sampling"]["box_size"], config["sampling"]["box_size"], len(config["image_set"]["channels"])), ()]
     imgs_shape = [None, config["image_set"]["height"], config["image_set"]["width"], len(config["image_set"]["channels"])]
+    batch_shape = (config["sampling"]["images"],config["image_set"]["height"],config["image_set"]["width"],len(config["image_set"]["channels"]))
+
+    # Inputs to the load data queue
     image_ph = tf.placeholder(tf.float32, shape=imgs_shape, name="raw_images")
     boxes_ph = tf.placeholder(tf.float32, shape=[None, 4], name="cell_boxes")
     box_ind_ph = tf.placeholder(tf.int32, shape=[None], name="box_indicators")
     labels_ph = tf.placeholder(tf.int32, shape=[None], name="image_labels")
 
-    # Outputs and queue of the cropping graph
-    crop_op = learning.cropping.crop(image_ph, boxes_ph, box_ind_ph, config["sampling"]["box_size"])
-    daug_queue = tf.FIFOQueue(config["queueing"]["fifo_queue_size"], [tf.float32, tf.int32])
-    daug_enqueue_op = daug_queue.enqueue_many([crop_op, labels_ph])
-    labeled_crops = daug_queue.dequeue()
+    with tf.device("/cpu:0"):
+        # Outputs and queue of the cropping graph
+        crop_op = learning.cropping.crop(image_ph, boxes_ph, box_ind_ph, config["sampling"]["box_size"])
+        daug_queue = tf.FIFOQueue(
+            config["queueing"]["fifo_queue_size"], 
+            [tf.float32, tf.int32], 
+            shapes=crop_shape
+        )
+        daug_enqueue_op = daug_queue.enqueue_many([crop_op, labels_ph])
+        labeled_crops = daug_queue.dequeue_many(config["training"]["minibatch"])
 
-    # Outputs and queue of the dataset augmentation graph
-    augmented_op = learning.cropping.augment(labeled_crops[0])
-    crop_shape = [(config["sampling"]["box_size"], config["sampling"]["box_size"], len(config["image_set"]["channels"])), ()]
-    train_queue = tf.RandomShuffleQueue(config["queueing"]["random_queue_size"], config["sampling"]["locations"], [tf.float32, tf.int32], shapes=crop_shape)
-    train_enqueue_op = train_queue.enqueue([augmented_op, labeled_crops[1]])
-    train_inputs = train_queue.dequeue_many(config["training"]["minibatch"])
+        # Outputs and queue of the data augmentation graph
+        train_queue = tf.RandomShuffleQueue(
+            config["queueing"]["random_queue_size"], 
+            config["queueing"]["min_size"], 
+            [tf.float32, tf.int32], 
+            shapes=crop_shape
+        )
+        augmented_op = learning.cropping.aument_multiple(labeled_crops[0], config["queueing"]["augmentation_workers"])
+        train_enqueue_op = train_queue.enqueue_many([augmented_op, labeled_crops[1]])
+        train_inputs = train_queue.dequeue() 
+
+        # Enqueueing threads for raw images
+        def data_enqueue_thread():
+            while not coord.should_stop():
+                # Load images and cell boxes
+                batch = learning.cropping.loadBatch(dset, config)
+                images = np.reshape(batch["images"], batch_shape)
+                boxes, box_ind, labels = learning.cropping.prepareBoxes(batch["locations"], batch["labels"], config)
+                sess.run(daug_enqueue_op, {image_ph:images, boxes_ph:boxes, box_ind_ph:box_ind, labels_ph:labels})
+
+        load_threads = []
+        for i in range(config["queueing"]["cropping_workers"]):
+            lt = threading.Thread(target=data_enqueue_thread)
+            load_threads.append(lt)
+            lt.isDaemon()
+            lt.start()
+
+        # Enqueueing threads for augmented crops
+        qr = tf.train.QueueRunner(train_queue, [train_enqueue_op]*config["queueing"]["augmentation_workers"])
+        enqueue_threads = qr.create_threads(sess, coord=coord, start=True)
+
+    return train_inputs
+
+
+#################################################
+## MAIN TRAINING ROUTINE
+#################################################
+
+def learn_model(config, dset):
 
     # Start session
-    sess = tf.Session()
+    gpu_config = tf.ConfigProto()
+    gpu_config.gpu_options.per_process_gpu_memory_fraction = 0.5
+    sess = tf.Session(config=gpu_config)
     coord = tf.train.Coordinator()
+    train_inputs = start_data_queues(config, dset, sess, coord)
 
-    # Enqueuing thread for raw images
-    batch_size = (config["sampling"]["images"],config["image_set"]["height"],config["image_set"]["width"],len(config["image_set"]["channels"]))
-    def data_enqueue_thread():
-        while not coord.should_stop():
-            # Load images and cell boxes
-            batch = learning.cropping.loadBatch(dataset, config["image_set"]["path"], config)
-            images = np.reshape(batch["images"], batch_size)
-            boxes, box_ind, labels = learning.cropping.prepareBoxes(batch["cells"], batch["labels"], config)
-            sess.run(daug_enqueue_op, {image_ph:images, boxes_ph:boxes, box_ind_ph:box_ind, labels_ph:labels})
-            print("Images enqueued",images.shape, boxes.shape, labels.shape, box_ind.shape)
-    for _ in range(config["queueing"]["cropping_workers"]):
-        threading.Thread(target=data_enqueue_thread).start()
+    # Define data batches
+    num_classes = dset.numberOfClasses()
+    image_batch, label_batch = tf.train.shuffle_batch(
+        [train_inputs[0], tf.one_hot(train_inputs[1], num_classes)],
+        batch_size=config["training"]["minibatch"],
+        num_threads=config["queueing"]["augmentation_workers"],
+        capacity=config["queueing"]["random_queue_size"],
+        min_after_dequeue=config["queueing"]["min_size"]
+    )
 
-    # Enqueuing thread for labeled crops
-    def augm_enqueue_thread():
-        while not coord.should_stop():
-            sess.run(train_enqueue_op)
-    for _ in range(config["queueing"]["augmentation_workers"]):
-        threading.Thread(target=augm_enqueue_thread).start()
+    # Learning model
+    box_shape = [None, config["sampling"]["box_size"], config["sampling"]["box_size"], len(config["image_set"]["channels"])]
+    network = learning.models.create_vgg(image_batch, num_classes)
+    train_op, loss = learning.models.create_trainer(network, label_batch, config["training"]["learning_rate"])
 
     # Main training loop
+    threads = tf.train.start_queue_runners(coord=coord, sess=sess)
+    sess.run(tf.global_variables_initializer())
+    s = dataset.utils.tic()
     for i in range(config["training"]["iterations"]):
         if coord.should_stop():
             break
-        training_data = sess.run(train_inputs)
-        print('Cells used for training',training_data[0].shape)
-        time.sleep(0.5)
-        
+        run_metadata = tf.RunMetadata()
+        _, l = sess.run([train_op, loss], options=tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE), run_metadata=run_metadata)
+        if i % 20 == 0:
+            dataset.utils.toc("Iteration: {}. Loss={}".format(i, l), s)
+            s = dataset.utils.tic()
+            trace = timeline.Timeline(step_stats=run_metadata.step_stats)
+            trace_file = open('timeline.{}.json'.format(i), 'w')
+            trace_file.write(trace.generate_chrome_trace_format())
+
     coord.request_stop()
+    sess.close()
 

@@ -35,7 +35,7 @@ class ImageDataset():
         return keys, images, labels
 
     def getTrainBatch(self, N):
-        s = dataset.utils.tic()
+        #s = dataset.utils.tic()
         # Batch size is N
         categ = self.labels.copy()
         # 1. Sample categories
@@ -57,7 +57,7 @@ class ImageDataset():
         batch = {'keys': keys, 'images': [], 'labels': labels}
         for img in images:
             batch['images'].append(dataset.pixels.openImage(img, self.pixelProcessor))
-        dataset.utils.toc('Loading batch', s)
+        #dataset.utils.toc('Loading batch', s)
         return batch
 
     def scan(self, f, frame='train'):
@@ -85,6 +85,9 @@ class ImageDataset():
             return len(self.meta.train)
         else:
             return 0
+
+    def numberOfClasses(self):
+        return len(self.labels)
 
 def read_dataset(config):
     # Read metadata and split dataset in training and validation

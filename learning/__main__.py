@@ -23,7 +23,7 @@ def cli(context, config):
 @click.pass_context
 def training(context):
     images = dataset.image_dataset.read_dataset(context.obj["config"])
-    learning.training.learnCNN(context.obj["config"], images)
+    learning.training.learn_model(context.obj["config"], images)
 
 
 if __name__ == "__main__":
