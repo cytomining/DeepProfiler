@@ -1,5 +1,6 @@
 import threading
 import time
+from tqdm import tqdm
 
 import numpy as np
 import tensorflow as tf
@@ -68,7 +69,7 @@ def start_data_queues(config, dset, sess, coord):
         qr = tf.train.QueueRunner(train_queue, [train_enqueue_op]*config["queueing"]["augmentation_workers"])
         enqueue_threads = qr.create_threads(sess, coord=coord, start=True)
 
-    return train_inputs
+    return train_inputs, load_threads + enqueue_threads
 
 
 #################################################
@@ -82,7 +83,7 @@ def learn_model(config, dset):
     gpu_config.gpu_options.per_process_gpu_memory_fraction = 0.5
     sess = tf.Session(config=gpu_config)
     coord = tf.train.Coordinator()
-    train_inputs = start_data_queues(config, dset, sess, coord)
+    train_inputs, queue_threads = start_data_queues(config, dset, sess, coord)
 
     # Define data batches
     num_classes = dset.numberOfClasses()
@@ -97,24 +98,19 @@ def learn_model(config, dset):
     # Learning model
     box_shape = [None, config["sampling"]["box_size"], config["sampling"]["box_size"], len(config["image_set"]["channels"])]
     network = learning.models.create_vgg(image_batch, num_classes)
-    train_op, loss = learning.models.create_trainer(network, label_batch, config["training"]["learning_rate"])
+    train_ops, summary_writer = learning.models.create_trainer(network, label_batch, sess, config)
 
     # Main training loop
     threads = tf.train.start_queue_runners(coord=coord, sess=sess)
     sess.run(tf.global_variables_initializer())
-    s = dataset.utils.tic()
-    for i in range(config["training"]["iterations"]):
+    for i in tqdm(range(config["training"]["iterations"]), desc="Training"):
         if coord.should_stop():
             break
-        run_metadata = tf.RunMetadata()
-        _, l = sess.run([train_op, loss], options=tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE), run_metadata=run_metadata)
-        if i % 20 == 0:
-            dataset.utils.toc("Iteration: {}. Loss={}".format(i, l), s)
-            s = dataset.utils.tic()
-            trace = timeline.Timeline(step_stats=run_metadata.step_stats)
-            trace_file = open('timeline.{}.json'.format(i), 'w')
-            trace_file.write(trace.generate_chrome_trace_format())
-
+        results = sess.run(train_ops)
+        summary_writer.add_summary(results[-1], i)
+    
+    print("Complete. Closing session.")
     coord.request_stop()
+    coord.join(queue_threads)
     sess.close()
 

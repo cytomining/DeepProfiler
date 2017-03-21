@@ -24,9 +24,21 @@ def create_vgg(images, num_classes):
     return net
 
 
-def create_trainer(net, labels, learning_rate):
-    loss = tf.reduce_mean( tf.nn.sigmoid_cross_entropy_with_logits(logits=net, labels=labels) )
+def create_trainer(net, labels, sess, config):
+    # Loss and optimizer
+    loss = tf.reduce_mean( tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=net) )
     convnet_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, "convnet")
-    optimizer = tf.train.AdamOptimizer(learning_rate)
+    optimizer = tf.train.AdamOptimizer(config["training"]["learning_rate"])
     train_op = optimizer.minimize(loss, var_list=convnet_vars)
-    return train_op, loss
+    # Accuracy
+    correct_prediction = tf.equal(tf.argmax(labels,1), tf.argmax(tf.nn.softmax(net),1))
+    train_accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    # Summaries
+    tf.summary.scalar("training_loss", loss)
+    tf.summary.scalar("training_accuracy", train_accuracy)
+    merged_summary = tf.summary.merge_all()
+    train_writer = tf.summary.FileWriter(config["training"]["output"] + "/log", sess.graph)
+    # Return 2 objects: An array with training ops and a summary writter object
+    ops = [train_op, train_accuracy, merged_summary]
+    return ops, train_writer
+
