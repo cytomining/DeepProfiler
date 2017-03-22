@@ -18,7 +18,7 @@ class IlluminationCorrection():
 
     # Based on the CellProfiler implementation of Illumination Correction
     # CellProfiler/cellprofiler/modules/correctilluminationcalculate.py
-    def channelFunction(self, meanChannel, diskSize):
+    def channel_function(self, meanChannel, diskSize):
         #TODO: get np.type from other source or parameterize or compute :/
         # We currently assume 16 bit images
         operator = skimage.morphology.disk(diskSize)
@@ -36,7 +36,7 @@ class IlluminationCorrection():
         diskSize = medianFilterSize/2 # From diameter to radius
         illumCorrFunc = np.zeros( (self.targetDim[0], self.targetDim[1], len(self.channels)) )
         for ch in range(len(self.channels)):
-            illumCorrFunc[:,:,ch] = self.channelFunction(self.stats["mean_image"][:,:,ch], diskSize)
+            illumCorrFunc[:,:,ch] = self.channel_function(self.stats["mean_image"][:, :, ch], diskSize)
         self.illumCorrFunc = illumCorrFunc
         return
 
