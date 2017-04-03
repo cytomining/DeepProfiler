@@ -13,20 +13,21 @@ def vgg_module(x, filters, sizes, layers, scope_name):
 
 def create_vgg(images, num_classes):
     with tf.variable_scope("convnet"):
-        net = vgg_module(images, 32, [3, 3], 2, "scale1")
-        net = vgg_module(net, 32, [3, 3], 2, "scale2")
-        net = vgg_module(net, 64, [3, 3], 2, "scale3")
-        net = vgg_module(net, 128, [3, 3], 2, "scale4")
-        net = vgg_module(net, 256, [3, 3], 2, "scale5")
-        net = slim.conv2d(net, 64, [1, 1], scope="fmap")
-        net = slim.flatten(net, scope="features")
+        net = vgg_module(images, 32, [3, 3], 2, "scale1")  # 128x128x5
+        net = vgg_module(net, 64, [3, 3], 2, "scale2")     # 64x64x32
+        net = vgg_module(net, 128, [3, 3], 2, "scale3")    # 32x32x64
+        net = vgg_module(net, 256, [3, 3], 2, "scale4")    # 16x16x128
+        net = vgg_module(net, 256, [3, 3], 2, "scale5")    # 8x8x256
+        net = slim.conv2d(net, 128, [3, 3], scope="fmap1") # 4x4x256
+        net = slim.conv2d(net, 64, [1, 1], scope="fmap2")  # 4x4x128
+        net = slim.flatten(net, scope="features")          # 4x4x64
         net = slim.fully_connected(net, num_classes, scope="logits")
     return net
 
 
 def create_trainer(net, labels, sess, config):
     # Loss and optimizer
-    loss = tf.reduce_mean( tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=net) )
+    loss = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=net)
     convnet_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, "convnet")
     optimizer = tf.train.AdamOptimizer(config["training"]["learning_rate"])
     train_op = optimizer.minimize(loss, var_list=convnet_vars)
