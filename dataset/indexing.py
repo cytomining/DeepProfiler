@@ -103,4 +103,4 @@ def write_compression_index(config):
         new_index[ch] = new_index[ch].str.split("/").str[-1]
         png_path = lambda x: "/pngs/" + x.replace("."+config["original_images"]["file_format"], ".png")
         new_index[ch] = new_index["Metadata_Plate"].astype(str) + new_index[ch].map(png_path)
-    new_index.to_csv(config["metadata"]["path"] + "/index.csv")
+    new_index.to_csv(config["metadata"]["path"] + "/index.csv", index=False)

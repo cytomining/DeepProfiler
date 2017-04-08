@@ -17,7 +17,7 @@ import learning.models
 
 def start_data_queues(config, dset, sess, coord):
     # Data shapes
-    crop_shape = [(config["sampling"]["box_size"], config["sampling"]["box_size"], len(config["image_set"]["channels"])), ()]
+    crop_shape = [(config["sampling"]["box_size"], config["sampling"]["box_size"], len(config["image_set"]["channels"])), (dset.numberOfClasses())]
     imgs_shape = [None, config["image_set"]["height"], config["image_set"]["width"], len(config["image_set"]["channels"])]
     batch_shape = (config["sampling"]["images"],config["image_set"]["height"],config["image_set"]["width"],len(config["image_set"]["channels"]))
 
@@ -25,7 +25,7 @@ def start_data_queues(config, dset, sess, coord):
     image_ph = tf.placeholder(tf.float32, shape=imgs_shape, name="raw_images")
     boxes_ph = tf.placeholder(tf.float32, shape=[None, 4], name="cell_boxes")
     box_ind_ph = tf.placeholder(tf.int32, shape=[None], name="box_indicators")
-    labels_ph = tf.placeholder(tf.int32, shape=[None], name="image_labels")
+    labels_ph = tf.placeholder(tf.int32, shape=[None, dset.numberOfClasses()], name="image_labels")
 
     with tf.device("/cpu:0"):
         # Outputs and queue of the cropping graph
@@ -88,7 +88,7 @@ def learn_model(config, dset):
     # Define data batches
     num_classes = dset.numberOfClasses()
     image_batch, label_batch = tf.train.shuffle_batch(
-        [train_inputs[0], tf.one_hot(train_inputs[1], num_classes)],
+        [train_inputs[0], train_inputs[1]],
         batch_size=config["training"]["minibatch"],
         num_threads=config["queueing"]["augmentation_workers"],
         capacity=config["queueing"]["random_queue_size"],

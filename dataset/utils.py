@@ -28,6 +28,18 @@ def printProgress (iteration, total, prefix='Progress', suffix='Complete', decim
         sys.stdout.flush()
 
 ################################################################################
+# Debug a dataframe printing contents and stack trace.
+# Use inside a try-exception block
+################################################################################
+
+def debug_dataframe(x):
+    import sys, traceback
+    traceback.print_exc(file=sys.stdout)
+    pd.set_option('display.max_rows', len(x))
+    print(x)
+    pd.reset_option('display.max_rows')
+
+################################################################################
 ## Make sure directory exist for storing a file
 ################################################################################
 

@@ -1,19 +1,49 @@
 import numpy as np
+import scipy.sparse
+import json
+
+from tqdm import tqdm
 
 import dataset.pixels
 import dataset.utils
 import dataset.metadata
 
 
+#class MultiLabelDataset():
 class ImageDataset():
-    def __init__(self, metadata, category, channels, dataRoot, keyGen):
+    def __init__(self, metadata, label_column, channels, dataRoot, keyGen):
         self.meta = metadata  # Metadata object with a valid dataframe
-        self.category = category  # Column in the metadata that has category labels
+        self.label_column = label_column  # Column in the metadata that has category labels
         self.channels = channels  # List of column names corresponding to each channel file
         self.root = dataRoot  # Path to the directory of images
         self.keyGen = keyGen  # Function that returns the image key given its record in the metadata
         self.pixelProcessor = dataset.pixels.PixelProcessor()
-        self.labels = self.meta.data[self.category].unique()
+        self.multi_label_matrix()
+
+    def multi_label_matrix(self):
+        all_labels = {}
+        self.label_keys = set()
+        print("Creating multi-label matrix")
+        for i in tqdm(range(len(self.meta.data))):
+            img_labels = json.loads(self.meta.data.iloc[i][self.label_column])
+            all_labels[self.keyGen(self.meta.data.iloc[i])] = img_labels
+            self.label_keys.update(img_labels.keys())
+
+        self.label_keys = [i for i in map(int, list(self.label_keys))]
+        self.label_keys.sort()
+        self.label_image_index = {}
+        rows = len(self.meta.data)
+        cols = len(self.label_keys)
+        L = scipy.sparse.dok_matrix((rows,cols), dtype=np.int8)
+        print("Filling in sparse matrix with shape:", L.shape)
+        for i in tqdm(range(len(self.meta.data))):
+            img_labels = all_labels[self.keyGen(self.meta.data.iloc[i])]
+            for key, value in img_labels.items():
+                L[i,int(key)] = int(value)
+                try: self.label_image_index[int(key)].append(i)
+                except: self.label_image_index[int(key)] = [i]
+        self.label_matrix = L
+        
 
     def getImagePaths(self, r):
         key = self.keyGen(r)
@@ -25,19 +55,20 @@ class ImageDataset():
         images = []
         labels = []
         for c in categ:
-            mask = self.meta.train[self.category] == c
-            rec = self.meta.train[mask].sample(n=nImgCat, replace=True)
-            for i, r in rec.iterrows():
-                key, image = self.getImagePaths(r)
+            candidates = self.label_image_index[c].copy()
+            np.random.shuffle(candidates)
+            candidates = candidates[0:nImgCat]
+            for i in candidates:
+                key, image = self.getImagePaths(self.meta.data.iloc[i])
                 keys.append(key)
                 images.append(image)
-                labels.append(c)
+                labels.append(self.label_matrix.getrow(i).todense())
         return keys, images, labels
 
     def getTrainBatch(self, N):
         #s = dataset.utils.tic()
         # Batch size is N
-        categ = self.labels.copy()
+        categ = self.label_keys.copy()
         # 1. Sample categories
         if len(categ) > N:
             np.random.shuffle(categ)
@@ -90,13 +121,13 @@ class ImageDataset():
             return 0
 
     def numberOfClasses(self):
-        return len(self.labels)
+        return len(self.label_keys)
 
 def read_dataset(config):
     # Read metadata and split dataset in training and validation
     metadata = dataset.metadata.Metadata(config["image_set"]["index"], dtype=None)
-    trainingFilter = lambda df: df[config["training"]["split_field"]] <= 5
-    validationFilter = lambda df: df[config["training"]["split_field"]] > 5
+    trainingFilter = lambda df: df[config["training"]["split_field"]] == "1"
+    validationFilter = lambda df: df[config["training"]["split_field"]] != "1"
     metadata.splitMetadata(trainingFilter, validationFilter)
 
     # Create a dataset

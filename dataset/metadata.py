@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy
 
 import dataset.utils
 import sqlite3
@@ -81,11 +82,16 @@ def write_locations(field, query_template, plate_name, row, conn, config):
     locations = pd.read_sql_query(query, conn)
 
     # Keep center coordinates only, remove NaNs, and transform to integers
-    locations = locations.dropna(axis=0, how="any")
-    locations[field+"_Location_Center_X"] = locations[field+"_Location_Center_X"]*config["compression"]["scaling_factor"]
-    locations[field+"_Location_Center_Y"] = locations[field+"_Location_Center_Y"]*config["compression"]["scaling_factor"]
-    locations[field+"_Location_Center_X"] = locations[field+"_Location_Center_X"].astype(int)
-    locations[field+"_Location_Center_Y"] = locations[field+"_Location_Center_Y"].astype(int)
+    try:
+        locations[field+"_Location_Center_X"].replace('', numpy.nan, inplace=True)
+        locations[field+"_Location_Center_Y"].replace('', numpy.nan, inplace=True)
+        locations = locations.dropna(axis=0, how="any")
+        locations[field+"_Location_Center_X"] = locations[field+"_Location_Center_X"]*config["compression"]["scaling_factor"]
+        locations[field+"_Location_Center_Y"] = locations[field+"_Location_Center_Y"]*config["compression"]["scaling_factor"]
+        locations[field+"_Location_Center_X"] = locations[field+"_Location_Center_X"].astype(int)
+        locations[field+"_Location_Center_Y"] = locations[field+"_Location_Center_Y"].astype(int)
+    except Exception:
+        dataset.utils.debug_dataframe(locations)
 
     # Save the resulting dataset frame in the output directory
     loc_file = "{}/{}/locations/{}-{}-{}.csv".format(

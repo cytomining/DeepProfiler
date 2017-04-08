@@ -37,12 +37,12 @@ def prepareBoxes(locationsBatch, imageLabels, config):
         boxes[:,[0,2]] /= config["image_set"]["height"]
         boxes[:,[1,3]] /= config["image_set"]["width"]
         box_ind = index * np.ones((len(locations)), np.int32)
-        labels = imageLabels[index] * np.ones((len(locations)), np.int32)
+        labels = np.repeat(imageLabels[index], len(locations), axis=0)
         all_boxes.append(boxes)
         all_indices.append(box_ind)
         all_labels.append(labels)
         index += 1
-    return np.concatenate(all_boxes), np.concatenate(all_indices), np.concatenate(all_labels)
+    return np.concatenate(all_boxes), np.concatenate(all_indices), np.concatenate(all_labels) 
 
 def loadBatch(dataset, config):
     batch = dataset.getTrainBatch(config["sampling"]["images"])
