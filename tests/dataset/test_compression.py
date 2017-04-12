@@ -12,6 +12,7 @@ import scipy.misc
 def out_dir(tmpdir):
     return os.path.abspath(tmpdir.mkdir("images"))
 
+
 @pytest.fixture(scope="function")
 def compress(out_dir):
     stats = {"original_size": [16, 16]}
@@ -34,6 +35,48 @@ def test_init(compress, out_dir):
     assert compress.source_format == "tiff"
     assert compress.target_format == "png"
     assert compress.output_shape == [16, 16]
+
+
+def test_recompute_percentile(compress):
+    compress.stats["histogram"] = numpy.asarray([[1] * 100] * 3)
+
+    compress.recompute_percentile(0.9, "upper_percentile")
+    numpy.testing.assert_array_equal(compress.stats["upper_percentile"], numpy.asarray([89.0] * 3))
+    compress.recompute_percentile(0.1, "lower_percentile")
+    numpy.testing.assert_array_equal(compress.stats["lower_percentile"], numpy.asarray([10.0] * 3))
+
+
+def test_set_control_samples_filter(compress):
+    test_filter = lambda x: True
+    control_distribution = numpy.zeros((3, 2 ** 8), dtype=numpy.float64)
+
+    compress.set_control_samples_filter(test_filter)
+
+    assert compress.metadata_control_filter(1)
+    numpy.testing.assert_array_equal(compress.controls_distribution, control_distribution)
+
+
+def test_set_formats(compress):
+    compress.set_formats()
+    assert compress.source_format == "tiff"
+    assert compress.target_format == "png"
+    compress.set_formats(source_format="tif")
+    assert compress.source_format == "tif"
+    assert compress.target_format == "png"
+
+
+def test_set_scaling_factor(compress):
+    compress.set_scaling_factor(1.0)
+    assert compress.output_shape[0] == 16
+    assert compress.output_shape[1] == 16
+    compress.set_scaling_factor(0.5)
+    assert compress.output_shape[0] == 8
+    assert compress.output_shape[1] == 8
+
+
+def test_target_path(compress, out_dir):
+    new_path = compress.target_path("/path/to/some/image.tiff")
+    assert new_path == out_dir + "/image.png"
 
 
 def test_process_image(compress, out_dir):

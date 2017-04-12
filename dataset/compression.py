@@ -31,7 +31,7 @@ class Compress():
         self.controls_distribution = numpy.zeros((len(channels), 2 ** 8), dtype=numpy.float64)
 
     # Allows to recalculate the percentiles computed by default in the ImageStatistics class
-    def recompute_percentile(self, p, side="upper"):
+    def recompute_percentile(self, p, side="upper_percentile"):
         print("Percentiles for the", side, " >> ", end='')
         self.stats[side] = numpy.zeros((len(self.channels)))
         for i in range(len(self.channels)):
@@ -43,15 +43,15 @@ class Compress():
         print('')
 
     # Filter images that belong to control samples, to compute their histogram distribution
-    def setControlSamplesFilter(self, filterFunc):
+    def set_control_samples_filter(self, filterFunc):
         self.metadata_control_filter = filterFunc
         self.controls_distribution = numpy.zeros((len(self.channels), 2 ** 8), dtype=numpy.float64)
 
     # If the sourceFormat is the same as the target, no compression should be applied.
-    def setFormats(self, sourceFormat="tiff", targetFormat="png"):
-        self.source_format = sourceFormat
-        self.target_format = targetFormat
-        if targetFormat != "png":
+    def set_formats(self, source_format="tiff", target_format="png"):
+        self.source_format = source_format
+        self.target_format = target_format
+        if target_format != "png":
             raise ValueError("Only PNG compression is supported (target format should be png)")
 
     # Takes a percent factor to rescale the image preserving aspect ratio
@@ -119,15 +119,15 @@ def compress_plate(args):
         config["original_images"]["channels"],
         plate_output_dir
     )
-    compress.setFormats(sourceFormat=config["original_images"]["file_format"], targetFormat="png")
+    compress.set_formats(source_format=config["original_images"]["file_format"], target_format="png")
     compress.set_scaling_factor(config["compression"]["scaling_factor"])
-    compress.recompute_percentile(0.0001, side="lower")
-    compress.recompute_percentile(0.9999, side="upper")
+    compress.recompute_percentile(0.0001, side="lower_percentile")
+    compress.recompute_percentile(0.9999, side="upper_percentile")
     compress.expected = dset.numberOfRecords("all")
 
     # Setup control samples filter (for computing control illumination statistics)
     filter_func = lambda x: x[config["metadata"]["control_field"]] == config["metadata"]["control_value"]
-    compress.setControlSamplesFilter(filter_func)
+    compress.set_control_samples_filter(filter_func)
 
     # Run compression
     dset.scan(compress.process_image, frame="all")
