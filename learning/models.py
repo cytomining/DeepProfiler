@@ -1,6 +1,33 @@
 import tensorflow as tf
 import numpy as np
+import tensorflow.contrib.slim.nets
+
 slim = tf.contrib.slim
+resnet_v2 = slim.nets.resnet_v2
+
+def create_resnet(inputs, num_classes):
+    # Assumes input of 96x96, produces features of 1x1x1024
+    # Block parameters: (depth or channels, depth_bottleneck or channels bottleneck, stride)
+    #blocks = [
+    #  resnet_v2.resnet_utils.Block('block1', resnet_v2.bottleneck, [(64, 16, 1)] * 2 + [(64, 16, 2)]),
+    #  resnet_v2.resnet_utils.Block('block2', resnet_v2.bottleneck, [(128, 32, 1)] * 3 + [(128, 32, 2)]),
+    #  resnet_v2.resnet_utils.Block('block3', resnet_v2.bottleneck, [(256, 64, 1)] * 3 + [(256, 64, 2)]),
+    #  resnet_v2.resnet_utils.Block('block4', resnet_v2.bottleneck, [(512, 128, 1)] * 3 + [(512, 128, 2)]),
+    #  resnet_v2.resnet_utils.Block('block5', resnet_v2.bottleneck, [(1024, 256, 1)] * 3)
+    #]
+    #net = resnet_v2.resnet_v2(
+    #    inputs,
+    #    blocks,
+    #    num_classes,
+    #    True,
+    #    None,
+    #    include_root_block=False,
+    #    reuse=False,
+    #    scope="convnet")
+    #
+    ## The following produces a feature vector of 1x1x2048
+    net = resnet_v2.resnet_v2_50(inputs, num_classes, scope="convnet")
+    return tf.reshape(net[1]["convnet/logits"], (-1, num_classes))
 
 
 def vgg_module(x, filters, sizes, layers, scope_name):
@@ -12,6 +39,7 @@ def vgg_module(x, filters, sizes, layers, scope_name):
 
 
 def create_vgg(images, num_classes):
+    # Assumes input of 128x128, produces 4096 features 
     with tf.variable_scope("convnet"):
         net = vgg_module(images, 32, [3, 3], 2, "scale1")
         net = vgg_module(net, 32, [3, 3], 2, "scale2")

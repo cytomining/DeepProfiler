@@ -80,7 +80,7 @@ def learn_model(config, dset):
 
     # Start session
     gpu_config = tf.ConfigProto()
-    gpu_config.gpu_options.per_process_gpu_memory_fraction = 0.5
+    gpu_config.gpu_options.per_process_gpu_memory_fraction = 1.0
     sess = tf.Session(config=gpu_config)
     coord = tf.train.Coordinator()
     train_inputs, queue_threads = start_data_queues(config, dset, sess, coord)
@@ -97,7 +97,8 @@ def learn_model(config, dset):
 
     # Learning model
     box_shape = [None, config["sampling"]["box_size"], config["sampling"]["box_size"], len(config["image_set"]["channels"])]
-    network = learning.models.create_vgg(image_batch, num_classes)
+    #network = learning.models.create_vgg(image_batch, num_classes)
+    network = learning.models.create_resnet(image_batch, num_classes)
     train_ops, summary_writer = learning.models.create_trainer(network, label_batch, sess, config)
 
     # Main training loop
