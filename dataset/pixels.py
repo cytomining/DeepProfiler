@@ -27,3 +27,5 @@ class PixelProcessor():
     def run(self, pixels):
         return self.process(pixels)
 
+# TODO: Implement pixel normalization using control statistics
+#image_array /= 128.0

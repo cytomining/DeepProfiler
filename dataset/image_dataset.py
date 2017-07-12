@@ -6,12 +6,13 @@ import dataset.metadata
 
 
 class ImageDataset():
+
     def __init__(self, metadata, category, channels, dataRoot, keyGen):
-        self.meta = metadata  # Metadata object with a valid dataframe
+        self.meta = metadata      # Metadata object with a valid dataframe
         self.category = category  # Column in the metadata that has category labels
         self.channels = channels  # List of column names corresponding to each channel file
-        self.root = dataRoot  # Path to the directory of images
-        self.keyGen = keyGen  # Function that returns the image key given its record in the metadata
+        self.root = dataRoot      # Path to the directory of images
+        self.keyGen = keyGen      # Function that returns the image key given its record in the metadata
         self.pixelProcessor = dataset.pixels.PixelProcessor()
         self.labels = self.meta.data[self.category].unique()
 
@@ -57,8 +58,6 @@ class ImageDataset():
         batch = {'keys': keys, 'images': [], 'labels': labels}
         for img in images:
             image_array = dataset.pixels.openImage(img, self.pixelProcessor)
-            # TODO: Implement pixel normalization using control statistics
-            #image_array /= 128.0
             batch['images'].append(image_array)
         #dataset.utils.toc('Loading batch', s)
         return batch
@@ -95,8 +94,9 @@ class ImageDataset():
 def read_dataset(config):
     # Read metadata and split dataset in training and validation
     metadata = dataset.metadata.Metadata(config["image_set"]["index"], dtype=None)
-    trainingFilter = lambda df: df[config["training"]["split_field"]] <= 5
-    validationFilter = lambda df: df[config["training"]["split_field"]] > 5
+    split_field = config["training"]["split_field"]
+    trainingFilter = lambda df: df[split_field].isin(config["training"]["training_values"])
+    validationFilter = lambda df: df[split_field].isin(config["training"]["validation_values"])
     metadata.splitMetadata(trainingFilter, validationFilter)
 
     # Create a dataset

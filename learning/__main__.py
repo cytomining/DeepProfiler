@@ -5,6 +5,7 @@ import click
 
 import dataset.image_dataset
 import learning.training
+import learning.validation
 
 # Main interaction point
 @click.group()
@@ -24,6 +25,14 @@ def cli(context, config):
 def training(context):
     images = dataset.image_dataset.read_dataset(context.obj["config"])
     learning.training.learn_model(context.obj["config"], images)
+
+
+# Evaluate a network in the validation set
+@cli.command()
+@click.pass_context
+def validation(context):
+    images = dataset.image_dataset.read_dataset(context.obj["config"])
+    learning.validation.validate(context.obj["config"], images)
 
 
 if __name__ == "__main__":

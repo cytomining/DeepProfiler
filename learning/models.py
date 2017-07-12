@@ -6,25 +6,6 @@ slim = tf.contrib.slim
 resnet_v2 = slim.nets.resnet_v2
 
 def create_resnet(inputs, num_classes):
-    # Assumes input of 96x96, produces features of 1x1x1024
-    # Block parameters: (depth or channels, depth_bottleneck or channels bottleneck, stride)
-    #blocks = [
-    #  resnet_v2.resnet_utils.Block('block1', resnet_v2.bottleneck, [(64, 16, 1)] * 2 + [(64, 16, 2)]),
-    #  resnet_v2.resnet_utils.Block('block2', resnet_v2.bottleneck, [(128, 32, 1)] * 3 + [(128, 32, 2)]),
-    #  resnet_v2.resnet_utils.Block('block3', resnet_v2.bottleneck, [(256, 64, 1)] * 3 + [(256, 64, 2)]),
-    #  resnet_v2.resnet_utils.Block('block4', resnet_v2.bottleneck, [(512, 128, 1)] * 3 + [(512, 128, 2)]),
-    #  resnet_v2.resnet_utils.Block('block5', resnet_v2.bottleneck, [(1024, 256, 1)] * 3)
-    #]
-    #net = resnet_v2.resnet_v2(
-    #    inputs,
-    #    blocks,
-    #    num_classes,
-    #    True,
-    #    None,
-    #    include_root_block=False,
-    #    reuse=False,
-    #    scope="convnet")
-    #
     ## The following produces a feature vector of 1x1x2048
     net = resnet_v2.resnet_v2_50(inputs, num_classes, scope="convnet")
     return tf.reshape(net[1]["convnet/logits"], (-1, num_classes))
@@ -65,7 +46,7 @@ def create_trainer(net, labels, sess, config):
     tf.summary.scalar("training_loss", loss)
     tf.summary.scalar("training_accuracy", train_accuracy)
     merged_summary = tf.summary.merge_all()
-    train_writer = tf.summary.FileWriter(config["training"]["output"] + "/log", sess.graph)
+    train_writer = tf.summary.FileWriter(config["training"]["output"] + "/model/", sess.graph)
     # Return 2 objects: An array with training ops and a summary writter object
     ops = [train_op, train_accuracy, merged_summary]
     return ops, train_writer
