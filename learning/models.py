@@ -34,20 +34,53 @@ def create_vgg(images, num_classes):
 
 
 def create_trainer(net, labels, sess, config):
+    # labels are assumed to be one_hot encoded
     # Loss and optimizer
-    loss = tf.reduce_mean( tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=net) )
+    loss = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=net)
     convnet_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, "convnet")
     optimizer = tf.train.AdamOptimizer(config["training"]["learning_rate"])
     train_op = optimizer.minimize(loss, var_list=convnet_vars)
     # Accuracy
-    correct_prediction = tf.equal(tf.argmax(labels,1), tf.argmax(tf.nn.softmax(net),1))
+    predictions = tf.nn.softmax(net)
+    correct_prediction = tf.equal(tf.argmax(labels,1), tf.argmax(predictions,1))
     train_accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    top_5_acc = tf.reduce_mean( tf.to_float( tf.nn.in_top_k(
+                        predictions=predictions, 
+                        targets=tf.argmax(labels, 1), 
+                        k=5
+                )))
     # Summaries
     tf.summary.scalar("training_loss", loss)
     tf.summary.scalar("training_accuracy", train_accuracy)
+    tf.summary.scalar("training_top_5_acc", top_5_acc)
     merged_summary = tf.summary.merge_all()
     train_writer = tf.summary.FileWriter(config["training"]["output"] + "/model/", sess.graph)
     # Return 2 objects: An array with training ops and a summary writter object
-    ops = [train_op, train_accuracy, merged_summary]
+    ops = [train_op, train_accuracy, top_5_acc, merged_summary]
     return ops, train_writer
+
+
+def create_validator(net, labels, sess, config):
+    loss = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=net)
+    # labels are assumed to be one_hot encoded
+    # Accuracy
+    predictions = tf.nn.softmax(net)
+    correct_prediction = tf.equal(tf.argmax(labels,1), tf.argmax(predictions,1))
+    val_accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    top_5_acc = tf.reduce_mean( tf.to_float( tf.nn.in_top_k(
+                        predictions=predictions, 
+                        targets=tf.argmax(labels, 1), 
+                        k=5
+                )))
+    # Summaries
+    tf.summary.scalar("validation_accuracy", val_accuracy)
+    tf.summary.scalar("validation_top_5_acc", top_5_acc)
+    tf.summary.histogram("logits", net)
+    merged_summary = tf.summary.merge_all()
+    val_writer = tf.summary.FileWriter(config["training"]["output"] + "/model/", sess.graph)
+    # Return 2 objects: Array with validation ops and summary writter
+    gt = tf.argmax(labels,1)
+    pr = tf.reduce_max(predictions,1)
+    ops = [loss, val_accuracy, top_5_acc, gt, pr, merged_summary]
+    return ops, val_writer
 

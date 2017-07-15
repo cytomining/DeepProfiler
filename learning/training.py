@@ -30,7 +30,7 @@ def input_graph(config, labels=True):
                    len(config["image_set"]["channels"])
                  ]
     batch_shape = (
-                    config["sampling"]["images"],
+                    -1, #config["sampling"]["images"],
                     config["image_set"]["height"],
                     config["image_set"]["width"],
                     len(config["image_set"]["channels"])
@@ -96,7 +96,7 @@ def augmentation_graph(config, input_vars, num_classes):
         augmented_op,
         input_vars["labeled_crops"][1]
     ])
-    train_inputs = train_queue.dequeue_many(config["training"]["minibatch"]) 
+    train_inputs = train_queue.dequeue() #_many(config["training"]["minibatch"]) 
 
 
     train_vars = {
@@ -158,33 +158,54 @@ def learn_model(config, dset):
 
     # Start session
     gpu_config = tf.ConfigProto()
-    gpu_config.gpu_options.per_process_gpu_memory_fraction = 0.9
+    gpu_config.gpu_options.per_process_gpu_memory_fraction = config["queueing"]["gpu_mem_fraction"]
     sess = tf.Session(config=gpu_config)
 
-    # Define data batches
-    num_classes = dset.numberOfClasses()
-    input_vars = input_graph(config)
-    train_vars = augmentation_graph(config, input_vars, num_classes)
-    coord, queue_threads = training_queues(sess, dset, config, input_vars, train_vars)
+    # Define input data batches
+    with tf.variable_scope("train_inputs"):
+        num_classes = dset.numberOfClasses()
+        input_vars = input_graph(config)
+        train_vars = augmentation_graph(config, input_vars, num_classes)
+        image_batch, label_batch = tf.train.shuffle_batch(
+            [train_vars["image_batch"], train_vars["label_batch"]],
+            batch_size=config["training"]["minibatch"],
+            num_threads=config["queueing"]["augmentation_workers"],
+            capacity=config["queueing"]["random_queue_size"],
+            min_after_dequeue=config["queueing"]["min_size"]
+        )
+        for i in range(len(config["image_set"]["channels"])):
+            tf.summary.image("channel-" + str(i + 1), 
+                             tf.expand_dims(image_batch[:,:,:,i], -1), 
+                             max_outputs=3, 
+                             collections=None
+                            )
 
-    # Learning model
-    network = learning.models.create_resnet(train_vars["image_batch"], num_classes)
-    train_ops, summary_writer = learning.models.create_trainer(network, train_vars["label_batch"], sess, config)
+
+    # Graph of learning model
+    network = learning.models.create_resnet(image_batch, num_classes)
+    with tf.variable_scope("trainer"):
+        train_ops, summary_writer = learning.models.create_trainer(network, label_batch, sess, config)
+    sess.run(tf.global_variables_initializer())
+
+    # Model saver
+    convnet_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="convnet")
+    saver = tf.train.Saver(var_list=convnet_vars)
+    output_file = config["training"]["output"] + "/model/weights.ckpt"
+
+    # Start data threads
+    coord, queue_threads = training_queues(sess, dset, config, input_vars, train_vars)
+    tf.train.start_queue_runners(coord=coord, sess=sess)
 
     # Main training loop
-    sess.run(tf.global_variables_initializer())
     for i in tqdm(range(config["training"]["iterations"]), desc="Training"):
         if coord.should_stop():
             break
         results = sess.run(train_ops)
         if i % 100 == 0:
             summary_writer.add_summary(results[-1], i)
+        if i % 10000 == 0:
+            save_path = saver.save(sess, output_file, global_step=i)
 
-    # Save model 
-    saver = tf.train.Saver()
-    save_path = saver.save(sess, config["training"]["output"] + "/model/weights.ckpt")
-    print("Model saved in file {}".format(save_path))
-    
     # Close session and stop threads
     print("Complete! Closing session.", end="", flush=True)
     coord.request_stop()
@@ -192,5 +213,5 @@ def learn_model(config, dset):
     sess.run(train_vars["queue"].close(cancel_pending_enqueues=True))
     coord.join(queue_threads)
     sess.close()
-    print(" All done.")
+    print(" All set.")
 
