@@ -184,11 +184,12 @@ def learn_model(config, dset):
     # Graph of learning model
     network = learning.models.create_resnet(image_batch, num_classes)
     with tf.variable_scope("trainer"):
+        tf.summary.histogram("labels", tf.argmax(label_batch, axis=1))
         train_ops, summary_writer = learning.models.create_trainer(network, label_batch, sess, config)
     sess.run(tf.global_variables_initializer())
 
     # Model saver
-    convnet_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="convnet")
+    convnet_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="convnet")
     saver = tf.train.Saver(var_list=convnet_vars)
     output_file = config["training"]["output"] + "/model/weights.ckpt"
 
@@ -198,12 +199,13 @@ def learn_model(config, dset):
 
     # Main training loop
     for i in tqdm(range(config["training"]["iterations"]), desc="Training"):
+    #for i in range(config["training"]["iterations"]):
         if coord.should_stop():
             break
         results = sess.run(train_ops)
         if i % 100 == 0:
             summary_writer.add_summary(results[-1], i)
-        if i % 10000 == 0:
+        if i % 1000 == 0:
             save_path = saver.save(sess, output_file, global_step=i)
 
     # Close session and stop threads
