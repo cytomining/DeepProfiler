@@ -6,14 +6,15 @@ slim = tf.contrib.slim
 resnet_v2 = slim.nets.resnet_v2
 resnet_utils = slim.nets.resnet_utils
 
+
 def create_resnet(inputs, num_classes, is_training=True):
     ## The following produces a feature vector of 1x1x2048
     #TODO: Extremely odd way of defining if a model is training or not!
     # Update to TF v1.2 to use the most common way of passing a parameter.
     # https://github.com/tensorflow/tensorflow/blob/r1.2/tensorflow/contrib/slim/python/slim/nets/resnet_utils.py#L226
-    with slim.arg_scope(resnet_utils.resnet_arg_scope(is_training)):
-        net = resnet_v2.resnet_v2_50(inputs, num_classes, scope="convnet")
-        return tf.reshape(net[1]["convnet/logits"], (-1, num_classes))
+    #with slim.arg_scope(resnet_utils.resnet_arg_scope(is_training)):
+    net = resnet_v2.resnet_v2_50(inputs, num_classes, scope="convnet", is_training=is_training)
+    return tf.reshape(net[1]["convnet/logits"], (-1, num_classes))
 
 
 def vgg_module(x, filters, sizes, layers, scope_name, is_training=True):
@@ -68,7 +69,8 @@ def create_trainer(net, labels, sess, config):
 
 
 def create_validator(net, labels, sess, config):
-    loss = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=net)
+    #loss = tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=net)
+    loss = tf.reduce_max(net)
     # labels are assumed to be one_hot encoded
     # Accuracy
     predictions = tf.nn.softmax(net)

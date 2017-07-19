@@ -12,7 +12,7 @@ def validate(config, dset):
     input_vars = learning.training.input_graph(config)
     images = input_vars["labeled_crops"][0]
     labels = tf.one_hot(input_vars["labeled_crops"][1], num_classes)
-    net = learning.models.create_resnet(images, num_classes, is_training=False)
+    net = learning.models.create_resnet(images, num_classes, is_training=True)
     #net = learning.models.create_vgg(images, num_classes, is_training=False)
     saver = tf.train.Saver()
 
@@ -27,8 +27,8 @@ def validate(config, dset):
     #sess.run(tf.global_variables_initializer())
 
     #saver.restore(sess, "/data1/luad/experiments/5class-6/model/weights.ckpt-4000")
-    saver.restore(sess, "/data1/luad/experiments/exp9/model/weights.ckpt-80000")
-    #saver.restore(sess, "/data1/luad/debug/model/weights.ckpt")
+    #saver.restore(sess, "/data1/luad/experiments/exp9/model/weights.ckpt-80000")
+    saver.restore(sess, "/data1/luad/debug/model/weights.ckpt-8000")
 
 
     def predict(key, image_array, meta):
