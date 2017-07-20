@@ -3,6 +3,7 @@ from tqdm import tqdm
 
 import numpy as np
 import tensorflow as tf
+import keras
 
 import dataset.utils
 import learning.cropping
@@ -157,9 +158,11 @@ def training_queues(sess, dset, config, input_vars, train_vars):
 def learn_model(config, dset):
 
     # Start session
-    gpu_config = tf.ConfigProto()
-    gpu_config.gpu_options.per_process_gpu_memory_fraction = config["queueing"]["gpu_mem_fraction"]
-    sess = tf.Session(config=gpu_config)
+    configuration = tf.ConfigProto()
+    configuration.gpu_options.allow_growth = True
+    configuration.gpu_options.visible_device_list = "0"
+    session = tf.Session(config = configuration)
+    keras.backend.set_session(session)
 
     # Define input data batches
     with tf.variable_scope("train_inputs"):
@@ -179,41 +182,63 @@ def learn_model(config, dset):
                              max_outputs=3, 
                              collections=None
                             )
-
-
-    # Graph of learning model
-    network = learning.models.create_resnet(image_batch, num_classes)
+    '''
     with tf.variable_scope("trainer"):
         tf.summary.histogram("labels", tf.argmax(label_batch, axis=1))
         train_ops, summary_writer = learning.models.create_trainer(network, label_batch, sess, config)
     sess.run(tf.global_variables_initializer())
-
-    # Model saver
-    convnet_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="convnet")
-    saver = tf.train.Saver(var_list=convnet_vars)
-    output_file = config["training"]["output"] + "/model/weights.ckpt"
+    '''
 
     # Start data threads
-    coord, queue_threads = training_queues(sess, dset, config, input_vars, train_vars)
-    tf.train.start_queue_runners(coord=coord, sess=sess)
+    coord, queue_threads = training_queues(session, dset, config, input_vars, train_vars)
+    tf.train.start_queue_runners(coord=coord, sess=session)
 
-    # Main training loop
-    for i in tqdm(range(config["training"]["iterations"]), desc="Training"):
-    #for i in range(config["training"]["iterations"]):
-        if coord.should_stop():
-            break
-        results = sess.run(train_ops)
-        if i % 100 == 0:
-            summary_writer.add_summary(results[-1], i)
-        if i % 1000 == 0:
-            save_path = saver.save(sess, output_file, global_step=i)
+    def batch_generator(sess, global_step=0):
+        while True:
+            if coord.should_stop():
+                break
+            batch = sess.run([image_batch, label_batch])
+            global_step += 1
+            #if global_step % 10 == 0: print("Watch out!", global_step)
+
+            yield batch
+
+    # keras-resnet model
+    output_file = config["training"]["output"] + "/checkpoint_{epoch:04d}.hdf5"
+    callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
+        filepath=output_file,
+        save_weights_only=True,
+        save_best_only=False
+    )
+    csv_output = config["training"]["output"] + "/log.csv"
+    callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
+    callbacks = [callback_model_checkpoint, callback_csv]
+
+    input_shape = (
+        config["sampling"]["box_size"],      # height 
+        config["sampling"]["box_size"],      # width
+        len(config["image_set"]["channels"]) # channels
+    )
+    model = learning.models.create_keras_resnet(input_shape, num_classes)
+    optimizer = keras.optimizers.Adam(lr=config["training"]["learning_rate"])
+    model.compile(optimizer, "categorical_crossentropy", ["accuracy"])
+
+    epochs = 100
+    steps = config["training"]["iterations"] / epochs
+    model.fit_generator(
+        generator=batch_generator(session),
+        steps_per_epoch=steps,
+        epochs=epochs,
+        callbacks=callbacks,
+        verbose=1 
+    )
 
     # Close session and stop threads
     print("Complete! Closing session.", end="", flush=True)
     coord.request_stop()
-    sess.run(input_vars["queue"].close(cancel_pending_enqueues=True))
-    sess.run(train_vars["queue"].close(cancel_pending_enqueues=True))
+    session.run(input_vars["queue"].close(cancel_pending_enqueues=True))
+    session.run(train_vars["queue"].close(cancel_pending_enqueues=True))
     coord.join(queue_threads)
-    sess.close()
+    session.close()
     print(" All set.")
 
