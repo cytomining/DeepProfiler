@@ -6,6 +6,7 @@ import click
 import dataset.image_dataset
 import learning.training
 import learning.validation
+import learning.profiling
 
 # Main interaction point
 @click.group()
@@ -33,6 +34,13 @@ def training(context):
 def validation(context):
     images = dataset.image_dataset.read_dataset(context.obj["config"])
     learning.validation.validate(context.obj["config"], images)
+
+# Profile cells and extract features
+@cli.command()
+@click.pass_context
+def profiling(context):
+    metadata = dataset.image_dataset.read_dataset(context.obj["config"])
+    learning.profiling.profile(context.obj["config"], metadata)
 
 
 if __name__ == "__main__":
