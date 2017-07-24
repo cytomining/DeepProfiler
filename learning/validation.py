@@ -62,7 +62,7 @@ def validate(config, dset):
     session = tf.Session(config = configuration)
     keras.backend.set_session(session)
 
-    model.load_weights("/data1/luad/debug/checkpoint_0009.hdf5")
+    model.load_weights("/data1/luad/experiments/keras/5class-1/checkpoint_0036.hdf5")
     metrics = Metrics()
 
     def predict(key, image_array, meta):

@@ -96,10 +96,10 @@ def crop(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False
 def augment(crop):
     with tf.variable_scope("augmentation"):
         augmented = tf.image.random_flip_left_right(crop)
-        #angle = tf.random_uniform([1], minval=0, maxval=3, dtype=tf.int32)
-        #augmented = tf.image.rot90(augmented, angle[0])
         angle = tf.random_uniform([1], minval=0.0, maxval=2*PI, dtype=tf.float32)
         augmented = tf.contrib.image.rotate(augmented, angle[0], interpolation="BILINEAR")
+        illum = tf.random_uniform([1], minval=-0.1, maxval=0.1, dtype=tf.float32)
+        augmented = augmented + illum
     return augmented
 
 
