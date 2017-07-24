@@ -23,6 +23,7 @@ class Metrics():
         return self.correct/self.counts, self.in_top5/self.counts
 
 def validate(config, dset):
+    config["queueing"]["min_size"] = 0
     num_classes = dset.numberOfClasses()
     input_vars = learning.training.input_graph(config)
     images = input_vars["labeled_crops"][0]
@@ -61,22 +62,26 @@ def validate(config, dset):
     session = tf.Session(config = configuration)
     keras.backend.set_session(session)
 
-    model.load_weights("/data1/luad/experiments/keras1/checkpoint_0054.hdf5")
+    model.load_weights("/data1/luad/debug/checkpoint_0009.hdf5")
     metrics = Metrics()
 
     def predict(key, image_array, meta):
-        image_key, image_names = dset.getImagePaths(meta)
-        locations = [ learning.cropping.getLocations(image_key, config, randomize=False) ]
-        labels_data = [ meta[config["training"]["label_field"]] ]
-        boxes, box_ind, labels_data = learning.cropping.prepareBoxes(locations, labels_data, config)
-        images_data = np.reshape(image_array, input_vars["shapes"]["batch"])
+        image_key, image_names, outlines = dset.getImagePaths(meta)
+        batch = {"images":[], "locations":[], "labels":[]}
+        batch["images"].append(image_array)
+        batch["locations"].append(learning.cropping.getLocations(image_key, config, randomize=False))
+        batch["labels"].append(meta[config["training"]["label_field"]])
+        boxes, box_ind, labels_data, mask_ind = learning.cropping.prepareBoxes(batch, config)
+        batch["images"] = np.reshape(image_array, input_vars["shapes"]["batch"])
 
         session.run(input_vars["enqueue_op"], {
-                        input_vars["image_ph"]:images_data,
+                        input_vars["image_ph"]:batch["images"],
                         input_vars["boxes_ph"]:boxes,
                         input_vars["box_ind_ph"]:box_ind,
-                        input_vars["labels_ph"]:labels_data
+                        input_vars["labels_ph"]:labels_data,
+                        input_vars["mask_ind_ph"]:mask_ind
         })
+
         items = session.run(input_vars["queue"].size())
         while items > config["training"]["minibatch"]:
             batch = session.run([images, labels])

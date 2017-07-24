@@ -23,16 +23,16 @@ def cli(context, config):
 @cli.command()
 @click.pass_context
 def training(context):
-    images = dataset.image_dataset.read_dataset(context.obj["config"])
-    learning.training.learn_model(context.obj["config"], images)
+    metadata = dataset.image_dataset.read_dataset(context.obj["config"])
+    learning.training.learn_model(context.obj["config"], metadata)
 
 
 # Evaluate a network in the validation set
 @cli.command()
 @click.pass_context
 def validation(context):
-    images = dataset.image_dataset.read_dataset(context.obj["config"])
-    learning.validation.validate(context.obj["config"], images)
+    metadata = dataset.image_dataset.read_dataset(context.obj["config"])
+    learning.validation.validate(context.obj["config"], metadata)
 
 
 if __name__ == "__main__":

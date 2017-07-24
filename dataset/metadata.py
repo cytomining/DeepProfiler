@@ -39,7 +39,6 @@ class Metadata():
                 self.loadSingle(filename, delimiter, dtype)
             elif csvMode == "multi":
                 self.loadMultiple(filename, delimiter, dtype)
-            print(self.data.info())
 
     def loadSingle(self, filename, delim, dtype):
         print("Reading metadata form", filename)
@@ -69,6 +68,11 @@ class Metadata():
     def splitMetadata(self, trainingRule, validationRule):
         self.train = self.data[trainingRule(self.data)].copy()
         self.val = self.data[validationRule(self.data)].copy()
+
+    def mergeOutlines(self, outlines_df):
+        result = pd.merge(self.data, outlines_df, on=["Metadata_Plate", "Metadata_Well", "Metadata_Site"])
+        print("Metadata merged with Outlines")
+        self.data = result
 
 
 def write_locations(field, query_template, plate_name, row, conn, config):

@@ -1,5 +1,6 @@
 import numpy as np
 import skimage.io
+import skimage.measure
 
 
 #################################################
@@ -7,25 +8,14 @@ import skimage.io
 #################################################
 
 # Main image reading function. Images are treated as 3D tensors: (height, width, channels)
-def openImage(paths, pixelProcessor):
+def openImage(paths, outlines):
     channels = [ skimage.io.imread(p) for p in paths ]
     img = np.zeros( (channels[0].shape[0], channels[0].shape[1], len(channels)) )
     for c in range(len(channels)):
         img[:,:,c] = channels[c] / 255.0
-    return pixelProcessor.run(img)
+    if outlines is not None:
+        boundaries = skimage.io.imread(outlines)
+        labels = skimage.measure.label(boundaries, background=1)
+        img = np.concatenate( (img, labels[:,:,np.newaxis]), axis=2)
+    return img
 
-#################################################
-## PIXEL PROCESSING CLASSES
-#################################################
-
-# Abstract class to extend operations that can be applied to images while reading them
-class PixelProcessor():
-
-    def process(self, pixels):
-        return pixels
-
-    def run(self, pixels):
-        return self.process(pixels)
-
-# TODO: Implement pixel normalization using control statistics
-#image_array /= 128.0

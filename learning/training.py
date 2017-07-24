@@ -15,33 +15,30 @@ import learning.models
 #################################################
 
 def input_graph(config, labels=True):
+    # Identify number of channels
+    mask_objects = config["image_set"]["mask_objects"]
+    if mask_objects:
+        img_channels = len(config["image_set"]["channels"]) + 1
+    else:
+        img_channels = len(config["image_set"]["channels"])
+    crop_channels = len(config["image_set"]["channels"])
+
+    # Identify image and box sizes
+    box_size = config["sampling"]["box_size"]
+    img_width = config["image_set"]["width"]
+    img_height = config["image_set"]["height"]
+
     # Data shapes
-    crop_shape = [
-                   (
-                     config["sampling"]["box_size"], 
-                     config["sampling"]["box_size"], 
-                     len(config["image_set"]["channels"])
-                   ), 
-                   ()
-                 ]
-    imgs_shape = [
-                   None, 
-                   config["image_set"]["height"], 
-                   config["image_set"]["width"], 
-                   len(config["image_set"]["channels"])
-                 ]
-    batch_shape = (
-                    -1, #config["sampling"]["images"],
-                    config["image_set"]["height"],
-                    config["image_set"]["width"],
-                    len(config["image_set"]["channels"])
-                  )
+    crop_shape = [(box_size, box_size, crop_channels), ()]
+    imgs_shape = [None, img_height, img_width, img_channels]
+    batch_shape = (-1, img_height, img_width, img_channels)
 
     # Inputs to the load data queue
     image_ph = tf.placeholder(tf.float32, shape=imgs_shape, name="raw_images")
     boxes_ph = tf.placeholder(tf.float32, shape=[None, 4], name="cell_boxes")
     box_ind_ph = tf.placeholder(tf.int32, shape=[None], name="box_indicators")
     labels_ph = tf.placeholder(tf.int32, shape=[None], name="image_labels")
+    mask_ind_ph = tf.placeholder(tf.int32, shape=[None], name="mask_indicators")
 
     with tf.device("/cpu:0"):
         # Outputs and queue of the cropping graph
@@ -49,7 +46,9 @@ def input_graph(config, labels=True):
             image_ph, 
             boxes_ph, 
             box_ind_ph, 
-            config["sampling"]["box_size"]
+            mask_ind_ph,
+            box_size,
+            mask_objects
         )
         daug_queue = tf.FIFOQueue(
             config["queueing"]["fifo_queue_size"], 
@@ -65,6 +64,7 @@ def input_graph(config, labels=True):
         "boxes_ph":boxes_ph,
         "box_ind_ph":box_ind_ph,
         "labels_ph":labels_ph,
+        "mask_ind_ph":mask_ind_ph,
         "labeled_crops":labeled_crops,
         "shapes": {
             "crops": crop_shape,
@@ -123,14 +123,17 @@ def training_queues(sess, dset, config, input_vars, train_vars):
                 # Load images and cell boxes
                 batch = learning.cropping.loadBatch(dset, config)
                 images = np.reshape(batch["images"], input_vars["shapes"]["batch"])
-                boxes, box_ind, labels = learning.cropping.prepareBoxes(batch["locations"], batch["labels"], config)
+                boxes, box_ind, labels, masks = learning.cropping.prepareBoxes(batch, config)
                 sess.run(input_vars["enqueue_op"], {
                         input_vars["image_ph"]:images, 
                         input_vars["boxes_ph"]:boxes, 
                         input_vars["box_ind_ph"]:box_ind, 
-                        input_vars["labels_ph"]:labels
+                        input_vars["labels_ph"]:labels,
+                        input_vars["mask_ind_ph"]:masks
                 })
             except:
+                #import traceback
+                #traceback.print_exc()
                 print(".", end="", flush=True)
                 return
 
@@ -182,6 +185,8 @@ def learn_model(config, dset):
                              max_outputs=3, 
                              collections=None
                             )
+    merged_summary = tf.summary.merge_all()
+    summary_writer = tf.summary.FileWriter(config["training"]["output"], session.graph)
     '''
     with tf.variable_scope("trainer"):
         tf.summary.histogram("labels", tf.argmax(label_batch, axis=1))
@@ -197,11 +202,12 @@ def learn_model(config, dset):
         while True:
             if coord.should_stop():
                 break
-            batch = sess.run([image_batch, label_batch])
+            im, lb, ms = sess.run([image_batch, label_batch, merged_summary])
             global_step += 1
-            #if global_step % 10 == 0: print("Watch out!", global_step)
+            if global_step % 10 == 0: 
+                summary_writer.add_summary(ms, global_step)
 
-            yield batch
+            yield (im, lb)
 
     # keras-resnet model
     output_file = config["training"]["output"] + "/checkpoint_{epoch:04d}.hdf5"
