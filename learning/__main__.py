@@ -29,10 +29,11 @@ def training(context):
 
 # Evaluate a network in the validation set
 @cli.command()
+@click.option("--model", prompt="Checkpoint", help="keras-resnet model")
 @click.pass_context
-def validation(context):
+def validation(context, model):
     metadata = dataset.image_dataset.read_dataset(context.obj["config"])
-    learning.validation.validate(context.obj["config"], metadata)
+    learning.validation.validate(context.obj["config"], metadata, model)
 
 
 if __name__ == "__main__":

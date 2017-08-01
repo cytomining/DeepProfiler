@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import pandas as pd
 
 import dataset.utils
 import learning.models
@@ -22,9 +23,10 @@ class Metrics():
         self.counts += counts
         return self.correct/self.counts, self.in_top5/self.counts
 
-def validate(config, dset):
+def validate(config, dset, checkpoint_file):
     config["queueing"]["min_size"] = 0
-    num_classes = dset.numberOfClasses()
+    #num_classes = dset.numberOfClasses()
+    num_classes = 594
     input_vars = learning.training.input_graph(config)
     images = input_vars["labeled_crops"][0]
     labels = tf.one_hot(input_vars["labeled_crops"][1], num_classes)
@@ -46,12 +48,13 @@ def validate(config, dset):
             )
         )
     )
-    in_top_5 = tf.reduce_sum(
+    with_k = 2
+    in_top_k = tf.reduce_sum(
         tf.to_float( 
             tf.nn.in_top_k(
                 predictions=predictions,
                 targets=tf.argmax(true_labels, 1),
-                k=5 
+                k=with_k
             )
         )
     )
@@ -62,7 +65,11 @@ def validate(config, dset):
     session = tf.Session(config = configuration)
     keras.backend.set_session(session)
 
-    model.load_weights("/data1/luad/experiments/keras/5class-1/checkpoint_0036.hdf5")
+    print("Checkpoint:",checkpoint_file)
+    model.load_weights(checkpoint_file)
+    features = model.layers[176].output
+    feat_extractor = keras.backend.function( [model.input] + [keras.backend.learning_phase()], [features] )
+
     metrics = Metrics()
 
     def predict(key, image_array, meta):
@@ -86,13 +93,19 @@ def validate(config, dset):
         while items > config["training"]["minibatch"]:
             batch = session.run([images, labels])
             result = model.predict(batch[0])
-            items, corr, intop = session.run( 
-                [input_vars["queue"].size(), correct, in_top_5], 
+
+            #f = feat_extractor((batch[0],0))
+            #feat = pd.DataFrame(f[0])
+            #feat["label"] = np.argmax(batch[1], axis=1)
+            #feat.to_csv(str(np.random.randint(1000,high=9999999)) + "-features.csv")
+
+            items, corr, intop = session.run(
+                [input_vars["queue"].size(), correct, in_top_k], 
                 feed_dict={true_labels:batch[1], predictions:result}
             )
-            acc, top5 = metrics.update(corr, intop, batch[0].shape[0])
-            message = "Acc: {:0.4f} Top-5: {:0.4f} Samples: {:0.0f}"
-            print(message.format(acc, top5, metrics.counts))
+            acc, topk = metrics.update(corr, intop, batch[0].shape[0])
+            message = "Acc: {:0.4f} Top-{}: {:0.4f} Samples: {:0.0f}"
+            print(message.format(acc, with_k, topk, metrics.counts))
            
         #print(" *",image_key, "done")
 

@@ -218,7 +218,18 @@ def learn_model(config, dset):
     )
     csv_output = config["training"]["output"] + "/log.csv"
     callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
-    callbacks = [callback_model_checkpoint, callback_csv]
+
+    def lrs(e):
+        new_lr = config["training"]["learning_rate"]
+        if    0 <= e < 30: new_lr /= 1.
+        elif 30 <= e < 60: new_lr /= 10.
+        elif 60 <= e < 80: new_lr /= 100.
+        elif 80 <= e     : new_lr /= 1000.
+        print("Learning rate:", new_lr)
+        return new_lr
+         
+    lr_schedule = keras.callbacks.LearningRateScheduler(schedule=lrs)
+    callbacks = [callback_model_checkpoint, callback_csv, lr_schedule]
 
     input_shape = (
         config["sampling"]["box_size"],      # height 
