@@ -18,6 +18,8 @@ import skimage.transform
 
 import pandas
 
+import glob
+
 from nets import inception
 
 image_size = inception.inception_resnet_v2.default_image_size
@@ -68,9 +70,16 @@ def profile(config, dset):
     init_fn(sess)
     
     def predict(key, image_array, meta):
+        existing = glob.glob(os.path.join(config["profiling"]["out_dir"], str(meta["Metadata_Plate"])+"_"+meta["Metadata_Well"]+"_"+str(meta["Metadata_Site"])+"_*"+".csv"))
+        if len(existing) > 0:
+            print("Already done:", str(key))
+            return
         batch_size = config["training"]["minibatch"]
         image_key, image_names = dset.getImagePaths(meta)
         locations = [ learning.cropping.getLocations(image_key, config, randomize=False) ]
+        if len(locations[0]) == 0:
+            print("Empty locations set:", str(key))
+            return
         pads = batch_size - len(locations[0]) % batch_size
         pad_data = pandas.DataFrame(columns=locations[0].columns, data=np.zeros(shape=(pads, 2), dtype=np.int32))
         locations[0] = pandas.concat((locations[0], pad_data))   
@@ -96,10 +105,11 @@ def profile(config, dset):
             b += 1
             items = sess.run(input_vars["queue"].size())
         for i in range(num_channels):
-            filename = os.path.join(config["profiling"]["csv_dir"], str(meta["Metadata_Plate"])+"_"+meta["Metadata_Well"]+"_"+str(meta["Metadata_Site"])+"_"+config["image_set"]["channels"][i]+".csv")
+            filename = os.path.join(config["profiling"]["out_dir"], str(meta["Metadata_Plate"])+"_"+meta["Metadata_Well"]+"_"+str(meta["Metadata_Site"])+"_"+config["image_set"]["channels"][i]+".csv")
             csv = pandas.DataFrame(data=data[i,:-pads,:])
-            csv.to_csv(filename)
+            csv.to_csv(filename, index=False)
+            print("Wrote ", filename)
         print(" *",image_key, "done")
         
-    dset.scan(predict, frame="val")
+    dset.scan(predict, frame="all")
     print("Profiling: done")
