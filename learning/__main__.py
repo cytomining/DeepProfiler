@@ -21,10 +21,11 @@ def cli(context, config):
 
 # First learning tool: Training a network
 @cli.command()
+@click.option("--epoch", default=1)
 @click.pass_context
-def training(context):
+def training(context, epoch):
     metadata = dataset.image_dataset.read_dataset(context.obj["config"])
-    learning.training.learn_model(context.obj["config"], metadata)
+    learning.training.learn_model(context.obj["config"], metadata, epoch)
 
 
 # Evaluate a network in the validation set

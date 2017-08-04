@@ -1,3 +1,4 @@
+import os
 import threading
 from tqdm import tqdm
 
@@ -158,7 +159,7 @@ def training_queues(sess, dset, config, input_vars, train_vars):
 ## MAIN TRAINING ROUTINE
 #################################################
 
-def learn_model(config, dset):
+def learn_model(config, dset, epoch):
 
     # Start session
     configuration = tf.ConfigProto()
@@ -240,6 +241,14 @@ def learn_model(config, dset):
     optimizer = keras.optimizers.Adam(lr=config["training"]["learning_rate"])
     model.compile(optimizer, "categorical_crossentropy", ["accuracy"])
 
+    previous_model = output_file.format(epoch=epoch-1)
+    if epoch > 1 and os.path.isfile(previous_model):
+        model.load_weights(previous_model)
+        print("Weights from previous model loaded", previous_model)
+    else:
+        print("Model does not exist:", previous_model)
+
+
     epochs = 100
     steps = config["training"]["iterations"] / epochs
     model.fit_generator(
@@ -247,7 +256,8 @@ def learn_model(config, dset):
         steps_per_epoch=steps,
         epochs=epochs,
         callbacks=callbacks,
-        verbose=1 
+        verbose=1,
+        initial_epoch=epoch
     )
 
     # Close session and stop threads
