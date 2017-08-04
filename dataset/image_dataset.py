@@ -62,7 +62,7 @@ class ImageDataset():
         #dataset.utils.toc('Loading batch', s)
         return batch
 
-    def scan(self, f, frame='train'):
+    def scan(self, f, frame='train', check=lambda k: True):
         if frame == 'all':
             frame = self.meta.data.iterrows()
         elif frame == 'val':
@@ -73,9 +73,10 @@ class ImageDataset():
         images = [(i, self.getImagePaths(r), r) for i, r in frame]
         for img in images:
             index = img[0]
-            image = dataset.pixels.openImage(img[1][1], self.pixelProcessor)
             meta = img[2]
-            f(index, image, meta)
+            if check(meta):
+                image = dataset.pixels.openImage(img[1][1], self.pixelProcessor)
+                f(index, image, meta)
         return
 
     def numberOfRecords(self, dataset):

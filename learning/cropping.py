@@ -9,14 +9,12 @@ import os
 
 def getLocations(image_key, config, randomize=True):
     keys = image_key.split("/")
-    locations_file = "{}/{}_{}_{}.csv".format(
-        keys[0].split('_')[0], 
+    locations_file = "{}/locations/{}-{}.csv".format(
         keys[0], 
-        keys[1].split('-')[0], 
-        keys[1].split('-')[1]
-        #config["sampling"]["locations_field"]
+        keys[1], 
+        config["sampling"]["locations_field"]
     )
-    locations_path = os.path.join(config["image_set"]["locations"], locations_file)
+    locations_path = os.path.join(config["image_set"]["path"], locations_file)
     if os.path.exists(locations_path):
         locations = pd.read_csv(locations_path)
         random_sample = config["sampling"]["locations"]
