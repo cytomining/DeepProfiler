@@ -6,9 +6,14 @@ import skimage.transform
 
 import tensorflow as tf
 from tensorflow.contrib import slim
-# export PYTHONPATH=/home/jccaicedo/luad-playground/models/slim
-from nets import inception
-from datasets import dataset_utils
+try:
+    from nets import inception
+    from datasets import dataset_utils
+except:
+    import sys
+    print("Make sure you have installed tensorflow/models and it's accessible in the environment")
+    print("export PYTHONPATH=/home/jccaicedo/luad-playground/models/slim")
+    sys.exit()
 
 import learning.training
 import learning.cropping

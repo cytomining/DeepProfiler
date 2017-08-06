@@ -38,7 +38,15 @@ def validation(context):
 # Profile cells and extract features
 @cli.command()
 @click.pass_context
-def profiling(context):
+@click.option("--part",
+              help="Part of index to process", 
+              default=-1, 
+              type=click.INT)
+def profiling(context, part):
+    config = context.obj["config"]
+    if part >= 0:
+        partfile = "index-{0:03d}.csv".format(part)
+        config["image_set"]["index"] = os.path.join(config["image_set"]["metadata"], partfile)
     metadata = dataset.image_dataset.read_dataset(context.obj["config"])
     learning.profiling.profile(context.obj["config"], metadata)
 
