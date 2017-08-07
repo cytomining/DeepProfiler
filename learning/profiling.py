@@ -123,7 +123,7 @@ def profile(config, dset):
         # Save features
         # TODO: save data with channels in the last axis
         np.savez_compressed(output_file, f=data[:, :-pads, :])
-        toc(image_key, start)
+        toc(image_key + " (" + str(data.shape[1]-pads) + ") cells", start)
         
     dset.scan(extract_features, frame="all", check=check)
     print("Profiling: done")
