@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-import pandas as pd
-import os.path
 import argparse
+import os.path
 import re
+
+import pandas as pd
 
 parser = argparse.ArgumentParser(description='Convert BBBC021 metadata')
 parser.add_argument('input_path', help='The path to the BBBC021 metadata file')
