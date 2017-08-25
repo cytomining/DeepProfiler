@@ -14,7 +14,7 @@ assert os.path.exists(options.input_path)
 bbbc021 = pd.read_csv(options.input_path)
 normalized = pd.DataFrame(columns=[
     'Metadata_Plate', 'Metadata_Well', 'Metadata_Site', 'Plate_Map_Name',
-    'DNA', 'Tubulin', 'Actin', 'Replicate'
+    'DNA', 'Tubulin', 'Actin', 'Replicate', 'Compound', 'Concentration'
 ])
 
 
@@ -32,5 +32,7 @@ normalized.Actin = join(bbbc021.Image_PathName_Actin,
 normalized.Replicate = bbbc021.Replicate
 normalized.Metadata_Site = bbbc021.Image_FileName_DAPI.apply(
     lambda name: re.search(r'_(s\d+)_', name).group(1))
+normalized.Compound = bbbc021.Image_Metadata_Compound
+normalized.Concentration = bbbc021.Image_Metadata_Concentration
 
 print(normalized.to_csv(sep=',', index=False))
