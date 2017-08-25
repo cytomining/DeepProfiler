@@ -11,23 +11,29 @@ def illum_stats_filename(output_dir, plate_name):
     return output_dir + "/" + plate_name + "/intensities/" + plate_name + ".pkl"
 
 
+def percentile(prob, p):
+    cum = np.cumsum(prob)
+    pos = cum > p
+    return np.argmax(pos)
+
+
 #################################################
 ## COMPUTATION OF ILLUMINATION STATISTICS
 #################################################
 
 # Build pixel histogram for each channel
 class IlluminationStatistics():
-    def __init__(self, bits, channels, downScaleFactor, medianFilterSize, name=""):
+    def __init__(self, bits, channels, down_scale_factor, median_filter_size, name=""):
         self.depth = 2 ** bits
         self.channels = channels
         self.name = name
-        self.downScaleFactor = downScaleFactor
-        self.medianFilterSize = medianFilterSize
+        self.down_scale_factor = down_scale_factor
+        self.median_filter_size = median_filter_size
         self.hist = np.zeros((len(channels), self.depth), dtype=np.float64)
         self.count = 0
         self.expected = 1
-        self.meanImage = None
-        self.originalImageSize = None
+        self.mean_image = None
+        self.original_image_size = None
 
     def processImage(self, index, img, meta):
         self.addToMean(img)
@@ -42,25 +48,20 @@ class IlluminationStatistics():
     # Accumulate the mean image. Useful for illumination correction purposes
     def addToMean(self, img):
         # Check image size (we assume all images have the same size)
-        if self.originalImageSize is None:
-            self.originalImageSize = img.shape
-            self.scale = (img.shape[0] / self.downScaleFactor, img.shape[1] / self.downScaleFactor)
+        if self.original_image_size is None:
+            self.original_image_size = img.shape
+            self.scale = (img.shape[0] / self.down_scale_factor, img.shape[1] / self.down_scale_factor)
         else:
-            if img.shape != self.originalImageSize:
+            if img.shape != self.original_image_size:
                 raise ValueError("Images in this plate don't match: required=",
-                                 self.originalImageSize, " found=", img.shape)
+                                 self.original_image_size, " found=", img.shape)
         # Rescale original image to half
-        thumb = skimage.transform.resize(img, self.scale, mode="reflect")
-        if self.meanImage is None:
-            self.meanImage = np.zeros_like(thumb, dtype=np.float64)
+        thumb = skimage.transform.resize(img, self.scale, mode="reflect", preserve_range=True)
+        if self.mean_image is None:
+            self.mean_image = np.zeros_like(thumb, dtype=np.float64)
         # Add image to current mean values
-        self.meanImage += thumb.astype(np.float64)
+        self.mean_image += thumb
         return
-
-    def percentile(self, prob, p):
-        cum = np.cumsum(prob)
-        pos = cum > p
-        return np.argmax(pos)
 
     # Compute global statistics on pixels. 
     def computeStats(self):
@@ -69,21 +70,21 @@ class IlluminationStatistics():
         mean = np.zeros((len(self.channels)))
         lower = np.zeros((len(self.channels)))
         upper = np.zeros((len(self.channels)))
-        self.meanImage /= self.count
+        self.mean_image /= self.count
 
         # Compute percentiles and histogram
         for i in range(len(self.channels)):
             probs = self.hist[i] / self.hist[i].sum()
             mean[i] = (bins * probs).sum()
-            lower[i] = self.percentile(probs, 0.0001)
-            upper[i] = self.percentile(probs, 0.9999)
+            lower[i] = percentile(probs, 0.0001)
+            upper[i] = percentile(probs, 0.9999)
         stats = {"mean_values": mean, "upper_percentiles": upper, "lower_percentiles": lower, "histogram": self.hist,
-                 "mean_image": self.meanImage, "channels": self.channels, "original_size": self.originalImageSize}
+                 "mean_image": self.mean_image, "channels": self.channels, "original_size": self.original_image_size}
 
         # Compute illumination correction function and add it to the dictionary
-        correct = IlluminationCorrection(stats, self.channels, self.originalImageSize)
-        correct.computeAll(self.medianFilterSize)
-        stats["illum_correction_function"] = correct.illumCorrFunc
+        correct = IlluminationCorrection(stats, self.channels, self.original_image_size)
+        correct.compute_all(self.median_filter_size)
+        stats["illum_correction_function"] = correct.illum_corr_func
 
         # Plate ready
         utils.logger.info('Plate ' + self.name + ' done')

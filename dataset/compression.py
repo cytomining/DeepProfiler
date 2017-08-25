@@ -1,8 +1,9 @@
 import pickle as pickle
 
-import numpy as np
+import numpy
 import scipy.misc
 import skimage.transform
+import os.path
 
 import dataset.utils
 import dataset.illumination_statistics
@@ -16,72 +17,75 @@ def png_dir(output_dir, plate_name):
 #################################################
 
 class Compress():
-    def __init__(self, stats, channels, outDir):
+    def __init__(self, stats, channels, out_dir):
         self.stats = stats
         self.channels = channels
-        self.outDir = outDir
+        self.out_dir = out_dir
         self.count = 0
         self.expected = 1
-        self.setFormats()
-        self.setScalingFactor(1.0)
-        self.metadataControlFilter = lambda x:False
-        self.controls_distribution = np.zeros((len(channels), 2**8), dtype=np.float64)
+        self.source_format = "tiff"
+        self.target_format = "png"
+        self.output_shape = [0, 0]
+        self.set_scaling_factor(1.0)
+        self.metadata_control_filter = lambda x:False
+        self.controls_distribution = numpy.zeros((len(channels), 2 ** 8), dtype=numpy.float64)
 
     # Allows to recalculate the percentiles computed by default in the ImageStatistics class
-    def recomputePercentile(self, p, side="upper"):
+    def recompute_percentile(self, p, side="upper_percentile"):
         print("Percentiles for the", side, " >> ", end='')
-        self.stats[side] = np.zeros((len(self.channels)))
+        self.stats[side] = numpy.zeros((len(self.channels)))
         for i in range(len(self.channels)):
             probs = self.stats["histogram"][i]/self.stats["histogram"][i].sum()
-            cum = np.cumsum(probs)
+            cum = numpy.cumsum(probs)
             pos = cum > p
-            self.stats[side][i] = np.argmax(pos)
+            self.stats[side][i] = numpy.argmax(pos)
             print(self.channels[i], ':', self.stats[side][i], ' ', end='')
         print('')
 
     # Filter images that belong to control samples, to compute their histogram distribution
-    def setControlSamplesFilter(self, filterFunc):
-        self.metadataControlFilter = filterFunc
-        self.controls_distribution = np.zeros((len(self.channels), 2**8), dtype=np.float64)
+    def set_control_samples_filter(self, filterFunc):
+        self.metadata_control_filter = filterFunc
+        self.controls_distribution = numpy.zeros((len(self.channels), 2 ** 8), dtype=numpy.float64)
 
     # If the sourceFormat is the same as the target, no compression should be applied.
-    def setFormats(self, sourceFormat="tiff", targetFormat="png"):
-        self.sourceFormat = sourceFormat
-        self.targetFormat = targetFormat
-        if targetFormat != "png":
+    def set_formats(self, source_format="tiff", target_format="png"):
+        self.source_format = source_format
+        self.target_format = target_format
+        if target_format != "png":
             raise ValueError("Only PNG compression is supported (target format should be png)")
 
     # Takes a percent factor to rescale the image preserving aspect ratio
     # If the number is between 0 and 1, the image is downscaled, otherwise is upscaled
-    def setScalingFactor(self, factor):
-        self.outputShape = [0,0]
-        self.outputShape[0] = int(factor * self.stats["original_size"][0])
-        self.outputShape[1] = int(factor * self.stats["original_size"][1])
+    def set_scaling_factor(self, factor):
+        self.output_shape[0] = int(factor * self.stats["original_size"][0])
+        self.output_shape[1] = int(factor * self.stats["original_size"][1])
 
-    def targetPath(self, origPath):
+    def target_path(self, origPath):
         image_name = origPath.split("/")[-1]
-        filename = self.outDir + image_name.replace(self.sourceFormat,self.targetFormat)
+        image_name = image_name.replace(self.source_format, self.target_format)
+        filename = os.path.join(self.out_dir, image_name)
         dataset.utils.check_path(filename)
         return filename
 
     # Main method. Downscales, stretches histogram, and saves as PNG
-    def processImage(self, index, img, meta):
+    def process_image(self, index, img, meta):
         self.count += 1
         dataset.utils.printProgress(self.count, self.expected)
         for c in range(len(self.channels)):
             # Illumination correction
-            image = img[:,:,c] / self.stats["illum_correction_function"][:,:,c]
+            # TODO: Can this operation be applied at once in all channels?
+            image = img[:, :, c] / self.stats["illum_correction_function"][:, :, c]
             # Downscale
-            image = skimage.transform.resize(image, self.outputShape, mode="reflect")
+            image = skimage.transform.resize(image, self.output_shape, mode="reflect")
             # Clip illumination values
             image[image < self.stats["lower_percentiles"][c]] = self.stats["lower_percentiles"][c]
             image[image > self.stats["upper_percentiles"][c]] = self.stats["upper_percentiles"][c]
             # Save resulting image in 8-bits PNG format
             image = scipy.misc.toimage(image, low=0, high=255, mode="L",
-                        cmin=self.stats["lower_percentiles"][c], cmax=self.stats["upper_percentiles"][c])
-            if self.metadataControlFilter(meta):
+                                       cmin=self.stats["lower_percentiles"][c], cmax=self.stats["upper_percentiles"][c])
+            if self.metadata_control_filter(meta):
                 self.controls_distribution[c] += image.histogram()
-            image.save(self.targetPath(meta[self.channels[c]]))
+            image.save(self.target_path(meta[self.channels[c]]))
         return
 
     def getUpdatedStats(self):
@@ -116,18 +120,18 @@ def compress_plate(args):
         config["original_images"]["channels"],
         plate_output_dir
     )
-    compress.setFormats(sourceFormat=config["original_images"]["file_format"], targetFormat="png")
-    compress.setScalingFactor(config["compression"]["scaling_factor"])
-    compress.recomputePercentile(0.0001, side="lower")
-    compress.recomputePercentile(0.9999, side="upper")
+    compress.set_formats(source_format=config["original_images"]["file_format"], target_format="png")
+    compress.set_scaling_factor(config["compression"]["scaling_factor"])
+    compress.recompute_percentile(0.0001, side="lower_percentile")
+    compress.recompute_percentile(0.9999, side="upper_percentile")
     compress.expected = dset.numberOfRecords("all")
 
     # Setup control samples filter (for computing control illumination statistics)
     filter_func = lambda x: x[config["metadata"]["control_field"]] == config["metadata"]["control_value"]
-    compress.setControlSamplesFilter(filter_func)
+    compress.set_control_samples_filter(filter_func)
 
     # Run compression
-    dset.scan(compress.processImage, frame="all")
+    dset.scan(compress.process_image, frame="all")
 
     # Retrieve and store results
     new_stats = compress.getUpdatedStats()
