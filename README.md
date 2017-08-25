@@ -12,9 +12,18 @@ To prepare microscopy datasets for deep learning we have implemented the followi
 Any of these three steps requires a configuration file written in JSON format. With this file available for a particular dataset, you can run the dataset tools as follows:
 
 <pre>
+    python dataset --config=data.json metadata
     python dataset --config=data.json illumination
     python dataset --config=data.json compression
     python dataset --config=data.json locations
 </pre>
 
 These commands take some time to get your dataset ready. After that, you can launch the learning commands [under construction].
+
+## Learning Tools
+
+Learn a convolutional network from single cell data using the following convention:
+
+<pre>
+    python learning --config=learn.json training
+</pre>
