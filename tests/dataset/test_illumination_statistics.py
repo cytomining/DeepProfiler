@@ -41,8 +41,8 @@ def test_add_to_mean_no_scaling(illumination_stats):
     assert illumination_stats.mean_image.shape == (16, 16, 3)
     # This method rescales the input image and normalizes pixels according to
     # the data type. We restore the values in this test to match the input for comparison.
-    result_mean = illumination_stats.mean_image * (2 ** 16)
-    numpy.testing.assert_array_equal(result_mean.astype(numpy.uint16), image)
+    result_mean = illumination_stats.mean_image #* (2 ** 16)
+    numpy.testing.assert_array_equal(numpy.round(result_mean).astype(numpy.uint16), image)
 
 
 def test_add_to_mean_with_scaling(illumination_stats):

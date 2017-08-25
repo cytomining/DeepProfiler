@@ -75,7 +75,7 @@ class Compress():
             # Illumination correction
             image = img[:, :, c] / self.stats["illum_correction_function"][:, :, c]
             # Downscale
-            image = skimage.transform.resize(image, self.output_shape)
+            image = skimage.transform.resize(image, self.output_shape, mode="reflect")
             # Clip illumination values
             image[image < self.stats["lower_percentiles"][c]] = self.stats["lower_percentiles"][c]
             image[image > self.stats["upper_percentiles"][c]] = self.stats["upper_percentiles"][c]

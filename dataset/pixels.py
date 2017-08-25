@@ -11,7 +11,7 @@ def openImage(paths, pixelProcessor):
     channels = [ skimage.io.imread(p) for p in paths ]
     img = np.zeros( (channels[0].shape[0], channels[0].shape[1], len(channels)) )
     for c in range(len(channels)):
-        img[:,:,c] = channels[c]
+        img[:,:,c] = channels[c] / 255.0
     return pixelProcessor.run(img)
 
 #################################################
@@ -27,3 +27,5 @@ class PixelProcessor():
     def run(self, pixels):
         return self.process(pixels)
 
+# TODO: Implement pixel normalization using control statistics
+#image_array /= 128.0
