@@ -2,6 +2,7 @@ import dataset.utils as utils
 import dataset.image_dataset
 import skimage.transform
 import numpy as np
+import os
 import pickle as pickle
 from .illumination_correction import IlluminationCorrection
 
@@ -54,8 +55,8 @@ class IlluminationStatistics():
             if img.shape != self.original_image_size:
                 raise ValueError("Images in this plate don't match: required=",
                                  self.original_image_size, " found=", img.shape)
-        # Rescale original image to match parameterized size
-        thumb = skimage.transform.resize(img, self.scale)
+        # Rescale original image to half
+        thumb = skimage.transform.resize(img, self.scale, mode="reflect", preserve_range=True)
         if self.mean_image is None:
             self.mean_image = np.zeros_like(thumb, dtype=np.float64)
         # Add image to current mean values
@@ -101,6 +102,12 @@ def calculate_statistics(args):
 
     plateName = plate.data["Metadata_Plate"].iloc[0]
 
+    outfile = illum_stats_filename(config["compression"]["output_dir"], plateName)
+
+    if os.path.isfile(outfile):
+        print(outfile, "exists")
+        return
+
     # Create Dataset object
     keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
 
@@ -129,7 +136,6 @@ def calculate_statistics(args):
     # Retrieve and store results
     stats = hist.computeStats()
 
-    outfile = illum_stats_filename(config["compression"]["output_dir"], plateName)
 
     utils.check_path(outfile)
 

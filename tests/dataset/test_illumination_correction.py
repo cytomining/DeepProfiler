@@ -9,11 +9,9 @@ import skimage.util
 
 @pytest.fixture(scope="function")
 def mean_image():
-    i, _ = numpy.mgrid[0:16, 0:16]
+    numpy.random.seed(81)
 
-    mean_image = skimage.exposure.rescale_intensity(1.0 * i)
-
-    mean_image = skimage.util.random_noise(mean_image, seed=12)
+    mean_image = numpy.random.randint(256, size=(16, 16, 3), dtype=numpy.uint16)
 
     return mean_image
 
@@ -45,7 +43,7 @@ def test_init(corrector, mean_image):
 def test_channel_function(corrector):
     numpy.random.seed(8)
 
-    mean_image = numpy.random.rand(16, 16)
+    mean_image = numpy.random.uniform(low=0.0, high=255.0, size=(16,16))
 
     result = corrector.channel_function(mean_image, 3)
 

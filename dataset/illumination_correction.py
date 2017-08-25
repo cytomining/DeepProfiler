@@ -16,22 +16,24 @@ class IlluminationCorrection(object):
         self.target_dim = (target_dim[0], target_dim[1])
         self.illum_corr_func = np.zeros((self.target_dim[0], self.target_dim[1], len(self.channels)))
 
-    # Based on the CellProfiler implementation of Illumination Correction
-    # CellProfiler/cellprofiler/modules/correctilluminationcalculate.py
+    # Based on Sing et al. 2014 paper
     def channel_function(self, mean_channel, disk_size):
         #TODO: get np.type from other source or parameterize or compute :/
         # We currently assume 16 bit images
         operator = skimage.morphology.disk(disk_size)
-        filtered_channel = skimage.filters.median(mean_channel, operator)
-        filtered_channel = skimage.transform.resize(filtered_channel, self.target_dim)
+        filtered_channel = skimage.filters.median(mean_channel.astype(np.uint16), operator)
+        filtered_channel = skimage.transform.resize(filtered_channel, self.target_dim, preserve_range=True)
         robust_minimum = scipy.stats.scoreatpercentile(filtered_channel, 2)
         filtered_channel = np.maximum(filtered_channel, robust_minimum)
+        if robust_minimum == 0.0:
+            print("WHAT?")
+            print("Mean channel", mean_channel.shape)
+            print("Filtered channel", filtered_channel.shape)
         illum_corr_func = filtered_channel / robust_minimum
         return illum_corr_func
 
     def compute_all(self, median_filter_size):
         disk_size = median_filter_size / 2  # From diameter to radius
-
         for ch in range(len(self.channels)):
             self.illum_corr_func[:, :, ch] = self.channel_function(self.stats["mean_image"][:, :, ch], disk_size)
 
