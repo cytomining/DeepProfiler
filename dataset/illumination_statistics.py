@@ -59,7 +59,7 @@ class IlluminationStatistics():
         if self.mean_image is None:
             self.mean_image = np.zeros_like(thumb, dtype=np.float64)
         # Add image to current mean values
-        self.mean_image += thumb.astype(np.float64)
+        self.mean_image += thumb
         return
 
     # Compute global statistics on pixels. 

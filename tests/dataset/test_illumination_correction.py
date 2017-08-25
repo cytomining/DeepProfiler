@@ -3,45 +3,84 @@ import numpy
 import numpy.testing
 import numpy.random
 import pytest
+import skimage.exposure
+import skimage.util
+
 
 @pytest.fixture(scope="function")
-def corrector():
-    stats = {"mean_image": numpy.ones((16,16,3))}
+def mean_image():
+    i, _ = numpy.mgrid[0:16, 0:16]
+
+    mean_image = skimage.exposure.rescale_intensity(1.0 * i)
+
+    mean_image = skimage.util.random_noise(mean_image, seed=12)
+
+    return mean_image
+
+
+@pytest.fixture(scope="function")
+def corrector(mean_image):
+    stats = {"mean_image": mean_image}
     channels = ["DNA", "ER", "Mito"]
-    target_dim = (24,24,3)
+    target_dim = (24, 24, 3)
     return dataset.illumination_correction.IlluminationCorrection(
         stats,
         channels,
         target_dim
     )
 
-def test_init(corrector):
-    stats = {"mean_image": numpy.ones((16,16,3))}
-    channels = ["DNA", "ER", "Mito"]
-    target_dim = (24,24,3)
 
-    numpy.testing.assert_array_equal(corrector.stats["mean_image"], stats["mean_image"])
+def test_init(corrector, mean_image):
+    channels = ["DNA", "ER", "Mito"]
+    target_dim = (24, 24, 3)
+
+    numpy.testing.assert_array_equal(corrector.stats["mean_image"], mean_image)
     assert corrector.channels == channels
     assert corrector.target_dim[0] == target_dim[0]
     assert corrector.target_dim[1] == target_dim[1]
 
 
+# With "enough" pixels we'd expect scipy.stats.scoreatpercentile(X, per=2) to return a value at 0.02 <- robust minimum
+# 
 def test_channel_function(corrector):
     numpy.random.seed(8)
-    mean_image = numpy.random.uniform(low=0.0, high=255.0, size=(16,16))
+
+    mean_image = numpy.random.rand(16, 16)
+
     result = corrector.channel_function(mean_image, 3)
-    # TODO: check contents of result
-    assert result.shape == (24,24)
+
+    assert result.shape == (24, 24)
+
+    assert numpy.all(result >= 1)
 
 
-def test_compute_all(corrector):
+def test_compute_all(corrector, mocker):  # Juan can remove mocker, it is a fun experiment
+    mocker.spy(corrector, "channel_function")
+
     corrector.compute_all(3)
-    # TODO: check the contents of illum_corr_func
-    assert corrector.illum_corr_func.shape == (24,24,3)
+
+    assert corrector.illum_corr_func.shape == (24, 24, 3)
+
+    assert corrector.channel_function.call_count == 3
+
+    corrector.channel_function.assert_called_with(mocker.ANY, 1.5)  # TODO: Claire feels bad about mocker.ANY
+
+    assert not numpy.all(corrector.illum_corr_func == 0)
+
 
 def test_apply(corrector):
     image = numpy.random.randint(256, size=(24, 24, 3), dtype=numpy.uint16)
-    corrector.compute_all(3)
+
+    illum_corr_func = numpy.random.rand(24, 24, 3)
+
+    illum_corr_func /= illum_corr_func.min()
+
+    corrector.illum_corr_func = illum_corr_func
+
     corrected = corrector.apply(image)
-    # TODO: check the contents of corrected
-    assert corrected.shape == (24,24,3)
+
+    expected = image / illum_corr_func
+
+    assert corrected.shape == (24, 24, 3)
+
+    numpy.testing.assert_array_equal(corrected, expected)

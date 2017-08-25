@@ -73,6 +73,7 @@ class Compress():
         dataset.utils.printProgress(self.count, self.expected)
         for c in range(len(self.channels)):
             # Illumination correction
+            # TODO: Can this operation be applied at once in all channels?
             image = img[:, :, c] / self.stats["illum_correction_function"][:, :, c]
             # Downscale
             image = skimage.transform.resize(image, self.output_shape)
