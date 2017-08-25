@@ -16,19 +16,16 @@ class IlluminationCorrection():
         self.channels = channels
         self.target_dim = (target_dim[0], target_dim[1])
 
-
+        
     # Based on the CellProfiler implementation of Illumination Correction
     # CellProfiler/cellprofiler/modules/correctilluminationcalculate.py
     def channel_function(self, mean_channel, disk_size):
         #TODO: get np.type from other source or parameterize or compute :/
         # We currently assume 16 bit images
         operator = skimage.morphology.disk(disk_size)
-        print(mean_channel.min(), mean_channel.mean(), mean_channel.max())
         filtered_channel = skimage.filters.median(mean_channel.astype(np.uint16), operator)
-        filtered_channel = skimage.transform.resize(filtered_channel, self.target_dim)
-        print(filtered_channel.mean())
+        filtered_channel = skimage.transform.resize(filtered_channel, self.target_dim, mode="reflect")
         sorted_pixels = filtered_channel[filtered_channel > 0]
-        print(sorted_pixels.shape)
         sorted_pixels.sort()
         idx = int(sorted_pixels.shape[0] * self.ROBUST_FACTOR)
         robust_minimum = sorted_pixels[idx]
