@@ -25,10 +25,6 @@ class IlluminationCorrection(object):
         filtered_channel = skimage.transform.resize(filtered_channel, self.target_dim, preserve_range=True)
         robust_minimum = scipy.stats.scoreatpercentile(filtered_channel, 2)
         filtered_channel = np.maximum(filtered_channel, robust_minimum)
-        if robust_minimum == 0.0:
-            print("WHAT?")
-            print("Mean channel", mean_channel.shape)
-            print("Filtered channel", filtered_channel.shape)
         illum_corr_func = filtered_channel / robust_minimum
         return illum_corr_func
 
