@@ -163,7 +163,7 @@ def learn_model(config, dset, epoch):
 
     # Start session
     configuration = tf.ConfigProto()
-    configuration.gpu_options.allow_growth = True
+    #configuration.gpu_options.allow_growth = True
     configuration.gpu_options.visible_device_list = "0"
     session = tf.Session(config = configuration)
     keras.backend.set_session(session)
