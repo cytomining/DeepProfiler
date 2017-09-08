@@ -1,8 +1,10 @@
+import os
 import threading
 from tqdm import tqdm
 
 import numpy as np
 import tensorflow as tf
+import keras
 
 import dataset.utils
 import learning.cropping
@@ -14,33 +16,30 @@ import learning.models
 #################################################
 
 def input_graph(config, labels=True):
+    # Identify number of channels
+    mask_objects = config["image_set"]["mask_objects"]
+    if mask_objects:
+        img_channels = len(config["image_set"]["channels"]) + 1
+    else:
+        img_channels = len(config["image_set"]["channels"])
+    crop_channels = len(config["image_set"]["channels"])
+
+    # Identify image and box sizes
+    box_size = config["sampling"]["box_size"]
+    img_width = config["image_set"]["width"]
+    img_height = config["image_set"]["height"]
+
     # Data shapes
-    crop_shape = [
-                   (
-                     config["sampling"]["box_size"], 
-                     config["sampling"]["box_size"], 
-                     len(config["image_set"]["channels"])
-                   ), 
-                   ()
-                 ]
-    imgs_shape = [
-                   None, 
-                   config["image_set"]["height"], 
-                   config["image_set"]["width"], 
-                   len(config["image_set"]["channels"])
-                 ]
-    batch_shape = (
-                    -1, #config["sampling"]["images"],
-                    config["image_set"]["height"],
-                    config["image_set"]["width"],
-                    len(config["image_set"]["channels"])
-                  )
+    crop_shape = [(box_size, box_size, crop_channels), ()]
+    imgs_shape = [None, img_height, img_width, img_channels]
+    batch_shape = (-1, img_height, img_width, img_channels)
 
     # Inputs to the load data queue
     image_ph = tf.placeholder(tf.float32, shape=imgs_shape, name="raw_images")
     boxes_ph = tf.placeholder(tf.float32, shape=[None, 4], name="cell_boxes")
     box_ind_ph = tf.placeholder(tf.int32, shape=[None], name="box_indicators")
     labels_ph = tf.placeholder(tf.int32, shape=[None], name="image_labels")
+    mask_ind_ph = tf.placeholder(tf.int32, shape=[None], name="mask_indicators")
 
     with tf.device("/cpu:0"):
         # Outputs and queue of the cropping graph
@@ -48,7 +47,9 @@ def input_graph(config, labels=True):
             image_ph, 
             boxes_ph, 
             box_ind_ph, 
-            config["sampling"]["box_size"]
+            mask_ind_ph,
+            box_size,
+            mask_objects
         )
         daug_queue = tf.FIFOQueue(
             config["queueing"]["fifo_queue_size"], 
@@ -64,6 +65,7 @@ def input_graph(config, labels=True):
         "boxes_ph":boxes_ph,
         "box_ind_ph":box_ind_ph,
         "labels_ph":labels_ph,
+        "mask_ind_ph":mask_ind_ph,
         "labeled_crops":labeled_crops,
         "shapes": {
             "crops": crop_shape,
@@ -122,14 +124,17 @@ def training_queues(sess, dset, config, input_vars, train_vars):
                 # Load images and cell boxes
                 batch = learning.cropping.loadBatch(dset, config)
                 images = np.reshape(batch["images"], input_vars["shapes"]["batch"])
-                boxes, box_ind, labels = learning.cropping.prepareBoxes(batch["locations"], batch["labels"], config)
+                boxes, box_ind, labels, masks = learning.cropping.prepareBoxes(batch, config)
                 sess.run(input_vars["enqueue_op"], {
                         input_vars["image_ph"]:images, 
                         input_vars["boxes_ph"]:boxes, 
                         input_vars["box_ind_ph"]:box_ind, 
-                        input_vars["labels_ph"]:labels
+                        input_vars["labels_ph"]:labels,
+                        input_vars["mask_ind_ph"]:masks
                 })
             except:
+                #import traceback
+                #traceback.print_exc()
                 print(".", end="", flush=True)
                 return
 
@@ -154,12 +159,14 @@ def training_queues(sess, dset, config, input_vars, train_vars):
 ## MAIN TRAINING ROUTINE
 #################################################
 
-def learn_model(config, dset):
+def learn_model(config, dset, epoch):
 
     # Start session
-    gpu_config = tf.ConfigProto()
-    gpu_config.gpu_options.per_process_gpu_memory_fraction = config["queueing"]["gpu_mem_fraction"]
-    sess = tf.Session(config=gpu_config)
+    configuration = tf.ConfigProto()
+    #configuration.gpu_options.allow_growth = True
+    configuration.gpu_options.visible_device_list = "0"
+    session = tf.Session(config = configuration)
+    keras.backend.set_session(session)
 
     # Define input data batches
     with tf.variable_scope("train_inputs"):
@@ -179,41 +186,86 @@ def learn_model(config, dset):
                              max_outputs=3, 
                              collections=None
                             )
-
-
-    # Graph of learning model
-    network = learning.models.create_resnet(image_batch, num_classes)
+    merged_summary = tf.summary.merge_all()
+    summary_writer = tf.summary.FileWriter(config["training"]["output"], session.graph)
+    '''
     with tf.variable_scope("trainer"):
         tf.summary.histogram("labels", tf.argmax(label_batch, axis=1))
         train_ops, summary_writer = learning.models.create_trainer(network, label_batch, sess, config)
     sess.run(tf.global_variables_initializer())
-
-    # Model saver
-    convnet_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="convnet")
-    saver = tf.train.Saver(var_list=convnet_vars)
-    output_file = config["training"]["output"] + "/model/weights.ckpt"
+    '''
 
     # Start data threads
-    coord, queue_threads = training_queues(sess, dset, config, input_vars, train_vars)
-    tf.train.start_queue_runners(coord=coord, sess=sess)
+    coord, queue_threads = training_queues(session, dset, config, input_vars, train_vars)
+    tf.train.start_queue_runners(coord=coord, sess=session)
 
-    # Main training loop
-    for i in tqdm(range(config["training"]["iterations"]), desc="Training"):
-    #for i in range(config["training"]["iterations"]):
-        if coord.should_stop():
-            break
-        results = sess.run(train_ops)
-        if i % 100 == 0:
-            summary_writer.add_summary(results[-1], i)
-        if i % 1000 == 0:
-            save_path = saver.save(sess, output_file, global_step=i)
+    def batch_generator(sess, global_step=0):
+        while True:
+            if coord.should_stop():
+                break
+            im, lb, ms = sess.run([image_batch, label_batch, merged_summary])
+            global_step += 1
+            if global_step % 10 == 0: 
+                summary_writer.add_summary(ms, global_step)
+
+            yield (im, lb)
+
+    # keras-resnet model
+    output_file = config["training"]["output"] + "/checkpoint_{epoch:04d}.hdf5"
+    callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
+        filepath=output_file,
+        save_weights_only=True,
+        save_best_only=False
+    )
+    csv_output = config["training"]["output"] + "/log.csv"
+    callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
+
+    def lrs(e):
+        new_lr = config["training"]["learning_rate"]
+        if    0 <= e < 30: new_lr /= 1.
+        elif 30 <= e < 60: new_lr /= 10.
+        elif 60 <= e < 80: new_lr /= 100.
+        elif 80 <= e     : new_lr /= 1000.
+        print("Learning rate:", new_lr)
+        return new_lr
+         
+    lr_schedule = keras.callbacks.LearningRateScheduler(schedule=lrs)
+    callbacks = [callback_model_checkpoint, callback_csv, lr_schedule]
+
+    input_shape = (
+        config["sampling"]["box_size"],      # height 
+        config["sampling"]["box_size"],      # width
+        len(config["image_set"]["channels"]) # channels
+    )
+    model = learning.models.create_keras_resnet(input_shape, num_classes)
+    optimizer = keras.optimizers.Adam(lr=config["training"]["learning_rate"])
+    model.compile(optimizer, "categorical_crossentropy", ["accuracy"])
+
+    previous_model = output_file.format(epoch=epoch-1)
+    if epoch > 1 and os.path.isfile(previous_model):
+        model.load_weights(previous_model)
+        print("Weights from previous model loaded", previous_model)
+    else:
+        print("Model does not exist:", previous_model)
+
+
+    epochs = 100
+    steps = config["training"]["iterations"] / epochs
+    model.fit_generator(
+        generator=batch_generator(session),
+        steps_per_epoch=steps,
+        epochs=epochs,
+        callbacks=callbacks,
+        verbose=1,
+        initial_epoch=epoch
+    )
 
     # Close session and stop threads
     print("Complete! Closing session.", end="", flush=True)
     coord.request_stop()
-    sess.run(input_vars["queue"].close(cancel_pending_enqueues=True))
-    sess.run(train_vars["queue"].close(cancel_pending_enqueues=True))
+    session.run(input_vars["queue"].close(cancel_pending_enqueues=True))
+    session.run(train_vars["queue"].close(cancel_pending_enqueues=True))
     coord.join(queue_threads)
-    sess.close()
+    session.close()
     print(" All set.")
 

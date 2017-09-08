@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 import dataset.pixels
 import dataset.utils
@@ -13,27 +14,32 @@ class ImageDataset():
         self.channels = channels  # List of column names corresponding to each channel file
         self.root = dataRoot      # Path to the directory of images
         self.keyGen = keyGen      # Function that returns the image key given its record in the metadata
-        self.pixelProcessor = dataset.pixels.PixelProcessor()
         self.labels = self.meta.data[self.category].unique()
+        self.outlines = None
 
     def getImagePaths(self, r):
         key = self.keyGen(r)
         image = [self.root + '/' + r[ch] for ch in self.channels]
-        return (key, image)
+        outlines = self.outlines
+        if outlines is not None:
+            outlines = self.outlines + r["Outlines"]
+        return (key, image, outlines)
 
     def sampleImages(self, categ, nImgCat):
         keys = []
         images = []
         labels = []
+        outlines = []
         for c in categ:
             mask = self.meta.train[self.category] == c
             rec = self.meta.train[mask].sample(n=nImgCat, replace=True)
             for i, r in rec.iterrows():
-                key, image = self.getImagePaths(r)
+                key, image, outl = self.getImagePaths(r)
                 keys.append(key)
                 images.append(image)
                 labels.append(c)
-        return keys, images, labels
+                outlines.append(outl)
+        return keys, images, labels, outlines
 
     def getTrainBatch(self, N):
         #s = dataset.utils.tic()
@@ -47,13 +53,14 @@ class ImageDataset():
         nImgCat = int(N / len(categ))
         residual = N % len(categ)
         # 3. Select images per category
-        keys, images, labels = self.sampleImages(categ, nImgCat)
+        keys, images, labels, outlines = self.sampleImages(categ, nImgCat)
         if residual > 0:
             np.random.shuffle(categ)
-            rk, ri, rl = self.sampleImages(categ[0:residual], 1)
+            rk, ri, rl, ro = self.sampleImages(categ[0:residual], 1)
             keys += rk
             images += ri
             labels += rl
+            outlines += ro
         # 4. Open images
         batch = {'keys': keys, 'images': [], 'labels': labels}
         for img in images:
@@ -74,10 +81,11 @@ class ImageDataset():
 
         images = [(i, self.getImagePaths(r), r) for i, r in frame]
         for img in images:
+            # img => [0] index key, [1] => [0:key, 1:paths, 2:outlines], [2] => metadata
             index = img[0]
             meta = img[2]
             if check(meta):
-                image = dataset.pixels.openImage(img[1][1], self.pixelProcessor)
+                image = dataset.pixels.openImage(img[1][1], img[1][2])
                 f(index, image, meta)
         return
 
@@ -97,6 +105,17 @@ class ImageDataset():
 def read_dataset(config):
     # Read metadata and split dataset in training and validation
     metadata = dataset.metadata.Metadata(config["image_set"]["index"], dtype=None)
+
+    # Add outlines if specified
+    outlines = None
+    if "outlines" in config["image_set"].keys() and config["image_set"]["outlines"] != "":
+        df = pd.read_csv(config["image_set"]["metadata"] + "/outlines.csv")
+        metadata.mergeOutlines(df)
+        outlines = config["image_set"]["outlines"]
+
+    print(metadata.data.info())
+
+    # Split training data
     split_field = config["training"]["split_field"]
     trainingFilter = lambda df: df[split_field].isin(config["training"]["training_values"])
     validationFilter = lambda df: df[split_field].isin(config["training"]["validation_values"])
@@ -111,4 +130,9 @@ def read_dataset(config):
         config["image_set"]["path"],
         keyGen
     )
+    if config["image_set"]["mask_objects"]:
+        dset.outlines = outlines
+
     return dset
+
+
