@@ -66,5 +66,15 @@ def locations(context):
     process.compute(dataset.metadata.create_cell_indices, metadata)
 
 
+# Auxiliary tool: Split index in multiple parts
+@cli.command()
+@click.pass_context
+@click.option("--parts", 
+              help="Number of parts to split the index",
+              type=click.INT)
+def split_index(context, parts):
+    dataset.indexing.split_index(context.obj["config"], parts)
+
+
 if __name__ == "__main__":
     cli(obj={})

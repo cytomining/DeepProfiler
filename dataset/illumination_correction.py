@@ -1,45 +1,40 @@
 import skimage.transform
 import skimage.filters
 import skimage.morphology
+import scipy.stats
 import numpy as np
 
 #################################################
 ## ILLUMINATION CORRECTION FUNCTION
 #################################################
 
-class IlluminationCorrection():
 
-    ROBUST_FACTOR = .02  # For rescaling, take 2nd percentile value
-
-    def __init__(self, stats, channels, targetDim):
+class IlluminationCorrection(object):
+    def __init__(self, stats, channels, target_dim):
         self.stats = stats
         self.channels = channels
-        self.targetDim = (targetDim[0], targetDim[1])
+        self.target_dim = (target_dim[0], target_dim[1])
+        self.illum_corr_func = np.zeros((self.target_dim[0], self.target_dim[1], len(self.channels)))
 
-    # Based on the CellProfiler implementation of Illumination Correction
-    # CellProfiler/cellprofiler/modules/correctilluminationcalculate.py
-    def channelFunction(self, meanChannel, diskSize):
+    # Based on Sing et al. 2014 paper
+    def channel_function(self, mean_channel, disk_size):
         #TODO: get np.type from other source or parameterize or compute :/
         # We currently assume 16 bit images
-        operator = skimage.morphology.disk(diskSize)
-        filteredChannel = skimage.filters.median(meanChannel.astype(np.uint16), operator)
-        filteredChannel = skimage.transform.resize(filteredChannel, self.targetDim)
-        sortedPixels = filteredChannel[filteredChannel > 0]
-        sortedPixels.sort()
-        idx = int(sortedPixels.shape[0] * self.ROBUST_FACTOR)
-        robustMinimum = sortedPixels[idx]
-        filteredChannel[filteredChannel < robustMinimum] = robustMinimum
-        illumCorrFunc = filteredChannel / robustMinimum
-        return illumCorrFunc
+        operator = skimage.morphology.disk(disk_size)
+        filtered_channel = skimage.filters.median(mean_channel.astype(np.uint16), operator)
+        filtered_channel = skimage.transform.resize(filtered_channel, self.target_dim, preserve_range=True)
+        robust_minimum = scipy.stats.scoreatpercentile(filtered_channel, 2)
+        filtered_channel = np.maximum(filtered_channel, robust_minimum)
+        illum_corr_func = filtered_channel / robust_minimum
+        return illum_corr_func
 
-    def computeAll(self, medianFilterSize):
-        diskSize = medianFilterSize/2 # From diameter to radius
-        illumCorrFunc = np.zeros( (self.targetDim[0], self.targetDim[1], len(self.channels)) )
+    def compute_all(self, median_filter_size):
+        disk_size = median_filter_size / 2  # From diameter to radius
         for ch in range(len(self.channels)):
-            illumCorrFunc[:,:,ch] = self.channelFunction(self.stats["mean_image"][:,:,ch], diskSize)
-        self.illumCorrFunc = illumCorrFunc
-        return
+            self.illum_corr_func[:, :, ch] = self.channel_function(self.stats["mean_image"][:, :, ch], disk_size)
 
+    # TODO: Is image a uint16 or float32/64? What is its data type?
+    # TODO: Update the test as appropriate.
+    # Not being used? Not needed?
     def apply(self, image):
-        return image / self.illumCorrFunc
-
+        return image / self.illum_corr_func
