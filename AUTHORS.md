@@ -1,11 +1,8 @@
-DeepProfiler is being developed by:
+Contributors
+---
 
-Juan Caicedo @jccaicedo
-
-Claire McQuin @mcquin
-
-Shantanu Sing @shntnu
-
-Santiago Benoit @santiagobenoit
-
-Peter Goldsborough @goldsborough
+Juan Caicedo @jccaicedo <br>
+Claire McQuin @mcquin <br>
+Shantanu Sing @shntnu <br>
+Santiago Benoit @santiagobenoit <br>
+Peter Goldsborough @goldsborough <br>
