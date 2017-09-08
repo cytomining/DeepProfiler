@@ -17,4 +17,7 @@ setuptools.setup(
         "Topic :: Utilities",
         "License :: OSI Approved :: BSD License",
     ],
+    install_requires=["scikit-image"],
+    setup_requires=["pytest-runner"],
+    tests_requires=["pytest"]
 )

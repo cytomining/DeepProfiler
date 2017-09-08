@@ -6,6 +6,7 @@ import click
 import dataset.image_dataset
 import learning.training
 import learning.validation
+import learning.profiling
 
 # Main interaction point
 @click.group()
@@ -35,6 +36,21 @@ def training(context, epoch):
 def validation(context, model):
     metadata = dataset.image_dataset.read_dataset(context.obj["config"])
     learning.validation.validate(context.obj["config"], metadata, model)
+
+# Profile cells and extract features
+@cli.command()
+@click.pass_context
+@click.option("--part",
+              help="Part of index to process", 
+              default=-1, 
+              type=click.INT)
+def profiling(context, part):
+    config = context.obj["config"]
+    if part >= 0:
+        partfile = "index-{0:03d}.csv".format(part)
+        config["image_set"]["index"] = os.path.join(config["image_set"]["metadata"], partfile)
+    metadata = dataset.image_dataset.read_dataset(context.obj["config"])
+    learning.profiling.profile(context.obj["config"], metadata)
 
 
 if __name__ == "__main__":

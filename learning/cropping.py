@@ -16,12 +16,18 @@ def getLocations(image_key, config, randomize=True):
         keys[1], 
         config["sampling"]["locations_field"]
     )
-    locations = pd.read_csv(os.path.join(config["image_set"]["path"], locations_file))
-    random_sample = config["sampling"]["locations"]
-    if randomize and random_sample is not None and random_sample < len(locations):
-        return locations.sample(random_sample)
+    locations_path = os.path.join(config["image_set"]["path"], locations_file)
+    if os.path.exists(locations_path):
+        locations = pd.read_csv(locations_path)
+        random_sample = config["sampling"]["locations"]
+        if randomize and random_sample is not None and random_sample < len(locations):
+            return locations.sample(random_sample)
+        else:
+            return locations
     else:
-        return locations
+        y_key = config["sampling"]["locations_field"] + "_Location_Center_Y"
+        x_key = config["sampling"]["locations_field"] + "_Location_Center_X"
+        return pd.DataFrame(columns=[x_key, y_key])
 
 
 def prepareBoxes(batch, config):
