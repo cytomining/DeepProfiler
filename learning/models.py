@@ -36,13 +36,14 @@ def vgg_module(x, filters, sizes, layers, scope_name, is_training=True):
 def create_vgg(images, num_classes, is_training=True):
     # Assumes input of 128x128, produces 4096 features 
     with tf.variable_scope("convnet"):
-        net = vgg_module(images, 32, [3, 3], 2, "scale1", is_training=is_training)
-        net = vgg_module(net, 32, [3, 3], 2, "scale2", is_training=is_training)
-        net = vgg_module(net, 64, [3, 3], 2, "scale3", is_training=is_training)
-        net = vgg_module(net, 128, [3, 3], 2, "scale4", is_training=is_training)
-        net = vgg_module(net, 256, [3, 3], 2, "scale5", is_training=is_training)
-        net = slim.conv2d(net, 64, [1, 1], scope="fmap")
-        net = slim.flatten(net, scope="features")
+        net = vgg_module(images, 32, [3, 3], 2, "scale1")  # 128x128x5
+        net = vgg_module(net, 64, [3, 3], 2, "scale2")     # 64x64x32
+        net = vgg_module(net, 128, [3, 3], 2, "scale3")    # 32x32x64
+        net = vgg_module(net, 256, [3, 3], 2, "scale4")    # 16x16x128
+        net = vgg_module(net, 256, [3, 3], 2, "scale5")    # 8x8x256
+        net = slim.conv2d(net, 128, [3, 3], scope="fmap1") # 4x4x256
+        net = slim.conv2d(net, 64, [1, 1], scope="fmap2")  # 4x4x128
+        net = slim.flatten(net, scope="features")          # 4x4x64
         net = slim.fully_connected(net, num_classes, scope="logits")
     #x = keras.layers.Input(shape)
     return net
