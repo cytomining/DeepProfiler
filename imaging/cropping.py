@@ -142,8 +142,8 @@ class CropGenerator(object):
                             self.input_variables["mask_ind_ph"]:masks
                     })
                 except:
-                    import traceback
-                    traceback.print_exc()
+                    #import traceback
+                    #traceback.print_exc()
                     print(".", end="", flush=True)
                     return
 
@@ -209,6 +209,6 @@ class CropGenerator(object):
     def stop(self, session):
         self.coord.request_stop()
         session.run(self.input_variables["queue"].close(cancel_pending_enqueues=True))
-        session.run(self.input_variables["queue"].close(cancel_pending_enqueues=True))
+        session.run(self.train_variables["queue"].close(cancel_pending_enqueues=True))
         self.coord.join(self.queue_threads)
 

@@ -6,6 +6,19 @@ import keras
 import learning.models
 import imaging.cropping
 
+
+def create_learning_rate_schedule(config):
+    def lrs(e):
+        new_lr = config["training"]["learning_rate"]
+        if    .0 <= e/100 < .30: new_lr /= 1.
+        elif .30 <= e/100 < .60: new_lr /= 10.
+        elif .60 <= e/100 < .80: new_lr /= 100.
+        elif .80 <= e/100     : new_lr /= 1000.
+        print("Learning rate:", new_lr)
+        return new_lr
+    return lrs
+
+
 #################################################
 ## MAIN TRAINING ROUTINE
 #################################################
@@ -32,17 +45,7 @@ def learn_model(config, dset, epoch):
     csv_output = config["training"]["output"] + "/log.csv"
     callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
 
-    epochs = 100
-
-    def lrs(e):
-        new_lr = config["training"]["learning_rate"]
-        if    .0 <= e/100 < .30: new_lr /= 1.
-        elif .30 <= e/100 < .60: new_lr /= 10.
-        elif .60 <= e/100 < .80: new_lr /= 100.
-        elif .80 <= e/100     : new_lr /= 1000.
-        print("Learning rate:", new_lr)
-        return new_lr
-         
+    lrs = create_learning_rate_schedule(config)
     lr_schedule = keras.callbacks.LearningRateScheduler(schedule=lrs)
     callbacks = [callback_model_checkpoint, callback_csv, lr_schedule]
 
@@ -56,21 +59,21 @@ def learn_model(config, dset, epoch):
     model.compile(optimizer, "categorical_crossentropy", ["accuracy"])
 
     previous_model = output_file.format(epoch=epoch-1)
-    if epoch > 1 and os.path.isfile(previous_model):
+    if epoch >= 1 and os.path.isfile(previous_model):
         model.load_weights(previous_model)
         print("Weights from previous model loaded", previous_model)
     else:
         print("Model does not exist:", previous_model)
 
-
-    steps = config["training"]["iterations"] / epochs
+    epochs = config["training"]["epochs"]
+    steps = config["training"]["steps"]
     model.fit_generator(
         generator=crop_generator.generate(session),
         steps_per_epoch=steps,
         epochs=epochs,
         callbacks=callbacks,
         verbose=1,
-        initial_epoch=epoch
+        initial_epoch=epoch-1
     )
 
     # Close session and stop threads
