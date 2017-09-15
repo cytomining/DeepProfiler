@@ -3,10 +3,11 @@ import threading
 import numpy as np
 import tensorflow as tf
 
-import images.boxes
+import imaging.boxes
+import imaging.augmentations
 import learning.models
 
-def crop(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False):
+def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False):
     with tf.variable_scope("cropping"):
         crop_size_ph = tf.constant([box_size, box_size], name="crop_size")
         crops = tf.image.crop_and_resize(image_ph, boxes_ph, box_ind_ph, crop_size_ph)
@@ -55,7 +56,7 @@ class CropGenerator(object):
 
         with tf.device("/cpu:0"):
             # Outputs and queue of the cropping graph
-            crop_op = crop(
+            crop_op = crop_graph(
                 image_ph,
                 boxes_ph,
                 box_ind_ph,
@@ -101,7 +102,7 @@ class CropGenerator(object):
             [tf.float32, tf.int32],
             shapes=self.input_variables["shapes"]["crops"]
         )
-        augmented_op = images.aumentations.aument_multiple(
+        augmented_op = imaging.augmentations.aument_multiple(
             self.input_variables["labeled_crops"][0],
             self.config["queueing"]["augmentation_workers"]
         )
@@ -130,9 +131,9 @@ class CropGenerator(object):
             while not coord.should_stop():
                 try:
                     # Load images and cell boxes
-                    batch = images.boxes.loadBatch(dset, self.config)
+                    batch = imaging.boxes.loadBatch(dset, self.config)
                     images = np.reshape(batch["images"], self.input_variables["shapes"]["batch"])
-                    boxes, box_ind, labels, masks = images.boxes.prepareBoxes(batch, self.config)
+                    boxes, box_ind, labels, masks = imaging.boxes.prepareBoxes(batch, self.config)
                     sess.run(self.input_variables["enqueue_op"], {
                             self.input_variables["image_ph"]:images,
                             self.input_variables["boxes_ph"]:boxes,
@@ -141,8 +142,8 @@ class CropGenerator(object):
                             self.input_variables["mask_ind_ph"]:masks
                     })
                 except:
-                    #import traceback
-                    #traceback.print_exc()
+                    import traceback
+                    traceback.print_exc()
                     print(".", end="", flush=True)
                     return
 

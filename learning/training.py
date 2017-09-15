@@ -4,7 +4,7 @@ import tensorflow as tf
 import keras
 
 import learning.models
-import images.cropping
+import imaging.cropping
 
 #################################################
 ## MAIN TRAINING ROUTINE
@@ -19,7 +19,7 @@ def learn_model(config, dset, epoch):
     session = tf.Session(config = configuration)
     keras.backend.set_session(session)
 
-    crop_generator = images.cropping.CropGenerator(config)
+    crop_generator = imaging.cropping.CropGenerator(config)
     crop_generator.start(dset, session)
 
     # keras-resnet model
