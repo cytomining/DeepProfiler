@@ -16,7 +16,7 @@ except:
     sys.exit()
 
 import learning.training
-import learning.cropping
+import images.boxes
 from dataset.utils import tic, toc
 
 
@@ -82,7 +82,7 @@ def profile(config, dset):
         # Prepare image and crop locations
         batch_size = config["training"]["minibatch"]
         image_key, image_names = dset.getImagePaths(meta)
-        locations = [ learning.cropping.getLocations(image_key, config, randomize=False) ]
+        locations = [ images.boxes.getLocations(image_key, config, randomize=False) ]
         if len(locations[0]) == 0:
             print("Empty locations set:", str(key))
             return
@@ -94,7 +94,7 @@ def profile(config, dset):
 
         # Prepare boxes, indices, labels and push the image to the queue
         labels_data = [ meta[config["training"]["label_field"]] ]
-        boxes, box_ind, labels_data = learning.cropping.prepareBoxes(locations, labels_data, config)
+        boxes, box_ind, labels_data = images.boxes.prepareBoxes(locations, labels_data, config)
         images_data = np.reshape(image_array, input_vars["shapes"]["batch"])
 
         sess.run(input_vars["enqueue_op"], {
