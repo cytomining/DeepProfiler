@@ -220,12 +220,14 @@ def learn_model(config, dset, epoch):
     csv_output = config["training"]["output"] + "/log.csv"
     callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
 
+    epochs = 100
+
     def lrs(e):
         new_lr = config["training"]["learning_rate"]
-        if    0 <= e < 30: new_lr /= 1.
-        elif 30 <= e < 60: new_lr /= 10.
-        elif 60 <= e < 80: new_lr /= 100.
-        elif 80 <= e     : new_lr /= 1000.
+        if    .0 <= e/100 < .30: new_lr /= 1.
+        elif .30 <= e/100 < .60: new_lr /= 10.
+        elif .60 <= e/100 < .80: new_lr /= 100.
+        elif .80 <= e/100     : new_lr /= 1000.
         print("Learning rate:", new_lr)
         return new_lr
          
@@ -249,7 +251,6 @@ def learn_model(config, dset, epoch):
         print("Model does not exist:", previous_model)
 
 
-    epochs = 100
     steps = config["training"]["iterations"] / epochs
     model.fit_generator(
         generator=batch_generator(session),

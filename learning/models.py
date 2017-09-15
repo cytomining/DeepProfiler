@@ -13,10 +13,10 @@ import keras
 
 def create_keras_resnet(input_shape, num_classes):
     x = keras.layers.Input(input_shape)
-    y = keras_resnet.models.ResNet50(x)
-    y = keras.layers.Flatten()(y.output)
-    y = keras.layers.Dense(num_classes, activation="softmax")(y)
-    model = keras.models.Model(x, y)
+    model = keras_resnet.models.ResNet50(x, classes=num_classes)
+    #y = keras.layers.Flatten()(y.output)
+    #y = keras.layers.Dense(num_classes, activation="softmax")(y)
+    #model = keras.models.Model(x, y)
     return model
 
 

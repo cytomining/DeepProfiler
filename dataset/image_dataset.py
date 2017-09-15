@@ -63,8 +63,8 @@ class ImageDataset():
             outlines += ro
         # 4. Open images
         batch = {'keys': keys, 'images': [], 'labels': labels}
-        for img in images:
-            image_array = dataset.pixels.openImage(img, self.pixelProcessor)
+        for i in range(len(images)):
+            image_array = dataset.pixels.openImage(images[i], outlines[i])
             # TODO: Implement pixel normalization using control statistics
             #image_array -= 128.0
             batch['images'].append(image_array)
