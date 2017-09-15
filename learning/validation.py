@@ -5,7 +5,7 @@ import os
 
 import dataset.utils
 import learning.models
-import learning.cropping
+import imaging.boxes
 import learning.training
 
 import keras
@@ -117,7 +117,7 @@ def validate(config, dset, checkpoint_file):
 
         batch = {"images":[], "locations":[], "labels":[]}
         batch["images"].append(image_array)
-        batch["locations"].append(learning.cropping.getLocations(image_key, config, randomize=False))
+        batch["locations"].append(imaging.boxes.getLocations(image_key, config, randomize=False))
         batch["labels"].append(meta[config["training"]["label_field"]])
 
         # Add trailing locations to fit the batch size
@@ -125,7 +125,7 @@ def validate(config, dset, checkpoint_file):
         padding = pd.DataFrame(columns=batch["locations"][0].columns, data=np.zeros(shape=(pads, 2), dtype=np.int32))
         batch["locations"][0] = pd.concat((batch["locations"][0], padding), ignore_index=True)
 
-        boxes, box_ind, labels_data, mask_ind = learning.cropping.prepareBoxes(batch, config)
+        boxes, box_ind, labels_data, mask_ind = imaging.boxes.prepareBoxes(batch, config)
         batch["images"] = np.reshape(image_array, input_vars["shapes"]["batch"])
 
         session.run(input_vars["enqueue_op"], {

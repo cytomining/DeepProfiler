@@ -1,9 +1,6 @@
-import tensorflow as tf
 import numpy as np
 import pandas as pd
 import os
-
-PI = 3.1415926539
 
 #################################################
 ## BOUNDING BOX HANDLING
@@ -12,8 +9,8 @@ PI = 3.1415926539
 def getLocations(image_key, config, randomize=True):
     keys = image_key.split("/")
     locations_file = "{}/locations/{}-{}.csv".format(
-        keys[0], 
-        keys[1], 
+        keys[0],
+        keys[1],
         config["sampling"]["locations_field"]
     )
     locations_path = os.path.join(config["image_set"]["path"], locations_file)
@@ -69,8 +66,8 @@ def prepareBoxes(batch, config):
         all_labels.append(labels)
         all_masks.append(masks)
         index += 1
-    result = (np.concatenate(all_boxes), 
-              np.concatenate(all_indices), 
+    result = (np.concatenate(all_boxes),
+              np.concatenate(all_indices),
               np.concatenate(all_labels),
               np.concatenate(all_masks)
              )
@@ -81,37 +78,3 @@ def loadBatch(dataset, config):
     batch = dataset.getTrainBatch(config["sampling"]["images"])
     batch["locations"] = [ getLocations(x, config) for x in batch["keys"] ]
     return batch
-
-
-#################################################
-## CROPPING AND TRANSFORMATION OPERATIONS
-#################################################
-
-def crop(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False):
-    with tf.variable_scope("cropping"):
-        crop_size_ph = tf.constant([box_size, box_size], name="crop_size")
-        crops = tf.image.crop_and_resize(image_ph, boxes_ph, box_ind_ph, crop_size_ph)
-        if mask_boxes:
-            mask_ind = tf.expand_dims(tf.expand_dims(mask_ind_ph, -1), -1)
-            mask_values = tf.ones_like(crops[:,:,:,-1], dtype=tf.float32) * tf.cast(mask_ind, dtype=tf.float32)
-            masks = tf.to_float( tf.equal(crops[:,:,:,-1], mask_values) )
-            crops = crops[:,:,:,0:-1] * tf.expand_dims(masks, -1)
-    return crops
-
-
-def augment(crop):
-    with tf.variable_scope("augmentation"):
-        augmented = tf.image.random_flip_left_right(crop)
-        #angle = tf.random_uniform([1], minval=0, maxval=3, dtype=tf.int32)
-        #augmented = tf.image.rot90(augmented, angle[0])
-        angle = tf.random_uniform([1], minval=0.0, maxval=2*PI, dtype=tf.float32)
-        augmented = tf.contrib.image.rotate(augmented, angle[0], interpolation="BILINEAR")
-        illum = tf.random_uniform([1], minval=-0.1, maxval=0.1, dtype=tf.float32)
-        augmented = augmented + illum
-    return augmented
-
-
-def aument_multiple(crops, parallel=10):
-    with tf.variable_scope("augmentation"):
-        return tf.map_fn(augment, crops, parallel_iterations=parallel)
-
