@@ -42,7 +42,8 @@ class CropGenerator(object):
         img_height = self.config["image_set"]["height"]
 
         # Data shapes
-        crop_shape = [(box_size, box_size, crop_channels), ()] # TODO: more blanks at the end?
+        num_targets = len(self.dset.targets)
+        crop_shape = [(box_size, box_size, crop_channels)] + [()]*num_targets
         imgs_shape = [None, img_height, img_width, img_channels]
         batch_shape = (-1, img_height, img_width, img_channels)
 
@@ -52,10 +53,10 @@ class CropGenerator(object):
         box_ind_ph = tf.placeholder(tf.int32, shape=[None], name="box_indicators")
         mask_ind_ph = tf.placeholder(tf.int32, shape=[None], name="mask_indicators")
         targets_phs = {}
-        for i in range(len(self.dset.targets)):
+        for i in range(num_targets):
             tname = "target_" + str(i)
             tgt = self.dset.targets[i]
-            targets_phs[tname] = tf.placeholder(tf.int32, shape=tname.shape, name=tname)
+            targets_phs[tname] = tf.placeholder(tf.int32, shape=[None], name=tname)
 
         with tf.device("/cpu:0"):
             # Outputs and queue of the cropping graph
@@ -72,7 +73,7 @@ class CropGenerator(object):
                 [tf.float32] + [tf.int32] * len(targets_phs),
                 shapes=crop_shape
             )
-            daug_enqueue_op = daug_queue.enqueue_many([crop_op] + targets_phs)
+            daug_enqueue_op = daug_queue.enqueue_many([crop_op] + [targets_phs[t] for t in targets_phs.keys()])
             labeled_crops = daug_queue.dequeue_many(self.config["training"]["minibatch"])
 
         self.input_variables = {
@@ -148,7 +149,7 @@ class CropGenerator(object):
                             self.input_variables["mask_ind_ph"]:masks
                     }
                     for i in range(len(targets)):
-                        feed_dict["target_" + str(i)] = targets[i]
+                        feed_dict[self.input_variables["targets_phs"]["target_" + str(i)]] = targets[i]
                     sess.run(self.input_variables["enqueue_op"], feed_dict)
                 except:
                     #import traceback
@@ -175,7 +176,6 @@ class CropGenerator(object):
     def start(self, session):
         # Define input data batches
         with tf.variable_scope("train_inputs"):
-            num_classes = self.dset.numberOfClasses()
             self.build_input_graph()
             self.build_augmentation_graph()
             targets = [self.train_variables[t] for t in self.train_variables.keys() if t.startswith("target_")]
@@ -219,7 +219,7 @@ class CropGenerator(object):
             if global_step % 10 == 0:
                 self.summary_writer.add_summary(ms, global_step)
 
-            yield data[0:-1]
+            yield (data[0], data[1:-1])
 
     def stop(self, session):
         self.coord.request_stop()

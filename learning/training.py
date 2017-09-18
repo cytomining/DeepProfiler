@@ -32,8 +32,8 @@ def learn_model(config, dset, epoch):
     session = tf.Session(config = configuration)
     keras.backend.set_session(session)
 
-    crop_generator = imaging.cropping.CropGenerator(config)
-    crop_generator.start(dset, session)
+    crop_generator = imaging.cropping.CropGenerator(config, dset)
+    crop_generator.start(session)
 
     # keras-resnet model
     output_file = config["training"]["output"] + "/checkpoint_{epoch:04d}.hdf5"
@@ -54,9 +54,7 @@ def learn_model(config, dset, epoch):
         config["sampling"]["box_size"],      # width
         len(config["image_set"]["channels"]) # channels
     )
-    model = learning.models.create_keras_resnet(input_shape, dset.numberOfClasses())
-    optimizer = keras.optimizers.Adam(lr=config["training"]["learning_rate"])
-    model.compile(optimizer, "categorical_crossentropy", ["accuracy"])
+    model = learning.models.create_keras_resnet(input_shape, dset.targets, config["training"]["learning_rate"])
 
     previous_model = output_file.format(epoch=epoch-1)
     if epoch >= 1 and os.path.isfile(previous_model):

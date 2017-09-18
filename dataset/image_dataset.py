@@ -15,7 +15,7 @@ class ImageDataset():
         self.root = dataRoot      # Path to the directory of images
         self.keyGen = keyGen      # Function that returns the image key given its record in the metadata
         self.sampling_field = sampling_field # Field in the metadata used to sample images evenly
-        self.sampling_values = metadata[sampling_field].unique()
+        self.sampling_values = metadata.data[sampling_field].unique()
         self.targets = []
         self.outlines = None
 
@@ -131,7 +131,7 @@ def read_dataset(config):
     keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     dset = ImageDataset(
         metadata,
-        config["training"]["label_field"],
+        config["sampling"]["field"],
         config["image_set"]["channels"],
         config["image_set"]["path"],
         keyGen
@@ -139,7 +139,7 @@ def read_dataset(config):
 
     # Add training targets
     for t in config["training"]["targets"]:
-        new_target = dataset.target.MetadataColumnTarget(t, metadata[t].unique())
+        new_target = dataset.target.MetadataColumnTarget(t, metadata.data[t].unique())
         dset.add_target(new_target)
 
     # Activate outlines for masking if needed
