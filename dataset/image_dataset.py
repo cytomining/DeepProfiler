@@ -4,17 +4,19 @@ import pandas as pd
 import dataset.pixels
 import dataset.utils
 import dataset.metadata
+import dataset.target
 
 
 class ImageDataset():
 
-    def __init__(self, metadata, category, channels, dataRoot, keyGen):
+    def __init__(self, metadata, sampling_field, channels, dataRoot, keyGen):
         self.meta = metadata      # Metadata object with a valid dataframe
-        self.category = category  # Column in the metadata that has category labels
         self.channels = channels  # List of column names corresponding to each channel file
         self.root = dataRoot      # Path to the directory of images
         self.keyGen = keyGen      # Function that returns the image key given its record in the metadata
-        self.labels = self.meta.data[self.category].unique()
+        self.sampling_field = sampling_field # Field in the metadata used to sample images evenly
+        self.sampling_values = metadata[sampling_field].unique()
+        self.targets = []
         self.outlines = None
 
     def getImagePaths(self, r):
@@ -25,50 +27,54 @@ class ImageDataset():
             outlines = self.outlines + r["Outlines"]
         return (key, image, outlines)
 
-    def sampleImages(self, categ, nImgCat):
+    def sampleImages(self, sampling_values, nImgCat):
         keys = []
         images = []
-        labels = []
+        targets = []
         outlines = []
-        for c in categ:
-            mask = self.meta.train[self.category] == c
+        for c in sampling_values:
+            mask = self.meta.train[self.sampling_field] == c
             rec = self.meta.train[mask].sample(n=nImgCat, replace=True)
             for i, r in rec.iterrows():
                 key, image, outl = self.getImagePaths(r)
                 keys.append(key)
                 images.append(image)
-                labels.append(c)
+                targets.append([t.get_values(r) for t in self.targets])
                 outlines.append(outl)
-        return keys, images, labels, outlines
+        return keys, images, targets, outlines
 
     def getTrainBatch(self, N):
         #s = dataset.utils.tic()
         # Batch size is N
-        categ = self.labels.copy()
+        values = self.sampling_values.copy()
         # 1. Sample categories
-        if len(categ) > N:
-            np.random.shuffle(categ)
-            categ = categ[0:N]
+        if len(values) > N:
+            np.random.shuffle(values)
+            values = values[0:N]
+
         # 2. Define images per category
-        nImgCat = int(N / len(categ))
-        residual = N % len(categ)
+        nImgCat = int(N / len(values))
+        residual = N % len(values)
+
         # 3. Select images per category
-        keys, images, labels, outlines = self.sampleImages(categ, nImgCat)
+        keys, images, targets, outlines = self.sampleImages(values, nImgCat)
         if residual > 0:
-            np.random.shuffle(categ)
-            rk, ri, rl, ro = self.sampleImages(categ[0:residual], 1)
+            np.random.shuffle(values)
+            rk, ri, rl, ro = self.sampleImages(values[0:residual], 1)
             keys += rk
             images += ri
-            labels += rl
+            targets += rl
             outlines += ro
+
         # 4. Open images
-        batch = {'keys': keys, 'images': [], 'labels': labels}
+        batch = {'keys': keys, 'images': [], 'targets': targets}
         for i in range(len(images)):
             image_array = dataset.pixels.openImage(images[i], outlines[i])
             # TODO: Implement pixel normalization using control statistics
             #image_array -= 128.0
             batch['images'].append(image_array)
         #dataset.utils.toc('Loading batch', s)
+
         return batch
 
     def scan(self, f, frame='train', check=lambda k: True):
@@ -89,7 +95,7 @@ class ImageDataset():
                 f(index, image, meta)
         return
 
-    def numberOfRecords(self, dataset):
+    def number_of_records(self, dataset):
         if dataset == 'all':
             return len(self.meta.data)
         elif dataset == 'val':
@@ -99,8 +105,8 @@ class ImageDataset():
         else:
             return 0
 
-    def numberOfClasses(self):
-        return len(self.labels)
+    def add_target(self, new_target):
+        self.targets.append(new_target)
 
 def read_dataset(config):
     # Read metadata and split dataset in training and validation
@@ -130,6 +136,13 @@ def read_dataset(config):
         config["image_set"]["path"],
         keyGen
     )
+
+    # Add training targets
+    for t in config["training"]["targets"]:
+        new_target = dataset.target.MetadataColumnTarget(t, metadata[t].unique())
+        dset.add_target(new_target)
+
+    # Activate outlines for masking if needed
     if config["image_set"]["mask_objects"]:
         dset.outlines = outlines
 

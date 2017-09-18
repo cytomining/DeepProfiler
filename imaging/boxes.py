@@ -29,11 +29,11 @@ def getLocations(image_key, config, randomize=True):
 
 def prepareBoxes(batch, config):
     locationsBatch = batch["locations"]
-    imageLabels = batch["labels"]
+    image_targets = batch["targets"]
     images = batch["images"]
     all_boxes = []
     all_indices = []
-    all_labels = []
+    all_targets = [[] for i in range(len(image_targets[0]))]
     all_masks = []
     index = 0
     y_key = config["sampling"]["locations_field"] + "_Location_Center_Y"
@@ -50,7 +50,8 @@ def prepareBoxes(batch, config):
         # Create indicators for this set of boxes, belonging to the same image
         box_ind = index * np.ones((len(locations)), np.int32)
         # Propage the same label to all crops
-        labels = imageLabels[index] * np.ones((len(locations)), np.int32)
+        for i in range(len(image_targets[index])):
+            all_targets[i].append(image_targets[index][i] * np.ones((len(locations)), np.int32))
         # Identify object mask for each crop
         masks = np.zeros(len(locations), np.int32)
         if config["image_set"]["mask_objects"]:
@@ -63,12 +64,12 @@ def prepareBoxes(batch, config):
         # Pile up the resulting variables
         all_boxes.append(boxes)
         all_indices.append(box_ind)
-        all_labels.append(labels)
         all_masks.append(masks)
         index += 1
+
     result = (np.concatenate(all_boxes),
               np.concatenate(all_indices),
-              np.concatenate(all_labels),
+              [np.concatenate(t) for t in all_targets],
               np.concatenate(all_masks)
              )
     return result

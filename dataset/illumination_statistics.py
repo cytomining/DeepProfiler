@@ -128,7 +128,7 @@ def calculate_statistics(args):
         name=plateName
     )
 
-    hist.expected = dset.numberOfRecords("all")
+    hist.expected = dset.number_of_records("all")
 
     # Run the intensity computation
     dset.scan(hist.processImage, frame="all")

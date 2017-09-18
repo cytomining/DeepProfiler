@@ -10,10 +10,11 @@ import imaging.cropping
 def create_learning_rate_schedule(config):
     def lrs(e):
         new_lr = config["training"]["learning_rate"]
-        if    .0 <= e/100 < .30: new_lr /= 1.
-        elif .30 <= e/100 < .60: new_lr /= 10.
-        elif .60 <= e/100 < .80: new_lr /= 100.
-        elif .80 <= e/100     : new_lr /= 1000.
+        epochs = config["training"]["epochs"]
+        if    .0 <= e/epochs < .30: new_lr /= 1.
+        elif .30 <= e/epochs < .60: new_lr /= 10.
+        elif .60 <= e/epochs < .80: new_lr /= 100.
+        elif .80 <= e/epochs      : new_lr /= 1000.
         print("Learning rate:", new_lr)
         return new_lr
     return lrs
@@ -27,7 +28,6 @@ def learn_model(config, dset, epoch):
 
     # Start session
     configuration = tf.ConfigProto()
-    #configuration.gpu_options.allow_growth = True
     configuration.gpu_options.visible_device_list = "0"
     session = tf.Session(config = configuration)
     keras.backend.set_session(session)

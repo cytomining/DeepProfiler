@@ -124,7 +124,7 @@ def compress_plate(args):
     compress.set_scaling_factor(config["compression"]["scaling_factor"])
     compress.recompute_percentile(0.0001, side="lower_percentile")
     compress.recompute_percentile(0.9999, side="upper_percentile")
-    compress.expected = dset.numberOfRecords("all")
+    compress.expected = dset.number_of_records("all")
 
     # Setup control samples filter (for computing control illumination statistics)
     filter_func = lambda x: x[config["metadata"]["control_field"]] == config["metadata"]["control_value"]

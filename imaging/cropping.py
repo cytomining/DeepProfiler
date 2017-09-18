@@ -5,7 +5,6 @@ import tensorflow as tf
 
 import imaging.boxes
 import imaging.augmentations
-import learning.models
 
 def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False):
     with tf.variable_scope("cropping"):
@@ -20,9 +19,9 @@ def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes
 
 class CropGenerator(object):
 
-    def __init__(self, config):
+    def __init__(self, config, dset):
         self.config = config
-        self.label_sources = []
+        self.dset = dset
 
     #################################################
     ## INPUT GRAPH DEFINITION
@@ -51,8 +50,12 @@ class CropGenerator(object):
         image_ph = tf.placeholder(tf.float32, shape=imgs_shape, name="raw_images")
         boxes_ph = tf.placeholder(tf.float32, shape=[None, 4], name="cell_boxes")
         box_ind_ph = tf.placeholder(tf.int32, shape=[None], name="box_indicators")
-        labels_ph = tf.placeholder(tf.int32, shape=[None], name="image_labels")
         mask_ind_ph = tf.placeholder(tf.int32, shape=[None], name="mask_indicators")
+        targets_phs = {}
+        for i in range(len(self.dset.targets)):
+            tname = "target_" + str(i)
+            tgt = self.dset.targets[i]
+            targets_phs[tname] = tf.placeholder(tf.int32, shape=tname.shape, name=tname)
 
         with tf.device("/cpu:0"):
             # Outputs and queue of the cropping graph
@@ -69,15 +72,14 @@ class CropGenerator(object):
                 [tf.float32, tf.int32],
                 shapes=crop_shape
             )
-            daug_enqueue_op = daug_queue.enqueue_many([crop_op, labels_ph])
+            daug_enqueue_op = daug_queue.enqueue_many([crop_op] + targets_phs)
             labeled_crops = daug_queue.dequeue_many(self.config["training"]["minibatch"])
-
 
         self.input_variables = {
             "image_ph":image_ph,
             "boxes_ph":boxes_ph,
             "box_ind_ph":box_ind_ph,
-            "labels_ph":labels_ph,
+            "targets_phs":targets_phs,
             "mask_ind_ph":mask_ind_ph,
             "labeled_crops":labeled_crops,
             "shapes": {
@@ -93,7 +95,7 @@ class CropGenerator(object):
     ## AUGMENTATION GRAPH DEFINITION
     #################################################
 
-    def build_augmentation_graph(self, num_classes):
+    def build_augmentation_graph(self):
 
         # Outputs and queue of the data augmentation graph
         train_queue = tf.RandomShuffleQueue(
@@ -114,16 +116,20 @@ class CropGenerator(object):
 
         self.train_variables = {
             "image_batch":train_inputs[0],
-            "label_batch":tf.one_hot(train_inputs[1], num_classes),
             "queue":train_queue,
             "enqueue_op":train_enqueue_op
         }
+
+        for i in range(len(self.dset.targets)):
+            tname = "target_" + str(i)
+            tgt = self.dset.targets[i]
+            self.train_variables[tname] = tf.one_hot(train_inputs[i+1], tgt.shape[1])
 
     #################################################
     ## START TRAINING QUEUES
     #################################################
 
-    def training_queues(self, sess, dset):
+    def training_queues(self, sess):
         coord = tf.train.Coordinator()
 
         # Enqueueing threads for raw images
@@ -131,16 +137,18 @@ class CropGenerator(object):
             while not coord.should_stop():
                 try:
                     # Load images and cell boxes
-                    batch = imaging.boxes.loadBatch(dset, self.config)
+                    batch = imaging.boxes.loadBatch(self.dset, self.config)
                     images = np.reshape(batch["images"], self.input_variables["shapes"]["batch"])
-                    boxes, box_ind, labels, masks = imaging.boxes.prepareBoxes(batch, self.config)
-                    sess.run(self.input_variables["enqueue_op"], {
+                    boxes, box_ind, targets, masks = imaging.boxes.prepareBoxes(batch, self.config)
+                    feed_dict = {
                             self.input_variables["image_ph"]:images,
                             self.input_variables["boxes_ph"]:boxes,
                             self.input_variables["box_ind_ph"]:box_ind,
-                            self.input_variables["labels_ph"]:labels,
                             self.input_variables["mask_ind_ph"]:masks
-                    })
+                    }
+                    for i in range(len(targets)):
+                        feed_dict["target_" + str(i)] = targets[i]
+                    sess.run(self.input_variables["enqueue_op"], feed_dict)
                 except:
                     #import traceback
                     #traceback.print_exc()
@@ -163,12 +171,12 @@ class CropGenerator(object):
 
         return coord, load_threads + enqueue_threads
 
-    def start(self, dset, session):
+    def start(self, session):
         # Define input data batches
         with tf.variable_scope("train_inputs"):
-            num_classes = dset.numberOfClasses()
+            num_classes = self.dset.numberOfClasses()
             self.build_input_graph()
-            self.build_augmentation_graph(num_classes)
+            self.build_augmentation_graph()
             self.image_batch, self.label_batch = tf.train.shuffle_batch(
                 [self.train_variables["image_batch"], self.train_variables["label_batch"]],
                 batch_size=self.config["training"]["minibatch"],
@@ -192,7 +200,7 @@ class CropGenerator(object):
         '''
 
         # Start data threads
-        self.coord, self.queue_threads = self.training_queues(session, dset)
+        self.coord, self.queue_threads = self.training_queues(session)
         tf.train.start_queue_runners(coord=self.coord, sess=session)
 
     def generate(self, sess, global_step=0):
