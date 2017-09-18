@@ -42,7 +42,7 @@ class CropGenerator(object):
         img_height = self.config["image_set"]["height"]
 
         # Data shapes
-        crop_shape = [(box_size, box_size, crop_channels), ()]
+        crop_shape = [(box_size, box_size, crop_channels), ()] # TODO: more blanks at the end?
         imgs_shape = [None, img_height, img_width, img_channels]
         batch_shape = (-1, img_height, img_width, img_channels)
 
@@ -69,7 +69,7 @@ class CropGenerator(object):
             )
             daug_queue = tf.FIFOQueue(
                 self.config["queueing"]["fifo_queue_size"],
-                [tf.float32, tf.int32],
+                [tf.float32] + [tf.int32] * len(targets_phs),
                 shapes=crop_shape
             )
             daug_enqueue_op = daug_queue.enqueue_many([crop_op] + targets_phs)
@@ -96,22 +96,23 @@ class CropGenerator(object):
     #################################################
 
     def build_augmentation_graph(self):
+        num_targets = len(self.dset.targets)
 
         # Outputs and queue of the data augmentation graph
         train_queue = tf.RandomShuffleQueue(
             self.config["queueing"]["random_queue_size"],
             self.config["queueing"]["min_size"],
-            [tf.float32, tf.int32],
+            [tf.float32] + [tf.int32] * num_targets,
             shapes=self.input_variables["shapes"]["crops"]
         )
         augmented_op = imaging.augmentations.aument_multiple(
             self.input_variables["labeled_crops"][0],
             self.config["queueing"]["augmentation_workers"]
         )
-        train_enqueue_op = train_queue.enqueue_many([
-            augmented_op,
-            self.input_variables["labeled_crops"][1]
-        ])
+        train_enqueue_op = train_queue.enqueue_many(
+            [augmented_op] +
+            self.input_variables["labeled_crops"][1:]
+        )
         train_inputs = train_queue.dequeue() #_many(config["training"]["minibatch"])
 
         self.train_variables = {
@@ -120,7 +121,7 @@ class CropGenerator(object):
             "enqueue_op":train_enqueue_op
         }
 
-        for i in range(len(self.dset.targets)):
+        for i in range(num_targets):
             tname = "target_" + str(i)
             tgt = self.dset.targets[i]
             self.train_variables[tname] = tf.one_hot(train_inputs[i+1], tgt.shape[1])
@@ -177,13 +178,17 @@ class CropGenerator(object):
             num_classes = self.dset.numberOfClasses()
             self.build_input_graph()
             self.build_augmentation_graph()
-            self.image_batch, self.label_batch = tf.train.shuffle_batch(
-                [self.train_variables["image_batch"], self.train_variables["label_batch"]],
+            targets = [self.train_variables[t] for t in self.train_variables.keys() if t.startswith("target_")]
+            batch = tf.train.shuffle_batch(
+                [self.train_variables["image_batch"]] + targets,
                 batch_size=self.config["training"]["minibatch"],
                 num_threads=self.config["queueing"]["augmentation_workers"],
                 capacity=self.config["queueing"]["random_queue_size"],
                 min_after_dequeue=self.config["queueing"]["min_size"]
             )
+            self.image_batch = batch[0]
+            self.target_batch = batch[1:]
+
             for i in range(len(self.config["image_set"]["channels"])):
                 tf.summary.image("channel-" + str(i + 1),
                                  tf.expand_dims(self.image_batch[:, :, :, i], -1),
@@ -207,12 +212,14 @@ class CropGenerator(object):
         while True:
             if self.coord.should_stop():
                 break
-            im, lb, ms = sess.run([self.image_batch, self.label_batch, self.merged_summary])
+            data = sess.run([self.image_batch] + self.target_batch + [self.merged_summary])
+            # Indices of data => [0] images, [1:-1] targets, [-1] summary
+            ms = data[-1]
             global_step += 1
             if global_step % 10 == 0:
                 self.summary_writer.add_summary(ms, global_step)
 
-            yield (im, lb)
+            yield data[0:-1]
 
     def stop(self, session):
         self.coord.request_stop()
