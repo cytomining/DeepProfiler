@@ -249,7 +249,7 @@ class CropGenerator(object):
 class SingleImageCropGenerator(CropGenerator):
 
     def __init__(self, config, dset):
-        super.__init__(config, dset)
+        super().__init__(config, dset)
 
 
     def start(self, session):
@@ -260,7 +260,7 @@ class SingleImageCropGenerator(CropGenerator):
 
     def prepare_image(self, session, image_array, meta):
         num_targets = len(self.dset.targets)
-        batch_size = self.config["training"]["minibatch"]
+        self.batch_size = self.config["training"]["minibatch"]
         image_key, image_names, outlines = self.dset.getImagePaths(meta)
 
         batch = {"images": [], "locations": [], "targets": [[]]}
@@ -271,7 +271,7 @@ class SingleImageCropGenerator(CropGenerator):
             batch["targets"][0].append(meta[tgt.field_name])
 
         # Add trailing locations to fit the batch size
-        pads = batch_size - len(batch["locations"][0]) % batch_size
+        pads = self.batch_size - len(batch["locations"][0]) % self.batch_size
         padding = pd.DataFrame(columns=batch["locations"][0].columns, data=np.zeros(shape=(pads, 2), dtype=np.int32))
         batch["locations"][0] = pd.concat((batch["locations"][0], padding), ignore_index=True)
 
@@ -299,3 +299,4 @@ class SingleImageCropGenerator(CropGenerator):
         while items >= self.batch_size:
             batch = session.run(self.input_variables["labeled_crops"])
             yield batch
+            items = session.run(self.input_variables["queue"].size())
