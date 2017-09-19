@@ -1,4 +1,5 @@
 import threading
+import pandas as pd
 
 import numpy as np
 import tensorflow as tf
@@ -149,7 +150,9 @@ class CropGenerator(object):
                             self.input_variables["mask_ind_ph"]:masks
                     }
                     for i in range(len(targets)):
-                        feed_dict[self.input_variables["targets_phs"]["target_" + str(i)]] = targets[i]
+                        tname = "target_" + str(i)
+                        feed_dict[self.input_variables["targets_phs"][tname]] = targets[i]
+
                     sess.run(self.input_variables["enqueue_op"], feed_dict)
                 except:
                     #import traceback
@@ -227,3 +230,72 @@ class CropGenerator(object):
         session.run(self.train_variables["queue"].close(cancel_pending_enqueues=True))
         self.coord.join(self.queue_threads)
 
+
+#######################################################
+## SUB CLASS TO GENERATE ALL CROPS IN A SINGLE IMAGE
+#######################################################
+# Useful for validation, predictions and profiling.
+# Important differences to the above class:
+# * No randomization is performed for crop generation
+# * A batch of crops is padded with zeros at the end
+#   for avoiding mixing of crops from different images.
+# * Only one queue is used for loading a single image
+#   and creating all crops in that image
+# * No need to stop threads.
+# * The generate method yields crops for a single image
+# * The generator needs to be restarted for each image.
+#########################################################
+
+class SingleImageCropGenerator(CropGenerator):
+
+    def __init__(self, config, dset):
+        super.__init__(config, dset)
+
+
+    def start(self, session):
+        # Define input data batches
+        with tf.variable_scope("train_inputs"):
+            self.build_input_graph()
+
+
+    def prepare_image(self, session, image_array, meta):
+        num_targets = len(self.dset.targets)
+        batch_size = self.config["training"]["minibatch"]
+        image_key, image_names, outlines = self.dset.getImagePaths(meta)
+
+        batch = {"images": [], "locations": [], "targets": [[]]}
+        batch["images"].append(image_array)
+        batch["locations"].append(imaging.boxes.getLocations(image_key, self.config, randomize=False))
+        for i in range(num_targets):
+            tgt = self.dset.targets[i]
+            batch["targets"][0].append(meta[tgt.field_name])
+
+        # Add trailing locations to fit the batch size
+        pads = batch_size - len(batch["locations"][0]) % batch_size
+        padding = pd.DataFrame(columns=batch["locations"][0].columns, data=np.zeros(shape=(pads, 2), dtype=np.int32))
+        batch["locations"][0] = pd.concat((batch["locations"][0], padding), ignore_index=True)
+
+        boxes, box_ind, targets, mask_ind = imaging.boxes.prepareBoxes(batch, self.config)
+        batch["images"] = np.reshape(image_array, self.input_variables["shapes"]["batch"])
+
+        feed_dict = {
+            self.input_variables["image_ph"]: batch["images"],
+            self.input_variables["boxes_ph"]: boxes,
+            self.input_variables["box_ind_ph"]: box_ind,
+            self.input_variables["mask_ind_ph"]: mask_ind
+        }
+        for i in range(num_targets):
+            tname = "target_" + str(i)
+            feed_dict[self.input_variables["targets_phs"][tname]] = targets[i]
+
+        session.run(self.input_variables["enqueue_op"], feed_dict)
+
+        total_crops = len(batch["locations"][0])
+        return total_crops, pads
+
+
+    def generate(self, session, global_step=0):
+        items = session.run(self.input_variables["queue"].size())
+        while items >= self.batch_size:
+            batch = session.run(self.input_variables["labeled_crops"])
+            yield batch

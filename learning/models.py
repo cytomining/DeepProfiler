@@ -18,7 +18,7 @@ def make_regularizer(transforms, reg_lambda):
     return loss
 
 
-def create_keras_resnet(input_shape, targets, learning_rate, embed_dims=1024, reg_lambda=10):
+def create_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=1024, reg_lambda=10):
     # 1. Create ResNet architecture to extract features
     input_image = keras.layers.Input(input_shape)
     model = keras_resnet.models.ResNet50(input_image, include_top=False)

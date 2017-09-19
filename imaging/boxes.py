@@ -49,7 +49,7 @@ def prepareBoxes(batch, config):
         boxes[:,[1,3]] /= config["image_set"]["width"]
         # Create indicators for this set of boxes, belonging to the same image
         box_ind = index * np.ones((len(locations)), np.int32)
-        # Propage the same label to all crops
+        # Propage the same labels to all crops
         for i in range(len(image_targets[index])):
             all_targets[i].append(image_targets[index][i] * np.ones((len(locations)), np.int32))
         # Identify object mask for each crop
