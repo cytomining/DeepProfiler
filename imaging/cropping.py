@@ -258,7 +258,7 @@ class SingleImageCropGenerator(CropGenerator):
             self.build_input_graph()
 
 
-    def prepare_image(self, session, image_array, meta):
+    def prepare_image(self, session, image_array, meta, sample_first_crops=False):
         num_targets = len(self.dset.targets)
         self.batch_size = self.config["training"]["minibatch"]
         image_key, image_names, outlines = self.dset.getImagePaths(meta)
@@ -270,10 +270,14 @@ class SingleImageCropGenerator(CropGenerator):
             tgt = self.dset.targets[i]
             batch["targets"][0].append(meta[tgt.field_name])
 
-        # Add trailing locations to fit the batch size
-        pads = self.batch_size - len(batch["locations"][0]) % self.batch_size
-        padding = pd.DataFrame(columns=batch["locations"][0].columns, data=np.zeros(shape=(pads, 2), dtype=np.int32))
-        batch["locations"][0] = pd.concat((batch["locations"][0], padding), ignore_index=True)
+        if (sample_first_crops and self.batch_size > len(batch["locations"][0])) or not sample_first_crops:
+            # Add trailing locations to fit the batch size
+            pads = self.batch_size - len(batch["locations"][0]) % self.batch_size
+            padding = pd.DataFrame(columns=batch["locations"][0].columns, data=np.zeros(shape=(pads, 2), dtype=np.int32))
+            batch["locations"][0] = pd.concat((batch["locations"][0], padding), ignore_index=True)
+        else:
+            batch["locations"][0] = batch["locations"][0].head(self.batch_size)
+            pads = 0
 
         boxes, box_ind, targets, mask_ind = imaging.boxes.prepareBoxes(batch, self.config)
         batch["images"] = np.reshape(image_array, self.input_variables["shapes"]["batch"])

@@ -16,7 +16,7 @@ class Validation(object):
         self.config = config
         self.dset = dset
         self.config["queueing"]["min_size"] = 0
-        self.save_features = config["validation"]["save_features"]
+        self.save_features = config["validation"]["save_features"] and config["validation"]["sample_first_crops"]
         self.metrics = []
 
 
@@ -47,10 +47,7 @@ class Validation(object):
         # Create feature extraction function
         feature_embedding = self.model.get_layer(feature_layer).output
         self.num_features = feature_embedding.shape[1]
-        self.feat_extractor = keras.backend.function(
-            [self.model.input] + [keras.backend.learning_phase()], 
-            [feature_embedding]
-        )
+        self.feat_extractor = keras.backend.function([self.model.input], [feature_embedding])
 
         # Configure metrics for each target
         for i in range(len(self.dset.targets)):
@@ -84,7 +81,12 @@ class Validation(object):
         # Prepare image for cropping
         batch_size = self.config["training"]["minibatch"]  
         filename = self.output_name(meta)
-        total_crops, pads = self.crop_generator.prepare_image(self.session, image_array, meta)
+        total_crops, pads = self.crop_generator.prepare_image(
+                                   self.session, 
+                                   image_array, 
+                                   meta, 
+                                   self.config["validation"]["sample_first_crops"]
+                            )
         features = np.zeros(shape=(total_crops, self.num_features))
 
         bp = 0
@@ -122,6 +124,7 @@ def validate(config, dset, checkpoint_file):
     configuration.gpu_options.visible_device_list = "0"
     session = tf.Session(config=configuration)
     keras.backend.set_session(session)
+    keras.backend.set_learning_phase(0)
 
     validation = Validation(config, dset)
     validation.configure(session, checkpoint_file)
