@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import tensorflow as tf
+import pickle
 
 import imaging.boxes
 import learning.metrics
@@ -20,15 +21,14 @@ class Validation(object):
         self.metrics = []
 
 
-    def output_name(self, meta):
-        # TODO: parameterize file structure?
-        filename = os.path.join(
-            self.config["profiling"]["output_dir"],
+    def output_base(self, meta):
+        filebase = os.path.join(
+            self.val_dir,
             str(meta["Metadata_Plate"]) + "_" +
             str(meta["Metadata_Well"]) + "_" +
-            str(meta["Metadata_Site"]) + ".npz"
+            str(meta["Metadata_Site"])
         )
-        return filename
+        return filebase
 
 
     def configure(self, session, checkpoint_file):
@@ -57,8 +57,9 @@ class Validation(object):
             self.metrics.append(mtr)
 
         # Prepare output directory
-        if not os.path.exists(self.config["profiling"]["output_dir"]):
-            os.mkdir(self.config["profiling"]["output_dir"])
+        self.val_dir = self.config["training"]["output"] + "/validation/"
+        if not os.path.isdir(self.val_dir):
+            os.mkdir(self.val_dir)
 
         # Initiate generator
         self.crop_generator = imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
@@ -66,31 +67,42 @@ class Validation(object):
         self.session = session
 
 
-    def check(self, meta):
-        if not self.save_features:
-            return True
-        filename = self.output_name(meta)
-        if os.path.isfile(filename):
-            print(filename, "already done")
+    def load_batches(self, meta):
+        filebase = self.output_base(meta)
+        if os.path.isfile(filebase + ".pkl"):
+            with open(filebase + ".pkl", "rb") as input_file:
+                batches = pickle.load(input_file)
+                self.predict(batches, meta)
             return False
         else:
             return True
-   
 
-    def predict(self, key, image_array, meta):
+
+    def process_batches(self, key, image_array, meta):
         # Prepare image for cropping
-        batch_size = self.config["training"]["minibatch"]  
-        filename = self.output_name(meta)
+        batch_size = self.config["training"]["minibatch"] 
         total_crops, pads = self.crop_generator.prepare_image(
                                    self.session, 
                                    image_array, 
                                    meta, 
                                    self.config["validation"]["sample_first_crops"]
                             )
-        features = np.zeros(shape=(total_crops, self.num_features))
+        batches = []
+        for batch in self.crop_generator.generate(self.session):
+            batches.append(batch)
+
+        filebase = self.output_base(meta)
+        batch_data = {"total_crops": total_crops, "pads": pads, "batches": batches}
+        with open(filebase + ".pkl", "wb") as output_file:
+            pickle.dump(batch_data, output_file)
+        self.predict(batch_data, meta)
+
+
+    def predict(self, batch_data, meta):
+        features = np.zeros(shape=(batch_data["total_crops"], self.num_features))
 
         bp = 0
-        for batch in self.crop_generator.generate(self.session):
+        for batch in batch_data["batches"]:
             # Forward propagate crops into the network and get the outputs
             output = self.model.predict(batch[0])
             if self.save_features:
@@ -107,15 +119,18 @@ class Validation(object):
             bp += 1
 
         # Save features and report performance
+        filebase = self.output_base(meta)
+        if self.save_features:
+            features = features[:-batch_data["pads"], :]
+            np.savez_compressed(filebase + ".npz", f=features)
+            print(filebase, features.shape)
+
+
+    def report_results(self):
         status = ""
         for metric in self.metrics:
             status += " " + metric.result_string()
-        if self.save_features:
-            features = features[:-pads, :]
-            np.savez_compressed(filename, f=features)
-            print(filename, features.shape, status)
-        else:
-            print(filename, "(not saved)", status)
+        print(status)
 
 
 def validate(config, dset, checkpoint_file):
@@ -128,7 +143,8 @@ def validate(config, dset, checkpoint_file):
 
     validation = Validation(config, dset)
     validation.configure(session, checkpoint_file)
-    dset.scan(validation.predict, frame=config["validation"]["frame"], check=validation.check)
+    dset.scan(validation.process_batches, frame=config["validation"]["frame"], check=validation.load_batches)
+    validation.report_results()
 
     print("Validation: done")
 
