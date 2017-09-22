@@ -26,10 +26,11 @@ def create_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=10
 
     # 2. Create an output embedding for each target
     class_outputs = []
-    BN = keras.layers.normalization.BatchNormalization
 
     for t in targets:
-        e = BN()(keras.layers.Dense(embed_dims, activation=None, name=t.field_name + "_embed", use_bias=False)(features))
+        e = keras.layers.Dense(embed_dims, activation=None, name=t.field_name + "_embed", use_bias=False)(features)
+        e = keras.layers.normalization.BatchNormalization()(e)
+        e = keras.layers.core.Dropout(0.5)(e)
         y = keras.layers.Dense(t.shape[1], activation="softmax", name=t.field_name)(e)
         class_outputs.append(y)
 

@@ -33,7 +33,8 @@ class Validation(object):
 
     def configure(self, session, checkpoint_file):
         # Create model and load weights
-        batch_size = self.config["training"]["minibatch"]  
+        batch_size = self.config["validation"]["minibatch"]
+        self.config["training"]["minibatch"] = batch_size
         feature_layer = self.config["profiling"]["feature_layer"]
         input_shape = (
             self.config["sampling"]["box_size"],      # height
@@ -53,7 +54,7 @@ class Validation(object):
         for i in range(len(self.dset.targets)):
             tgt = self.dset.targets[i]
             mtr = learning.metrics.Metrics(name=tgt.field_name, k=self.config["validation"]["top_k"])
-            mtr.configure_ops(batch_size, tgt.shape[1])
+            mtr.configure_ops(batch_size, tgt.index)
             self.metrics.append(mtr)
 
         # Prepare output directory
@@ -80,7 +81,7 @@ class Validation(object):
 
     def process_batches(self, key, image_array, meta):
         # Prepare image for cropping
-        batch_size = self.config["training"]["minibatch"] 
+        batch_size = self.config["validation"]["minibatch"] 
         total_crops, pads = self.crop_generator.prepare_image(
                                    self.session, 
                                    image_array, 
@@ -113,7 +114,7 @@ class Validation(object):
             for i in range(len(self.metrics)):
                 metric_values = self.session.run(
                         self.metrics[i].get_ops(), 
-                        feed_dict=self.metrics[i].set_inputs(batch[1], output[i])
+                        feed_dict=self.metrics[i].set_inputs(batch[i+1], output[i])
                     )
                 self.metrics[i].update(metric_values, batch[0].shape[0])
             bp += 1
