@@ -106,6 +106,8 @@ class Validation(object):
         for batch in batch_data["batches"]:
             # Forward propagate crops into the network and get the outputs
             output = self.model.predict(batch[0])
+            if type(output) is not list:
+                output = [output]
             if self.save_features:
                 f = self.feat_extractor((batch[0], 0))
                 features[bp * batch_size:(bp + 1) * batch_size, :] = f[0]
