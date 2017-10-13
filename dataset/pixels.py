@@ -13,7 +13,9 @@ def openImage(paths, outlines):
     img = np.zeros( (channels[0].shape[0], channels[0].shape[1], len(channels)) )
     for c in range(len(channels)):
         #TODO: dividing here is a terrible idea for illumination correction!
-        img[:,:,c] = (channels[c] -128.0) / 128.0
+        #img[:,:,c] = (channels[c] -128.0) / 128.0
+        max_value = np.max(channels[c])
+        img[:,:,c] = channels[c] / max(max_value, 1.0)
     if outlines is not None:
         boundaries = skimage.io.imread(outlines)
         labels = skimage.measure.label(boundaries, background=1)

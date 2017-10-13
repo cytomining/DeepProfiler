@@ -19,6 +19,7 @@ def make_regularizer(transforms, reg_lambda):
 
 
 def create_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=256, reg_lambda=10):
+    embed_dims = [384, 128]
     # 1. Create ResNet architecture to extract features
     input_image = keras.layers.Input(input_shape)
     model = keras_resnet.models.ResNet18(input_image, include_top=False)
@@ -28,12 +29,14 @@ def create_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=25
     # 2. Create an output embedding for each target
     class_outputs = []
 
+    i = 0
     for t in targets:
-        e = keras.layers.Dense(embed_dims, activation=None, name=t.field_name + "_embed", use_bias=False)(features)
+        e = keras.layers.Dense(embed_dims[i], activation=None, name=t.field_name + "_embed", use_bias=False)(features)
         e = keras.layers.normalization.BatchNormalization()(e)
         e = keras.layers.core.Dropout(0.5)(e)
         y = keras.layers.Dense(t.shape[1], activation="softmax", name=t.field_name)(e)
         class_outputs.append(y)
+        i += 1
 
     # 3. Define the regularized loss function
     transforms = [v for v in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES) if v.name.find("_embed") != -1]
