@@ -110,6 +110,7 @@ class Validation(object):
                 output = [output]
             if self.save_features:
                 f = self.feat_extractor((batch[0], 0))
+                batch_size = batch[0].shape[0]
                 features[bp * batch_size:(bp + 1) * batch_size, :] = f[0]
 
             # Compute performance metrics for each target
@@ -124,7 +125,8 @@ class Validation(object):
         # Save features and report performance
         filebase = self.output_base(meta)
         if self.save_features:
-            features = features[:-batch_data["pads"], :]
+            if batch_data["pads"] > 0:
+                features = features[:-batch_data["pads"], :]
             np.savez_compressed(filebase + ".npz", f=features)
             print(filebase, features.shape)
 

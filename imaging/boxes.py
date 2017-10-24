@@ -79,3 +79,4 @@ def loadBatch(dataset, config):
     batch = dataset.getTrainBatch(config["sampling"]["images"])
     batch["locations"] = [ getLocations(x, config) for x in batch["keys"] ]
     return batch
+
