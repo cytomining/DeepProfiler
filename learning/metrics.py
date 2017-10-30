@@ -64,8 +64,6 @@ class Metrics(object):
 
     def set_inputs(self, batch_labels, batch_predictions):
         # Transform labels to class indices
-        for i in range(len(batch_labels)):
-            batch_labels[i] = self.label_dict[batch_labels[i]]
         feed_dict={
                      self.true_labels:batch_labels,
                      self.predictions:batch_predictions

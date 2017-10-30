@@ -271,7 +271,7 @@ class SingleImageCropGenerator(CropGenerator):
         batch["locations"].append(imaging.boxes.getLocations(image_key, self.config, randomize=False))
         for i in range(num_targets):
             tgt = self.dset.targets[i]
-            batch["targets"][0].append(meta[tgt.field_name])
+            batch["targets"][0].append(tgt.get_values(meta))
 
         if (sample_first_crops and self.batch_size > len(batch["locations"][0])) or not sample_first_crops:
             # Add trailing locations to fit the batch size
