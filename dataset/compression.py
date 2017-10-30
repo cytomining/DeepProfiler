@@ -78,11 +78,16 @@ class Compress():
             # Downscale
             image = skimage.transform.resize(image, self.output_shape, mode="reflect")
             # Clip illumination values
-            image[image < self.stats["lower_percentiles"][c]] = self.stats["lower_percentiles"][c]
-            image[image > self.stats["upper_percentiles"][c]] = self.stats["upper_percentiles"][c]
+            plate_stats = False
+            if plate_stats:
+                vmin, vmax = self.stats["lower_percentiles"][c], self.stats["upper_percentiles"][c]
+            else:
+                vmin, vmax = scipy.stats.scoreatpercentile(image, (0.1, 99.1))
+            image[image < vmin] = vmin
+            image[image > vmax] = vmax
+
             # Save resulting image in 8-bits PNG format
-            image = scipy.misc.toimage(image, low=0, high=255, mode="L",
-                                       cmin=self.stats["lower_percentiles"][c], cmax=self.stats["upper_percentiles"][c])
+            image = scipy.misc.toimage(image, low=0, high=255, mode="L", cmin=vmin, cmax=vmax)
             if self.metadata_control_filter(meta):
                 self.controls_distribution[c] += image.histogram()
             image.save(self.target_path(meta[self.channels[c]]))
