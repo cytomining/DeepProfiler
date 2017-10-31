@@ -28,12 +28,12 @@ class Metrics(object):
         top_k = self.in_top_k / self.counts
         return message.format(acc, self.with_k, top_k, self.counts)
 
-    def configure_ops(self, batch_size, label_dict):
+    def configure_ops(self, label_dict):
         self.label_dict = label_dict
         num_classes = len(label_dict)
         with tf.name_scope(self.name + "_metric"):
-            self.true_labels = tf.placeholder(tf.int32, shape=(batch_size))
-            self.predictions = tf.placeholder(tf.float32, shape=(batch_size, num_classes))
+            self.true_labels = tf.placeholder(tf.int32, shape=(None))
+            self.predictions = tf.placeholder(tf.float32, shape=(None, num_classes))
             one_hot_true_labels = tf.one_hot(self.true_labels, num_classes)
 
             self.correct_op = tf.reduce_sum(

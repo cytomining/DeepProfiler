@@ -54,7 +54,7 @@ class Validation(object):
         for i in range(len(self.dset.targets)):
             tgt = self.dset.targets[i]
             mtr = learning.metrics.Metrics(name=tgt.field_name, k=self.config["validation"]["top_k"])
-            mtr.configure_ops(batch_size, tgt.index)
+            mtr.configure_ops(tgt.index)
             self.metrics.append(mtr)
 
         # Prepare output directory
@@ -108,10 +108,15 @@ class Validation(object):
             output = self.model.predict(batch[0])
             if type(output) is not list:
                 output = [output]
-            if self.save_features:
-                f = self.feat_extractor((batch[0], 0))
-                batch_size = batch[0].shape[0]
-                features[bp * batch_size:(bp + 1) * batch_size, :] = f[0]
+            bp += 1
+
+            # Remove padded crops
+            if len(batch_data["batches"]) == bp and batch_data["pads"] > 0:
+                p = batch_data["pads"]
+                for i in range(len(batch)):
+                    batch[i] = batch[i][0:-p,...]
+                for i in range(len(output)):
+                    output[i] = output[i][0:-p,...]
 
             # Compute performance metrics for each target
             for i in range(len(self.metrics)):
@@ -120,7 +125,14 @@ class Validation(object):
                         feed_dict=self.metrics[i].set_inputs(batch[i+1], output[i])
                     )
                 self.metrics[i].update(metric_values, batch[0].shape[0])
-            bp += 1
+
+            # Extract features (again) 
+            # TODO: compute predictions and features at the same time
+            if self.save_features:
+                f = self.feat_extractor((batch[0], 0))
+                batch_size = batch[0].shape[0]
+                features[bp * batch_size:(bp + 1) * batch_size, :] = f[0]
+
 
         # Save features and report performance
         filebase = self.output_base(meta)
