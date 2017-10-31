@@ -17,7 +17,7 @@ class Validation(object):
         self.config = config
         self.dset = dset
         self.config["queueing"]["min_size"] = 0
-        self.save_features = config["validation"]["save_features"] and config["validation"]["sample_first_crops"]
+        self.save_features = config["validation"]["save_features"] #and config["validation"]["sample_first_crops"]
         self.metrics = []
 
 
@@ -119,6 +119,7 @@ class Validation(object):
                     output[i] = output[i][0:-p,...]
 
             # Compute performance metrics for each target
+            # batch[0] contains images, batch[i+1] contains the targets
             for i in range(len(self.metrics)):
                 metric_values = self.session.run(
                         self.metrics[i].get_ops(), 
@@ -131,7 +132,7 @@ class Validation(object):
             if self.save_features:
                 f = self.feat_extractor((batch[0], 0))
                 batch_size = batch[0].shape[0]
-                features[bp * batch_size:(bp + 1) * batch_size, :] = f[0]
+                features[(bp - 1) * batch_size:bp * batch_size, :] = f[0]
 
 
         # Save features and report performance
