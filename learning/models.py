@@ -59,6 +59,14 @@ def create_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=25
     return model
 
 
+def create_recurrent_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims, reg_lambda=10):
+    # 1. Create ResNet architecture to extract features
+    input_image = keras.layers.Input(input_shape)
+    model = keras_resnet.models.ResNet18(input_image, include_top=False)
+    features = keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-1].output)
+    # TODO: Complete the model and compile it
+
+
 def create_resnet(inputs, num_classes, is_training=True):
     net = resnet_v2.resnet_v2_50(inputs, num_classes, scope="convnet", is_training=is_training)
     return tf.reshape(net[1]["convnet/logits"], (-1, num_classes))

@@ -6,6 +6,7 @@ import tensorflow as tf
 
 import imaging.boxes
 import imaging.augmentations
+import imaging.cropset
 
 def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False):
     with tf.variable_scope("cropping"):
@@ -311,3 +312,42 @@ class SingleImageCropGenerator(CropGenerator):
             batch = session.run(self.input_variables["labeled_crops"])
             yield batch
             items = session.run(self.input_variables["queue"].size())
+
+
+#######################################################
+## SUB CLASS TO GENERATE SETS OF CROPS FOR SEQUENCE LEARNING
+#######################################################
+
+class SetCropGenerator(CropGenerator):
+
+    def __init__(self, config, dset):
+        super().__init__(config, dset)
+        self.set_manager = imaging.cropset.CropSet(
+                   config["image_set"]["crop_set"],
+                   config["queueing"]["random_queue_size"], 
+                   self.input_variables["shapes"]["crops"]
+        )
+        self.batch_size=self.config["training"]["minibatch"]
+
+
+    def generate(self, sess, global_step=0):
+        while True:
+            if self.coord.should_stop():
+                break
+            data = sess.run([self.image_batch] + self.target_batch + [self.merged_summary])
+            # Indices of data => [0] images, [1:-1] targets, [-1] summary
+            self.set_manager.add_crops(data[0], data[1]) #TODO: support for multiple targets
+            while not self.set_manager.ready:
+                data = sess.run([self.image_batch] + self.target_batch + [self.merged_summary])
+                self.set_manager.add_crops(data[0], data[1])
+
+            # TODO: Enable use of summaries
+            #ms = data[-1]
+            global_step += 1
+            #if global_step % 10 == 0:
+            #    self.summary_writer.add_summary(ms, global_step)
+
+            batch = self.set_manager.batch(self.batch_size)
+
+            yield (data[0], data[1]) # TODO: support for multiple targets
+
