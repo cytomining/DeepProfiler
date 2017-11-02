@@ -50,6 +50,7 @@ def learn_model(config, dset, epoch):
     callbacks = [callback_model_checkpoint, callback_csv, lr_schedule]
 
     input_shape = (
+        config["image_set"]["crop_set_length"],
         config["sampling"]["box_size"],      # height 
         config["sampling"]["box_size"],      # width
         len(config["image_set"]["channels"]) # channels

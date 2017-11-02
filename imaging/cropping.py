@@ -322,12 +322,24 @@ class SetCropGenerator(CropGenerator):
 
     def __init__(self, config, dset):
         super().__init__(config, dset)
+
+
+    def start(self, session):
+        super().start(session)
+
+        self.batch_size = self.config["training"]["minibatch"]
+        self.target_sizes = []
+        targets = [t for t in self.train_variables.keys() if t.startswith("target_")]
+        targets.sort()
+        for t in targets:
+            self.target_sizes.append(self.train_variables[t].shape[0])
+
         self.set_manager = imaging.cropset.CropSet(
-                   config["image_set"]["crop_set"],
-                   config["queueing"]["random_queue_size"], 
-                   self.input_variables["shapes"]["crops"]
+                   self.config["image_set"]["crop_set_length"],
+                   self.config["queueing"]["random_queue_size"], 
+                   self.input_variables["shapes"]["crops"],
+                   self.target_sizes[0]
         )
-        self.batch_size=self.config["training"]["minibatch"]
 
 
     def generate(self, sess, global_step=0):
@@ -341,13 +353,13 @@ class SetCropGenerator(CropGenerator):
                 data = sess.run([self.image_batch] + self.target_batch + [self.merged_summary])
                 self.set_manager.add_crops(data[0], data[1])
 
+            global_step += 1
             # TODO: Enable use of summaries
             #ms = data[-1]
-            global_step += 1
             #if global_step % 10 == 0:
             #    self.summary_writer.add_summary(ms, global_step)
 
             batch = self.set_manager.batch(self.batch_size)
 
-            yield (data[0], data[1]) # TODO: support for multiple targets
+            yield (batch[0], batch[1]) # TODO: support for multiple targets
 

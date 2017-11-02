@@ -5,6 +5,7 @@ import click
 
 import dataset.image_dataset
 import learning.training
+import learning.recurrent_training
 import learning.validation
 #import learning.profiling
 
@@ -27,6 +28,14 @@ def cli(context, config):
 def training(context, epoch):
     metadata = dataset.image_dataset.read_dataset(context.obj["config"])
     learning.training.learn_model(context.obj["config"], metadata, epoch)
+
+# Second learning tool: Training a recurrent network
+@cli.command()
+@click.option("--epoch", default=1)
+@click.pass_context
+def recurrent_training(context, epoch):
+    metadata = dataset.image_dataset.read_dataset(context.obj["config"])
+    learning.recurrent_training.learn_model(context.obj["config"], metadata, epoch)
 
 
 # Evaluate a network in the validation set
