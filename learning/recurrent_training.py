@@ -55,7 +55,7 @@ def learn_model(config, dset, epoch):
         config["sampling"]["box_size"],      # width
         len(config["image_set"]["channels"]) # channels
     )
-    model = learning.models.create_recurrent_keras_resnet(input_shape, dset.targets, config["training"]["learning_rate"])
+    model = learning.models.create_recurrent_keras_resnet(input_shape, dset.targets, config["training"]["learning_rate"], is_training=True)
 
     previous_model = output_file.format(epoch=epoch-1)
     if epoch >= 1 and os.path.isfile(previous_model):

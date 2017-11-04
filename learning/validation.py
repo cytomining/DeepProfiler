@@ -41,7 +41,7 @@ class Validation(object):
             self.config["sampling"]["box_size"],      # width
             len(self.config["image_set"]["channels"]) # channels
         )
-        self.model = learning.models.create_keras_resnet(input_shape, self.dset.targets)
+        self.model = learning.models.create_keras_resnet(input_shape, self.dset.targets, is_training=False)
         print("Checkpoint:", checkpoint_file)
         self.model.load_weights(checkpoint_file)
 

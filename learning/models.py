@@ -18,11 +18,11 @@ def make_regularizer(transforms, reg_lambda):
     return loss
 
 
-def create_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=256, reg_lambda=10):
+def create_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=256, reg_lambda=10, is_training=True):
     embed_dims = [256, 256]
     # 1. Create ResNet architecture to extract features
     input_image = keras.layers.Input(input_shape)
-    model = keras_resnet.models.ResNet18(input_image, include_top=False)
+    model = keras_resnet.models.ResNet18(input_image, include_top=False, freeze_bn=not is_training)
     features = keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-1].output)
     #features = keras.layers.core.Dropout(0.5)(features)
 
