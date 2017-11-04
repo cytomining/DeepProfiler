@@ -59,10 +59,10 @@ def create_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=25
     return model
 
 
-def create_recurrent_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=256, reg_lambda=10):
+def create_recurrent_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=256, reg_lambda=10, is_training=True):
     classes = targets[0].shape[1] # TODO: support for multiple targets
     input_set = keras.layers.Input(input_shape)
-    net = keras_resnet.models.TimeDistributedResNet18(input_set, include_top=False)
+    net = keras_resnet.models.TimeDistributedResNet18(input_set, include_top=False, freeze_bn=not is_training)
     features = keras.layers.TimeDistributed(keras.layers.GlobalAveragePooling2D(), name="pool5")(net.output[-1])
     memory = keras.layers.GRU(embed_dims, return_sequences=False, stateful=False)(features)
     classifier = keras.layers.Dense(classes, activation="softmax", name="Allele")(memory)
