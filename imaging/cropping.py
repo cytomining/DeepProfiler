@@ -376,7 +376,7 @@ class SingleImageCropSetGenerator(SingleImageCropGenerator):
 
     def generate(self, session, global_step=0):
         reps = self.config["image_set"]["crop_set_length"]
-        for batch in supper().generate(session):
+        for batch in super().generate(session):
             batch[0] = batch[0][:,np.newaxis,:,:,:]
             batch[0] = np.tile(batch[0], (1,reps,1,1,1))
             yield batch

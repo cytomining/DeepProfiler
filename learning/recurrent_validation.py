@@ -37,6 +37,7 @@ class Validation(object):
         self.config["training"]["minibatch"] = batch_size
         feature_layer = self.config["profiling"]["feature_layer"]
         input_shape = (
+            self.config["image_set"]["crop_set_length"],
             self.config["sampling"]["box_size"],      # height
             self.config["sampling"]["box_size"],      # width
             len(self.config["image_set"]["channels"]) # channels
