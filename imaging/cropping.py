@@ -363,3 +363,20 @@ class SetCropGenerator(CropGenerator):
 
             yield (batch[0], batch[1]) # TODO: support for multiple targets
 
+
+class SingleImageCropSetGenerator(SingleImageCropGenerator):
+
+    def __init__(self, config, dset):
+        super().__init__(config, dset)
+
+
+    def start(self, session):
+        super().start(session)
+
+
+    def generate(self, session, global_step=0):
+        reps = self.config["image_set"]["crop_set_length"]
+        for batch in supper().generate(session):
+            batch[0] = batch[0][:,np.newaxis,:,:,:]
+            batch[0] = np.tile(batch[0], (1,reps,1,1,1))
+            yield batch

@@ -7,6 +7,7 @@ import dataset.image_dataset
 import learning.training
 import learning.recurrent_training
 import learning.validation
+import learning.recurrent_validation
 #import learning.profiling
 
 # Main interaction point
@@ -47,6 +48,18 @@ def validation(context, model, subset):
     metadata = dataset.image_dataset.read_dataset(context.obj["config"])
     context.obj["config"]["validation"]["frame"] = subset
     learning.validation.validate(context.obj["config"], metadata, model)
+
+
+# Evaluate a network in the validation set
+@cli.command()
+@click.option("--model", prompt="Checkpoint", help="keras-resnet model")
+@click.option("--subset", default="val", type=click.Choice(["val", "train"]))
+@click.pass_context
+def recurrent_validation(context, model, subset):
+    metadata = dataset.image_dataset.read_dataset(context.obj["config"])
+    context.obj["config"]["validation"]["frame"] = subset
+    learning.recurrent_validation.validate(context.obj["config"], metadata, model)
+
 
 # Profile cells and extract features
 @cli.command()
