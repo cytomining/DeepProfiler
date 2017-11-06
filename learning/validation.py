@@ -47,7 +47,7 @@ class Validation(object):
 
         # Create feature extraction function
         feature_embedding = self.model.get_layer(feature_layer).output
-        self.num_features = feature_embedding.shape[1]
+        self.num_features = feature_embedding.shape[-1]
         self.feat_extractor = keras.backend.function([self.model.input], [feature_embedding])
 
         # Configure metrics for each target
@@ -131,6 +131,8 @@ class Validation(object):
             # TODO: compute predictions and features at the same time
             if self.save_features:
                 f = self.feat_extractor((batch[0], 0))
+                while len(f[0].shape) > 2: # 2D mean spatial pooling
+                    f[0] = np.mean(f[0], axis=1)
                 batch_size = batch[0].shape[0]
                 features[(bp - 1) * batch_size:bp * batch_size, :] = f[0]
 
