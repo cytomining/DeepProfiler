@@ -31,12 +31,12 @@ def augment(crop):
         augmented = tf.image.random_flip_left_right(moved_crop)
 
         # 90 degree rotations
-        #angle = tf.random_uniform([1], minval=0, maxval=4, dtype=tf.int32)
-        #augmented = tf.image.rot90(augmented, angle[0])
+        angle = tf.random_uniform([1], minval=0, maxval=4, dtype=tf.int32)
+        augmented = tf.image.rot90(augmented, angle[0])
 
         # 360 degree rotations
-        angle = tf.random_uniform([1], minval=0.0, maxval=2*PI, dtype=tf.float32)
-        augmented = tf.contrib.image.rotate(augmented, angle[0], interpolation="BILINEAR")
+        #angle = tf.random_uniform([1], minval=0.0, maxval=2*PI, dtype=tf.float32)
+        #augmented = tf.contrib.image.rotate(augmented, angle[0], interpolation="BILINEAR")
 
         # Illumination changes
         #illum_s = tf.random_uniform([1], minval=0.8, maxval=1.2, dtype=tf.float32)

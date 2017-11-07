@@ -48,3 +48,54 @@ class CropSet(object):
             data[i,:,:,:,:] = self.crops[index, ...]
             labels[i, t] = 1.0
         return data, labels
+
+
+class Mixup(CropSet):
+
+    def __init__(self, alpha, table_size, crop_shape, target_size):
+        super().__init__(2, table_size, crop_shape, target_size)
+        self.alpha = alpha
+
+
+    def batch(self, batch_size):
+        targets = self.labels["target"].unique()
+        s, w, h, c = self.crops.shape
+        data = np.zeros( (batch_size, w, h, c) )
+        labels = np.zeros((batch_size, self.target_size))
+        
+        for i in range(batch_size):
+            lam = np.random.beta(self.alpha, self.alpha)
+            sample = self.labels.sample(n=2)
+            idx = sample.index.tolist()
+            data[i,:,:,:] = lam*self.crops[idx[0],...] + (1. - lam)*self.crops[idx[1],...]
+            labels[i, sample.loc[idx[0],"target"]] = lam
+            labels[i, sample.loc[idx[1],"target"]] = 1. - lam
+        return data, labels
+
+
+class SameLabelMixup(CropSet):
+
+    def __init__(self, alpha, table_size, crop_shape, target_size):
+        super().__init__(2, table_size, crop_shape, target_size)
+        self.alpha = alpha
+
+
+    def batch(self, batch_size):
+        targets = self.labels["target"].unique()
+        s, w, h, c = self.crops.shape
+        data = np.zeros( (batch_size, w, h, c) )
+        labels = np.zeros((batch_size, self.target_size))
+
+        for i in range(batch_size):
+            lam = np.random.beta(self.alpha, self.alpha)
+            random.shuffle(targets)
+            t = targets[0]
+            sample = self.labels[self.labels["target"] == t]
+            if len(sample) <= 2:
+                sample = sample.sample(n=2, replace=True)
+            else:
+                sample = sample.sample(n=2, replace=False)
+            index = sample.index.tolist()
+            data[i,:,:,:] = lam*self.crops[index[0], ...] + (1. - lam)*self.crops[index[1],...]
+            labels[i, t] = 1.0
+        return data, labels

@@ -11,10 +11,10 @@ def create_learning_rate_schedule(config):
     def lrs(e):
         new_lr = config["training"]["learning_rate"]
         epochs = config["training"]["epochs"]
-        if    .0 <= e/epochs < .30: new_lr /= 1.
-        elif .30 <= e/epochs < .60: new_lr /= 10.
-        elif .60 <= e/epochs < .80: new_lr /= 100.
-        elif .80 <= e/epochs      : new_lr /= 1000.
+        if    .0 <= e/epochs < .40: new_lr /= 1.
+        elif .40 <= e/epochs < .70: new_lr /= 10.
+        elif .70 <= e/epochs < .90: new_lr /= 100.
+        elif .90 <= e/epochs      : new_lr /= 1000.
         print("Learning rate:", new_lr)
         return new_lr
     return lrs
@@ -32,7 +32,61 @@ def learn_model(config, dset, epoch):
     session = tf.Session(config = configuration)
     keras.backend.set_session(session)
 
-    crop_generator = imaging.cropping.CropGenerator(config, dset)
+    if config["model"]["type"] == "convnet":
+        crop_generator = imaging.cropping.CropGenerator(config, dset)
+        input_shape = (
+            config["sampling"]["box_size"],      # height 
+            config["sampling"]["box_size"],      # width
+            len(config["image_set"]["channels"]) # channels
+        )
+        model = learning.models.create_keras_resnet(
+                    input_shape, 
+                    dset.targets, 
+                    config["training"]["learning_rate"], 
+                    is_training=True
+                )
+    elif config["model"]["type"] == "recurrent":
+        crop_generator = imaging.cropping.SetCropGenerator(config, dset)
+        input_shape = (
+            config["model"]["sequence_length"],  # time
+            config["sampling"]["box_size"],      # height 
+            config["sampling"]["box_size"],      # width
+            len(config["image_set"]["channels"]) # channels
+        )
+        model = learning.models.create_recurrent_keras_resnet(
+                    input_shape, 
+                    dset.targets, 
+                    config["training"]["learning_rate"], 
+                    is_training=True
+                )
+
+    elif config["model"]["type"] == "mixup":
+        crop_generator = imaging.cropping.SetCropGenerator(config, dset)
+        input_shape = (
+            config["sampling"]["box_size"],      # height 
+            config["sampling"]["box_size"],      # width
+            len(config["image_set"]["channels"]) # channels
+        )
+        model = learning.models.create_keras_resnet(
+                    input_shape, 
+                    dset.targets, 
+                    config["training"]["learning_rate"], 
+                    is_training=True
+                )
+    elif config["model"]["type"] == "same_label_mixup":
+        crop_generator = imaging.cropping.SetCropGenerator(config, dset)
+        input_shape = (
+            config["sampling"]["box_size"],      # height 
+            config["sampling"]["box_size"],      # width
+            len(config["image_set"]["channels"]) # channels
+        )
+        model = learning.models.create_keras_resnet(
+                    input_shape, 
+                    dset.targets, 
+                    config["training"]["learning_rate"], 
+                    is_training=True
+                )
+
     crop_generator.start(session)
 
     # keras-resnet model
@@ -49,12 +103,6 @@ def learn_model(config, dset, epoch):
     lr_schedule = keras.callbacks.LearningRateScheduler(schedule=lrs)
     callbacks = [callback_model_checkpoint, callback_csv, lr_schedule]
 
-    input_shape = (
-        config["sampling"]["box_size"],      # height 
-        config["sampling"]["box_size"],      # width
-        len(config["image_set"]["channels"]) # channels
-    )
-    model = learning.models.create_keras_resnet(input_shape, dset.targets, config["training"]["learning_rate"], is_training=True)
 
     previous_model = output_file.format(epoch=epoch-1)
     if epoch >= 1 and os.path.isfile(previous_model):

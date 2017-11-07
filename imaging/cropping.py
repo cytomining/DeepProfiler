@@ -334,12 +334,28 @@ class SetCropGenerator(CropGenerator):
         for t in targets:
             self.target_sizes.append(self.train_variables[t].shape[0])
 
-        self.set_manager = imaging.cropset.CropSet(
-                   self.config["image_set"]["crop_set_length"],
-                   self.config["queueing"]["random_queue_size"], 
-                   self.input_variables["shapes"]["crops"],
-                   self.target_sizes[0]
-        )
+        if self.config["model"]["type"] == "recurrent":
+            self.set_manager = imaging.cropset.CropSet(
+                       self.config["model"]["sequence_length"],
+                       self.config["queueing"]["random_queue_size"], 
+                       self.input_variables["shapes"]["crops"],
+                       self.target_sizes[0]
+            )
+        elif self.config["model"]["type"] == "mixup":
+            self.set_manager = imaging.cropset.Mixup(
+                       self.config["model"]["alpha"],
+                       self.config["queueing"]["random_queue_size"], 
+                       self.input_variables["shapes"]["crops"],
+                       self.target_sizes[0]
+            )
+        elif self.config["model"]["type"] == "same_label_mixup":
+            self.set_manager = imaging.cropset.SameLabelMixup(
+                       self.config["model"]["alpha"],
+                       self.config["queueing"]["random_queue_size"], 
+                       self.input_variables["shapes"]["crops"],
+                       self.target_sizes[0]
+            )
+
 
 
     def generate(self, sess, global_step=0):
@@ -375,7 +391,7 @@ class SingleImageCropSetGenerator(SingleImageCropGenerator):
 
 
     def generate(self, session, global_step=0):
-        reps = self.config["image_set"]["crop_set_length"]
+        reps = self.config["model"]["sequence_length"]
         for batch in super().generate(session):
             batch[0] = batch[0][:,np.newaxis,:,:,:]
             batch[0] = np.tile(batch[0], (1,reps,1,1,1))

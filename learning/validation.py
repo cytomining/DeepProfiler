@@ -36,12 +36,25 @@ class Validation(object):
         batch_size = self.config["validation"]["minibatch"]
         self.config["training"]["minibatch"] = batch_size
         feature_layer = self.config["profiling"]["feature_layer"]
-        input_shape = (
-            self.config["sampling"]["box_size"],      # height
-            self.config["sampling"]["box_size"],      # width
-            len(self.config["image_set"]["channels"]) # channels
-        )
-        self.model = learning.models.create_keras_resnet(input_shape, self.dset.targets, is_training=False)
+
+        if self.config["model"]["type"] in ["convnet", "mixup", "same_label_mixup"]:
+            input_shape = (
+                self.config["sampling"]["box_size"],      # height
+                self.config["sampling"]["box_size"],      # width
+                len(self.config["image_set"]["channels"]) # channels
+            )
+            self.model = learning.models.create_keras_resnet(input_shape, self.dset.targets, is_training=False)
+            self.crop_generator = imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
+        elif self.config["model"]["type"] == "recurrent":
+            input_shape = (
+                self.config["model"]["sequence_length"],  # time
+                self.config["sampling"]["box_size"],      # height
+                self.config["sampling"]["box_size"],      # width
+                len(self.config["image_set"]["channels"]) # channels
+            )
+            self.model = learning.models.create_recurrent_keras_resnet(input_shape, self.dset.targets, is_training=False)
+            self.crop_generator = imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
+       
         print("Checkpoint:", checkpoint_file)
         self.model.load_weights(checkpoint_file)
 
@@ -63,7 +76,6 @@ class Validation(object):
             os.mkdir(self.val_dir)
 
         # Initiate generator
-        self.crop_generator = imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
         self.crop_generator.start(session)
         self.session = session
 
