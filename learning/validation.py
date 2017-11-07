@@ -36,18 +36,31 @@ class Validation(object):
         batch_size = self.config["validation"]["minibatch"]
         self.config["training"]["minibatch"] = batch_size
         feature_layer = self.config["profiling"]["feature_layer"]
-        input_shape = (
-            self.config["sampling"]["box_size"],      # height
-            self.config["sampling"]["box_size"],      # width
-            len(self.config["image_set"]["channels"]) # channels
-        )
-        self.model = learning.models.create_keras_resnet(input_shape, self.dset.targets)
+
+        if self.config["model"]["type"] in ["convnet", "mixup", "same_label_mixup"]:
+            input_shape = (
+                self.config["sampling"]["box_size"],      # height
+                self.config["sampling"]["box_size"],      # width
+                len(self.config["image_set"]["channels"]) # channels
+            )
+            self.model = learning.models.create_keras_resnet(input_shape, self.dset.targets, is_training=False)
+            self.crop_generator = imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
+        elif self.config["model"]["type"] == "recurrent":
+            input_shape = (
+                self.config["model"]["sequence_length"],  # time
+                self.config["sampling"]["box_size"],      # height
+                self.config["sampling"]["box_size"],      # width
+                len(self.config["image_set"]["channels"]) # channels
+            )
+            self.model = learning.models.create_recurrent_keras_resnet(input_shape, self.dset.targets, is_training=False)
+            self.crop_generator = imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
+       
         print("Checkpoint:", checkpoint_file)
         self.model.load_weights(checkpoint_file)
 
         # Create feature extraction function
         feature_embedding = self.model.get_layer(feature_layer).output
-        self.num_features = feature_embedding.shape[1]
+        self.num_features = feature_embedding.shape[-1]
         self.feat_extractor = keras.backend.function([self.model.input], [feature_embedding])
 
         # Configure metrics for each target
@@ -63,7 +76,6 @@ class Validation(object):
             os.mkdir(self.val_dir)
 
         # Initiate generator
-        self.crop_generator = imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
         self.crop_generator.start(session)
         self.session = session
 
@@ -131,6 +143,8 @@ class Validation(object):
             # TODO: compute predictions and features at the same time
             if self.save_features:
                 f = self.feat_extractor((batch[0], 0))
+                while len(f[0].shape) > 2: # 2D mean spatial pooling
+                    f[0] = np.mean(f[0], axis=1)
                 batch_size = batch[0].shape[0]
                 features[(bp - 1) * batch_size:bp * batch_size, :] = f[0]
 

@@ -6,6 +6,7 @@ import tensorflow as tf
 
 import imaging.boxes
 import imaging.augmentations
+import imaging.cropset
 
 def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False):
     with tf.variable_scope("cropping"):
@@ -311,3 +312,87 @@ class SingleImageCropGenerator(CropGenerator):
             batch = session.run(self.input_variables["labeled_crops"])
             yield batch
             items = session.run(self.input_variables["queue"].size())
+
+
+#######################################################
+## SUB CLASS TO GENERATE SETS OF CROPS FOR SEQUENCE LEARNING
+#######################################################
+
+class SetCropGenerator(CropGenerator):
+
+    def __init__(self, config, dset):
+        super().__init__(config, dset)
+
+
+    def start(self, session):
+        super().start(session)
+
+        self.batch_size = self.config["training"]["minibatch"]
+        self.target_sizes = []
+        targets = [t for t in self.train_variables.keys() if t.startswith("target_")]
+        targets.sort()
+        for t in targets:
+            self.target_sizes.append(self.train_variables[t].shape[0])
+
+        if self.config["model"]["type"] == "recurrent":
+            self.set_manager = imaging.cropset.CropSet(
+                       self.config["model"]["sequence_length"],
+                       self.config["queueing"]["random_queue_size"], 
+                       self.input_variables["shapes"]["crops"],
+                       self.target_sizes[0]
+            )
+        elif self.config["model"]["type"] == "mixup":
+            self.set_manager = imaging.cropset.Mixup(
+                       self.config["model"]["alpha"],
+                       self.config["queueing"]["random_queue_size"], 
+                       self.input_variables["shapes"]["crops"],
+                       self.target_sizes[0]
+            )
+        elif self.config["model"]["type"] == "same_label_mixup":
+            self.set_manager = imaging.cropset.SameLabelMixup(
+                       self.config["model"]["alpha"],
+                       self.config["queueing"]["random_queue_size"], 
+                       self.input_variables["shapes"]["crops"],
+                       self.target_sizes[0]
+            )
+
+
+
+    def generate(self, sess, global_step=0):
+        while True:
+            if self.coord.should_stop():
+                break
+            data = sess.run([self.image_batch] + self.target_batch + [self.merged_summary])
+            # Indices of data => [0] images, [1:-1] targets, [-1] summary
+            self.set_manager.add_crops(data[0], data[1]) #TODO: support for multiple targets
+            while not self.set_manager.ready:
+                data = sess.run([self.image_batch] + self.target_batch + [self.merged_summary])
+                self.set_manager.add_crops(data[0], data[1])
+
+            global_step += 1
+            # TODO: Enable use of summaries
+            #ms = data[-1]
+            #if global_step % 10 == 0:
+            #    self.summary_writer.add_summary(ms, global_step)
+
+            batch = self.set_manager.batch(self.batch_size)
+
+            yield (batch[0], batch[1]) # TODO: support for multiple targets
+
+
+class SingleImageCropSetGenerator(SingleImageCropGenerator):
+
+    def __init__(self, config, dset):
+        super().__init__(config, dset)
+
+
+    def start(self, session):
+        super().start(session)
+
+
+    def generate(self, session, global_step=0):
+        reps = self.config["model"]["sequence_length"]
+        for batch in super().generate(session):
+            batch[0] = batch[0][:,np.newaxis,:,:,:]
+            batch[0] = np.tile(batch[0], (1,reps,1,1,1))
+            yield batch
