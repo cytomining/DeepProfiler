@@ -68,8 +68,8 @@ class Mixup(CropSet):
             sample = self.labels.sample(n=2)
             idx = sample.index.tolist()
             data[i,:,:,:] = lam*self.crops[idx[0],...] + (1. - lam)*self.crops[idx[1],...]
-            labels[i, sample.loc[idx[0],"target"]] = lam
-            labels[i, sample.loc[idx[1],"target"]] = 1. - lam
+            labels[i, sample.loc[idx[0],"target"]] += lam
+            labels[i, sample.loc[idx[1],"target"]] += 1. - lam
         return data, labels
 
 

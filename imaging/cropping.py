@@ -259,6 +259,7 @@ class SingleImageCropGenerator(CropGenerator):
     def start(self, session):
         # Define input data batches
         with tf.variable_scope("train_inputs"):
+            self.config["training"]["minibatch"] = self.config["validation"]["minibatch"]
             self.build_input_graph()
 
 

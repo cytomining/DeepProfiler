@@ -6,7 +6,6 @@ import click
 import dataset.image_dataset
 import learning.training
 import learning.validation
-#import learning.profiling
 
 # Main interaction point
 @click.group()
@@ -67,6 +66,7 @@ def recurrent_validation(context, model, subset):
               default=-1, 
               type=click.INT)
 def profiling(context, part):
+    import learning.profiling
     config = context.obj["config"]
     if part >= 0:
         partfile = "index-{0:03d}.csv".format(part)

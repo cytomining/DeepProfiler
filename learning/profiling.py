@@ -17,6 +17,7 @@ except:
 
 import learning.training
 import imaging.boxes
+import imaging.cropping
 from dataset.utils import tic, toc
 
 
@@ -34,15 +35,16 @@ def crop_transform(crop_ph):
 
 
 def profile(config, dset):
-    # Variables and cropping comp. graph
+
+    crop_shape = (
+        config["sampling"]["box_size"],      # height
+        config["sampling"]["box_size"],      # width
+        len(config["image_set"]["channels"]) # channels
+    )
+    crop_generator = imaging.cropping.SingleImageCropGenerator(config, dset)
     num_channels = len(config["image_set"]["channels"])
-    num_classes = dset.numberOfClasses()
-    input_vars = learning.training.input_graph(config)
-    images = input_vars["labeled_crops"][0]
-    labels = tf.one_hot(input_vars["labeled_crops"][1], num_classes)
 
     # Setup pretrained model 
-    crop_shape = input_vars["shapes"]["crops"][0]
     raw_crops = tf.placeholder(tf.float32, shape=(None, crop_shape[0], crop_shape[1], crop_shape[2]))
     network_input = crop_transform(raw_crops)
     url = config["profiling"]["url"]
@@ -60,6 +62,7 @@ def profile(config, dset):
    
     sess = tf.Session(config=configuration)
     init_fn(sess)
+    crop_generator.start(sess)
 
 
     def check(meta):
@@ -79,51 +82,31 @@ def profile(config, dset):
         output_file = config["profiling"]["output_dir"] + "/{}_{}_{}.npz"
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
 
-        # Prepare image and crop locations
-        batch_size = config["training"]["minibatch"]
-        image_key, image_names = dset.getImagePaths(meta)
-        locations = [ imaging.boxes.getLocations(image_key, config, randomize=False) ]
-        if len(locations[0]) == 0:
-            print("Empty locations set:", str(key))
-            return
-        # Pad last batch with empty locations
-        pads = batch_size - len(locations[0]) % batch_size
-        zero_pads = np.zeros(shape=(pads, 2), dtype=np.int32)
-        pad_data = pandas.DataFrame(columns=locations[0].columns, data=zero_pads)
-        locations[0] = pandas.concat((locations[0], pad_data))   
+        batch_size = config["validation"]["minibatch"]
+        image_key, image_names, outlines = dset.getImagePaths(meta)
+        total_crops, pads = crop_generator.prepare_image(
+                                   sess,
+                                   image_array,
+                                   meta,
+                                   config["validation"]["sample_first_crops"]
+                            )
 
-        # Prepare boxes, indices, labels and push the image to the queue
-        labels_data = [ meta[config["training"]["label_field"]] ]
-        boxes, box_ind, labels_data = imaging.boxes.prepareBoxes(locations, labels_data, config)
-        images_data = np.reshape(image_array, input_vars["shapes"]["batch"])
-
-        sess.run(input_vars["enqueue_op"], {
-                        input_vars["image_ph"]:images_data,
-                        input_vars["boxes_ph"]:boxes,
-                        input_vars["box_ind_ph"]:box_ind,
-                        input_vars["labels_ph"]:labels_data
-        })
-
-        # Collect crops of from the queue
-        items = sess.run(input_vars["queue"].size())
         #TODO: move the channels to the last axis
-        data = np.zeros(shape=(num_channels, len(locations[0]), num_features))
+        data = np.zeros(shape=(num_channels, total_crops, num_features))
         b = 0
         start = tic()
-        while items >= batch_size:
-            # Compute features in a batch of crops
-            crops = sess.run(images)
+        for batch in crop_generator.generate(sess):
+            crops = batch[0]
             feats = sess.run(endpoints['PreLogitsFlatten'], feed_dict={raw_crops:crops})
             # TODO: move the channels to the last axis using np.moveaxis
             feats = np.reshape(feats, (num_channels, batch_size, num_features))
             data[:, b * batch_size:(b + 1) * batch_size, :] = feats
-            items = sess.run(input_vars["queue"].size())
             b += 1
 
         # Save features
         # TODO: save data with channels in the last axis
         np.savez_compressed(output_file, f=data[:, :-pads, :])
-        toc(image_key + " (" + str(data.shape[1]-pads) + ") cells", start)
+        toc(image_key + " (" + str(data.shape[1]-pads) + " cells)", start)
         
     dset.scan(extract_features, frame="all", check=check)
     print("Profiling: done")
