@@ -5,9 +5,7 @@ import click
 
 import dataset.image_dataset
 import learning.training
-import learning.recurrent_training
 import learning.validation
-import learning.recurrent_validation
 #import learning.profiling
 
 # Main interaction point
