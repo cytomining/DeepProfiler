@@ -43,9 +43,10 @@ class Validation(object):
                 self.config["sampling"]["box_size"],      # width
                 len(self.config["image_set"]["channels"]) # channels
             )
-            self.model = learning.models.create_keras_resnet(input_shape, self.dset.targets, is_training=False)
+            self.model = learning.models.create_keras_vgg(input_shape, self.dset.targets, is_training=False)
             self.crop_generator = imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
         elif self.config["model"]["type"] == "recurrent":
+            print("RECURRENT MODEL")
             input_shape = (
                 self.config["model"]["sequence_length"],  # time
                 self.config["sampling"]["box_size"],      # height
@@ -53,7 +54,7 @@ class Validation(object):
                 len(self.config["image_set"]["channels"]) # channels
             )
             self.model = learning.models.create_recurrent_keras_resnet(input_shape, self.dset.targets, is_training=False)
-            self.crop_generator = imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
+            self.crop_generator = imaging.cropping.SingleImageCropSetGenerator(self.config, self.dset)
        
         print("Checkpoint:", checkpoint_file)
         self.model.load_weights(checkpoint_file)
@@ -85,6 +86,12 @@ class Validation(object):
         if os.path.isfile(filebase + ".pkl"):
             with open(filebase + ".pkl", "rb") as input_file:
                 batches = pickle.load(input_file)
+                # Hack to replicate validation crops N times
+                # Only works if crops were cached before with a non-recurrent model
+                if self.config["model"]["type"] == "recurrent":
+                    for i in range(len(batches["batches"])):
+                        batches["batches"][i][0] = np.tile(batches["batches"][i][0], (self.config["model"]["sequence_length"], 1, 1, 1, 1))
+                        batches["batches"][i][0] = np.swapaxes(batches["batches"][i][0], 0, 1)
                 self.predict(batches, meta)
             return False
         else:

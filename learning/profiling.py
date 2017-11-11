@@ -3,6 +3,7 @@ import numpy as np
 import pandas
 import glob
 import skimage.transform
+import pickle
 
 import tensorflow as tf
 from tensorflow.contrib import slim
@@ -95,6 +96,8 @@ def profile(config, dset):
         data = np.zeros(shape=(num_channels, total_crops, num_features))
         b = 0
         start = tic()
+
+        batches = []
         for batch in crop_generator.generate(sess):
             crops = batch[0]
             feats = sess.run(endpoints['PreLogitsFlatten'], feed_dict={raw_crops:crops})
@@ -102,11 +105,19 @@ def profile(config, dset):
             feats = np.reshape(feats, (num_channels, batch_size, num_features))
             data[:, b * batch_size:(b + 1) * batch_size, :] = feats
             b += 1
+            batches.append(batch)
 
         # Save features
         # TODO: save data with channels in the last axis
         np.savez_compressed(output_file, f=data[:, :-pads, :])
         toc(image_key + " (" + str(data.shape[1]-pads) + " cells)", start)
+
+        # Save crops TODO: parameterize saving crops or a sample of them.
+        if False:
+            batch_data = {"total_crops": total_crops, "pads": pads, "batches": batches}
+            with open(output_file.replace(".npz", ".pkl"), "wb") as batch_file:
+                pickle.dump(batch_data, batch_file)
+
         
     dset.scan(extract_features, frame="all", check=check)
     print("Profiling: done")
