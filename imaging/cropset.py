@@ -43,7 +43,11 @@ class CropSet(object):
         for i in range(batch_size):
             random.shuffle(targets)
             t = targets[0]
-            sample = self.labels[self.labels["target"] == t].sample(n=self.set_size)
+            sample = self.labels[self.labels["target"] == t]
+            if len(sample) > self.set_size:
+                sample = sample.sample(n=self.set_size, replace=False)
+            else:
+                sample = sample.sample(n=self.set_size, replace=True)
             index = sample.index.tolist()
             data[i,:,:,:,:] = self.crops[index, ...]
             labels[i, t] = 1.0
