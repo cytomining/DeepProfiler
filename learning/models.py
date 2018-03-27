@@ -23,7 +23,7 @@ def create_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=25
     # 1. Create ResNet architecture to extract features
     input_image = keras.layers.Input(input_shape)
 
-    model = keras_resnet.models.ResNet18(input_image, include_top=False, freeze_bn=not is_training)
+    model = keras_resnet.models.ResNet18(input_image, include_top=False)#, freeze_bn=not is_training)
     features = keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-1].output)
     #features = keras.layers.core.Dropout(0.5)(features)
 
@@ -63,7 +63,7 @@ def create_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=25
 def create_recurrent_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=256, reg_lambda=10, is_training=True):
     classes = targets[0].shape[1] # TODO: support for multiple targets
     input_set = keras.layers.Input(input_shape)
-    net = keras_resnet.models.TimeDistributedResNet18(input_set, include_top=False, freeze_bn=not is_training)
+    net = keras_resnet.models.TimeDistributedResNet18(input_set, include_top=False)#, freeze_bn=not is_training)
     features = keras.layers.TimeDistributed(keras.layers.GlobalAveragePooling2D(), name="pool5")(net.output[-1])
     memory = keras.layers.GRU(embed_dims, return_sequences=False, stateful=False)(features)
     classifier = keras.layers.Dense(classes, activation="softmax", name="Allele")(memory)

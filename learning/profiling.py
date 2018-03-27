@@ -92,25 +92,30 @@ def profile(config, dset):
                                    config["validation"]["sample_first_crops"]
                             )
 
-        #TODO: move the channels to the last axis
+        # Initialize data buffer
         data = np.zeros(shape=(num_channels, total_crops, num_features))
         b = 0
         start = tic()
 
+        # Extract features in batches
         batches = []
         for batch in crop_generator.generate(sess):
             crops = batch[0]
             feats = sess.run(endpoints['PreLogitsFlatten'], feed_dict={raw_crops:crops})
-            # TODO: move the channels to the last axis using np.moveaxis
             feats = np.reshape(feats, (num_channels, batch_size, num_features))
             data[:, b * batch_size:(b + 1) * batch_size, :] = feats
             b += 1
             batches.append(batch)
 
+        # Remove paddings and concatentate features of all channels
+        if pads > 0:
+            data = data[:, :-pads, :]
+        data = np.moveaxis(data, 0, 1)
+        data = np.reshape(data, (data.shape[0], data.shape[1]*data.shape[2]))
+
         # Save features
-        # TODO: save data with channels in the last axis
-        np.savez_compressed(output_file, f=data[:, :-pads, :])
-        toc(image_key + " (" + str(data.shape[1]-pads) + " cells)", start)
+        np.savez_compressed(output_file, f=data)
+        toc(image_key + " (" + str(data.shape[0]-pads) + " cells)", start)
 
         # Save crops TODO: parameterize saving crops or a sample of them.
         if False:

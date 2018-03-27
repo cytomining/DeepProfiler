@@ -43,7 +43,7 @@ class Validation(object):
                 self.config["sampling"]["box_size"],      # width
                 len(self.config["image_set"]["channels"]) # channels
             )
-            self.model = learning.models.create_keras_vgg(input_shape, self.dset.targets, is_training=False)
+            self.model = learning.models.create_keras_resnet(input_shape, self.dset.targets, is_training=False)
             self.crop_generator = imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
         elif self.config["model"]["type"] == "recurrent":
             print("RECURRENT MODEL")
@@ -83,15 +83,18 @@ class Validation(object):
 
     def load_batches(self, meta):
         filebase = self.output_base(meta)
+        if os.path.isfile(filebase + ".npz"):
+            print(filebase, "is done")
+            return False
         if os.path.isfile(filebase + ".pkl"):
             with open(filebase + ".pkl", "rb") as input_file:
                 batches = pickle.load(input_file)
                 # Hack to replicate validation crops N times
                 # Only works if crops were cached before with a non-recurrent model
-                if self.config["model"]["type"] == "recurrent":
-                    for i in range(len(batches["batches"])):
-                        batches["batches"][i][0] = np.tile(batches["batches"][i][0], (self.config["model"]["sequence_length"], 1, 1, 1, 1))
-                        batches["batches"][i][0] = np.swapaxes(batches["batches"][i][0], 0, 1)
+                #if self.config["model"]["type"] == "recurrent":
+                #    for i in range(len(batches["batches"])):
+                #        batches["batches"][i][0] = np.tile(batches["batches"][i][0], (self.config["model"]["sequence_length"], 1, 1, 1, 1))
+                #        batches["batches"][i][0] = np.swapaxes(batches["batches"][i][0], 0, 1)
                 self.predict(batches, meta)
             return False
         else:
@@ -113,8 +116,8 @@ class Validation(object):
 
         filebase = self.output_base(meta)
         batch_data = {"total_crops": total_crops, "pads": pads, "batches": batches}
-        with open(filebase + ".pkl", "wb") as output_file:
-            pickle.dump(batch_data, output_file)
+        #with open(filebase + ".pkl", "wb") as output_file:
+        #    pickle.dump(batch_data, output_file)
         self.predict(batch_data, meta)
 
 
