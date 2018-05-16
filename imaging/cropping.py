@@ -9,6 +9,8 @@ import imaging.boxes
 import imaging.augmentations
 import imaging.cropset
 
+import dataset.utils
+
 def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False):
     with tf.variable_scope("cropping"):
         crop_size_ph = tf.constant([box_size, box_size], name="crop_size")
@@ -144,10 +146,8 @@ class CropGenerator(object):
                     valid = np.sum(output["image_batch"], axis=(1,2,3)) > 0
                     output["image_batch"] = output["image_batch"][valid, ...]
                     output["target_0"] = output["target_0"][valid, ...]
-                    x = np.sum( np.sum(output["image_batch"], axis=(1,2,3)) == 0 )
-                    if x > 0: print(" OMG:", x)
 
-                    # Find block of the pool to leave data
+                    # Find block of the pool to store data
                     lock.acquire()
                     first = self.pool_pointer
                     records = output["image_batch"].shape[0]
@@ -265,8 +265,8 @@ class SingleImageCropGenerator(CropGenerator):
             self.config["training"]["minibatch"] = self.config["validation"]["minibatch"]
             self.build_input_graph()
 
-
     def prepare_image(self, session, image_array, meta, sample_first_crops=False):
+
         num_targets = len(self.dset.targets)
         self.batch_size = self.config["validation"]["minibatch"]
         image_key, image_names, outlines = self.dset.getImagePaths(meta)
@@ -290,7 +290,6 @@ class SingleImageCropGenerator(CropGenerator):
         padding = pd.DataFrame(columns=batch["locations"][0].columns, data=np.zeros(shape=(pads, 2), dtype=np.int32))
         batch["locations"][0] = pd.concat((batch["locations"][0], padding), ignore_index=True)
 
-
         boxes, box_ind, targets, mask_ind = imaging.boxes.prepareBoxes(batch, self.config)
         batch["images"] = np.reshape(image_array, self.input_variables["shapes"]["batch"])
 
@@ -304,18 +303,29 @@ class SingleImageCropGenerator(CropGenerator):
             tname = "target_" + str(i)
             feed_dict[self.input_variables["targets_phs"][tname]] = targets[i]
 
-        session.run(self.input_variables["enqueue_op"], feed_dict)
-
         total_crops = len(batch["locations"][0])
+
+        s = dataset.utils.tic()
+        output = session.run(self.input_variables["labeled_crops"], feed_dict)
+        output = {"image_batch": output[0], "target_0": output[1]}
+        dataset.utils.toc("Image "+image_key+"("+str(total_crops)+" crops)", s)
+
+        # Remove crops without any content TODO: enable multiple targets
+        valid = np.sum(output["image_batch"], axis=(1,2,3)) > 0
+        self.image_pool = output["image_batch"][valid, ...]
+        self.label_pool = output["target_0"][valid, ...]  
+
         return total_crops, pads
 
 
     def generate(self, session, global_step=0):
-        items = session.run(self.input_variables["queue"].size())
-        while items >= self.batch_size:
-            batch = session.run(self.input_variables["labeled_crops"])
+        pool_pointer = 0
+        while pool_pointer < self.image_pool.shape[0]:
+            start = pool_pointer
+            end = min(pool_pointer + self.batch_size, self.image_pool.shape[0])
+            batch = [self.image_pool[start:end, ...], self.label_pool[start:end, ...]]
             yield batch
-            items = session.run(self.input_variables["queue"].size())
+            pool_pointer = end
 
 
 #######################################################
