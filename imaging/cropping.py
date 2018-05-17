@@ -262,6 +262,10 @@ class SingleImageCropGenerator(CropGenerator):
         with tf.variable_scope("train_inputs"):
             self.config["training"]["minibatch"] = self.config["validation"]["minibatch"]
             self.build_input_graph()
+            # Align cells by rotating nuclei
+            self.angles = tf.placeholder(tf.float32, shape=[None], name="nuclei_angles")
+            rotated_imgs = tf.contrib.image.rotate(self.input_variables["labeled_crops"][0], self.angles, interpolation="BILINEAR")
+            self.aligned_labeled = [rotated_imgs, self.input_variables["labeled_crops"][1]]
 
     def prepare_image(self, session, image_array, meta, sample_first_crops=False):
 
@@ -279,15 +283,7 @@ class SingleImageCropGenerator(CropGenerator):
         if sample_first_crops and self.batch_size < len(batch["locations"][0]):
             batch["locations"][0] = batch["locations"][0].head(self.batch_size)
 
-        remaining = len(batch["locations"][0]) % self.batch_size
-        if remaining > 0:
-            pads = self.batch_size - remaining
-        else:
-            pads = 0
-
-        padding = pd.DataFrame(columns=batch["locations"][0].columns, data=np.zeros(shape=(pads, 2), dtype=np.int32))
-        batch["locations"][0] = pd.concat((batch["locations"][0], padding), ignore_index=True)
-
+        has_orientation = len(batch["locations"][0].columns) > 2
         boxes, box_ind, targets, mask_ind = imaging.boxes.prepareBoxes(batch, self.config)
         batch["images"] = np.reshape(image_array, self.input_variables["shapes"]["batch"])
 
@@ -297,33 +293,32 @@ class SingleImageCropGenerator(CropGenerator):
             self.input_variables["box_ind_ph"]: box_ind,
             self.input_variables["mask_ind_ph"]: mask_ind
         }
+
         for i in range(num_targets):
             tname = "target_" + str(i)
             feed_dict[self.input_variables["targets_phs"][tname]] = targets[i]
 
         total_crops = len(batch["locations"][0])
 
-        s = dataset.utils.tic()
-        output = session.run(self.input_variables["labeled_crops"], feed_dict)
+        if has_orientation:
+            # Align cells by rotating to the major axis of nuclei
+            feed_dict[self.angles] = (batch["locations"][0]["OOrientation"]*dataset.utils.PI)/180.
+            output = session.run(self.aligned_labeled, feed_dict)
+        else:
+            output = session.run(self.input_variables["labeled_crops"], feed_dict)
+
         output = {"image_batch": output[0], "target_0": output[1]}
-        dataset.utils.toc("Image "+image_key+"("+str(total_crops)+" crops)", s)
 
         # Remove crops without any content TODO: enable multiple targets
         valid = np.sum(output["image_batch"], axis=(1,2,3)) > 0
         self.image_pool = output["image_batch"][valid, ...]
         self.label_pool = output["target_0"][valid, ...]  
 
-        return total_crops, pads
+        return total_crops 
 
 
     def generate(self, session, global_step=0):
-        pool_pointer = 0
-        while pool_pointer < self.image_pool.shape[0]:
-            start = pool_pointer
-            end = min(pool_pointer + self.batch_size, self.image_pool.shape[0])
-            batch = [self.image_pool[start:end, ...], self.label_pool[start:end, ...]]
-            yield batch
-            pool_pointer = end
+        yield self.image_pool, self.label_pool
 
 
 #######################################################

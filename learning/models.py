@@ -54,7 +54,7 @@ def create_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=25
     model = keras.models.Model(inputs=input_image, outputs=class_outputs)
     print(model.summary())
     print([t.shape for t in transforms])
-    optimizer = keras.optimizers.Adam(lr=learning_rate, amsgrad=True)
+    optimizer = keras.optimizers.Adam(lr=learning_rate)
     model.compile(optimizer, loss_func, ["categorical_accuracy"])
 
     return model

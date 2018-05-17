@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-PI = 3.1415926539
+import dataset.utils
 
 #################################################
 ## CROPPING AND TRANSFORMATION OPERATIONS
@@ -37,7 +37,7 @@ def augment(crop):
         #augmented = tf.image.rot90(augmented, angle[0])
 
         # 360 degree rotations
-        angle = tf.random_uniform([1], minval=0.0, maxval=2*PI, dtype=tf.float32)
+        angle = tf.random_uniform([1], minval=0.0, maxval=2*dataset.utils.PI, dtype=tf.float32)
         augmented = tf.contrib.image.rotate(augmented, angle[0], interpolation="BILINEAR")
 
         # Illumination changes
