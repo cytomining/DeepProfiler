@@ -196,6 +196,7 @@ class CropGenerator(object):
             self.image_batch = batch[0]
             self.target_batch = batch[1:]
 
+            '''
             for i in range(len(self.config["image_set"]["channels"])):
                 tf.summary.image("channel-" + str(i + 1),
                                  tf.expand_dims(self.image_batch[:, :, :, i], -1),
@@ -204,6 +205,7 @@ class CropGenerator(object):
                                  )
         self.merged_summary = tf.summary.merge_all()
         self.summary_writer = tf.summary.FileWriter(self.config["training"]["output"], session.graph)
+        '''
         '''
         with tf.variable_scope("trainer"):
             tf.summary.histogram("labels", tf.argmax(label_batch, axis=1))
@@ -219,12 +221,12 @@ class CropGenerator(object):
         while True:
             if self.coord.should_stop():
                 break
-            data = sess.run([self.image_batch] + self.target_batch + [self.merged_summary])
+            data = sess.run([self.image_batch] + self.target_batch) # + [self.merged_summary])
             # Indices of data => [0] images, [1:-1] targets, [-1] summary
             ms = data[-1]
             global_step += 1
-            if global_step % 10 == 0:
-                self.summary_writer.add_summary(ms, global_step)
+            #if global_step % 10 == 0:
+                #self.summary_writer.add_summary(ms, global_step)
 
             yield (data[0], data[1:-1])
 
@@ -363,11 +365,11 @@ class SetCropGenerator(CropGenerator):
         while True:
             if self.coord.should_stop():
                 break
-            data = sess.run([self.image_batch] + self.target_batch + [self.merged_summary])
+            data = sess.run([self.image_batch] + self.target_batch) # + [self.merged_summary])
             # Indices of data => [0] images, [1:-1] targets, [-1] summary
             self.set_manager.add_crops(data[0], data[1]) #TODO: support for multiple targets
             while not self.set_manager.ready:
-                data = sess.run([self.image_batch] + self.target_batch + [self.merged_summary])
+                data = sess.run([self.image_batch] + self.target_batch) # + [self.merged_summary])
                 self.set_manager.add_crops(data[0], data[1])
 
             global_step += 1

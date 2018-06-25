@@ -26,14 +26,31 @@ def create_learning_rate_schedule(config):
 
 def learn_model(config, dset, epoch):
 
-    # Start session
+    # Create cropping graph
+    crop_graph = tf.Graph()
+    with crop_graph.as_default():
+        if config["model"]["type"] == "convnet":
+            crop_generator = imaging.cropping.CropGenerator(config, dset)
+        elif config["model"]["type"] == "recurrent":
+            crop_generator = imaging.cropping.SetCropGenerator(config, dset)
+        elif config["model"]["type"] == "mixup":
+            crop_generator = imaging.cropping.SetCropGenerator(config, dset)
+        elif config["model"]["type"] == "mixup":
+            crop_generator = imaging.cropping.SetCropGenerator(config, dset)
+        cpu_config = tf.ConfigProto( device_count={'CPU' : 1, 'GPU' : 0} )
+        cpu_config.gpu_options.visible_device_list = ""
+       
+        crop_session = tf.Session(config = cpu_config)
+
+        crop_generator.start(crop_session)
+
+    # Start main session
     configuration = tf.ConfigProto()
     configuration.gpu_options.visible_device_list = "0"
-    session = tf.Session(config = configuration)
-    keras.backend.set_session(session)
+    main_session = tf.Session(config = configuration)
+    keras.backend.set_session(main_session)
 
     if config["model"]["type"] == "convnet":
-        crop_generator = imaging.cropping.CropGenerator(config, dset)
         input_shape = (
             config["sampling"]["box_size"],      # height 
             config["sampling"]["box_size"],      # width
@@ -46,7 +63,6 @@ def learn_model(config, dset, epoch):
                     is_training=True
                 )
     elif config["model"]["type"] == "recurrent":
-        crop_generator = imaging.cropping.SetCropGenerator(config, dset)
         input_shape = (
             config["model"]["sequence_length"],  # time
             config["sampling"]["box_size"],      # height 
@@ -61,7 +77,6 @@ def learn_model(config, dset, epoch):
                 )
 
     elif config["model"]["type"] == "mixup":
-        crop_generator = imaging.cropping.SetCropGenerator(config, dset)
         input_shape = (
             config["sampling"]["box_size"],      # height 
             config["sampling"]["box_size"],      # width
@@ -74,7 +89,6 @@ def learn_model(config, dset, epoch):
                     is_training=True
                 )
     elif config["model"]["type"] == "same_label_mixup":
-        crop_generator = imaging.cropping.SetCropGenerator(config, dset)
         input_shape = (
             config["sampling"]["box_size"],      # height 
             config["sampling"]["box_size"],      # width
@@ -86,8 +100,6 @@ def learn_model(config, dset, epoch):
                     config["training"]["learning_rate"], 
                     is_training=True
                 )
-
-    crop_generator.start(session)
 
     # keras-resnet model
     output_file = config["training"]["output"] + "/checkpoint_{epoch:04d}.hdf5"
@@ -114,7 +126,7 @@ def learn_model(config, dset, epoch):
     epochs = config["training"]["epochs"]
     steps = config["training"]["steps"]
     model.fit_generator(
-        generator=crop_generator.generate(session),
+        generator=crop_generator.generate(crop_session),
         steps_per_epoch=steps,
         epochs=epochs,
         callbacks=callbacks,
@@ -124,7 +136,7 @@ def learn_model(config, dset, epoch):
 
     # Close session and stop threads
     print("Complete! Closing session.", end="", flush=True)
-    crop_generator.stop(session)
-    session.close()
+    crop_generator.stop(crop_session)
+    crop_session.close()
     print(" All set.")
 

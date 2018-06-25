@@ -59,7 +59,7 @@ def prepareBoxes(batch, config):
             for lkey in locations.index:
                 y = int(locations.loc[lkey, y_key])
                 x = int(locations.loc[lkey, x_key])
-                masks[i] = int(images[index][y, x, -1])
+                masks[i] = int(np.median(images[index][y-10,:y+10, x-10:x+10, -1]))
                 i += 1
         # Pile up the resulting variables
         all_boxes.append(boxes)

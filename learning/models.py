@@ -27,15 +27,18 @@ def create_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=25
     features = keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-1].output)
     #features = keras.layers.core.Dropout(0.5)(features)
 
+    # TODO: factorize the multi-target output model
+
     # 2. Create an output embedding for each target
     class_outputs = []
 
     i = 0
     for t in targets:
-        e = keras.layers.Dense(embed_dims[i], activation=None, name=t.field_name + "_embed", use_bias=False)(features)
-        e = keras.layers.normalization.BatchNormalization()(e)
-        e = keras.layers.core.Dropout(0.5)(e)
-        y = keras.layers.Dense(t.shape[1], activation="softmax", name=t.field_name)(e)
+        #e = keras.layers.Dense(embed_dims[i], activation=None, name=t.field_name + "_embed", use_bias=False)(features)
+        #e = keras.layers.normalization.BatchNormalization()(e)
+        #e = keras.layers.core.Dropout(0.5)(e)
+        #y = keras.layers.Dense(t.shape[1], activation="softmax", name=t.field_name)(e)
+        y = keras.layers.Dense(t.shape[1], activation="softmax", name=t.field_name)(features)
         class_outputs.append(y)
         i += 1
 
@@ -48,7 +51,7 @@ def create_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=25
             return loss
         loss_func = ["categorical_crossentropy"]*(len(transforms)-1) + [regularized_loss]
     else:
-        loss_func = ["categorical_crossentropy"]*len(transforms)
+        loss_func = ["categorical_crossentropy"]
 
     # 4. Create and compile model
     model = keras.models.Model(inputs=input_image, outputs=class_outputs)
