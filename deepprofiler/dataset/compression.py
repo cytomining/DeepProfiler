@@ -5,9 +5,9 @@ import scipy.misc
 import skimage.transform
 import os.path
 
-import dataset.utils
-import dataset.illumination_statistics
-import dataset.image_dataset
+import deepprofiler.dataset.utils
+import deepprofiler.dataset.illumination_statistics
+import deepprofiler.dataset.image_dataset
 
 def png_dir(output_dir, plate_name):
     return output_dir + "/" + plate_name + "/pngs/"
@@ -64,13 +64,13 @@ class Compress():
         image_name = origPath.split("/")[-1]
         image_name = image_name.replace(self.source_format, self.target_format)
         filename = os.path.join(self.out_dir, image_name)
-        dataset.utils.check_path(filename)
+        deepprofiler.dataset.utils.check_path(filename)
         return filename
 
     # Main method. Downscales, stretches histogram, and saves as PNG
     def process_image(self, index, img, meta):
         self.count += 1
-        dataset.utils.printProgress(self.count, self.expected)
+        deepprofiler.dataset.utils.printProgress(self.count, self.expected)
         for c in range(len(self.channels)):
             # Illumination correction
             # TODO: Can this operation be applied at once in all channels?
@@ -107,10 +107,10 @@ def compress_plate(args):
     plate_name = plate.data.iloc[0]["Metadata_Plate"]
 
     # Dataset configuration
-    statsfile = dataset.illumination_statistics.illum_stats_filename(config["compression"]["output_dir"], plate_name)
+    statsfile = deepprofiler.dataset.illumination_statistics.illum_stats_filename(config["compression"]["output_dir"], plate_name)
     stats = pickle.load( open(statsfile, "rb") )
     keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = dataset.image_dataset.ImageDataset(
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(
         plate,
         config["metadata"]["label_field"],
         config["original_images"]["channels"],

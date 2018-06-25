@@ -1,4 +1,4 @@
-import dataset.compression
+import deepprofiler.dataset.compression
 import numpy
 import numpy.testing
 import numpy.random
@@ -17,7 +17,7 @@ def out_dir(tmpdir):
 def compress(out_dir):
     stats = {"original_size": [16, 16]}
     channels = ["DNA", "ER", "Mito"]
-    return dataset.compression.Compress(stats, channels, out_dir)
+    return deepprofiler.dataset.compression.Compress(stats, channels, out_dir)
 
 
 def test_init(compress, out_dir):
@@ -84,9 +84,9 @@ def test_process_image(compress, out_dir):
     image = numpy.random.randint(256, size=(16, 16, 3), dtype=numpy.uint16)
 
     meta = {
-        "DNA": "/User/jcaciedo/LUAD/dna.tiff",
-        "ER": "/User/jcaciedo/LUAD/er.tiff",
-        "Mito": "/User/jcaciedo/LUAD/mito.tiff"
+        "DNA": "/tmp/dna.tiff",
+        "ER": "/tmp/er.tiff",
+        "Mito": "/tmp/mito.tiff"
     }
     compress.stats["illum_correction_function"] = numpy.ones((16,16,3))
     compress.stats["upper_percentiles"] = [255, 255, 255]
@@ -102,4 +102,4 @@ def test_process_image(compress, out_dir):
 
     for i in range(3):
         data = scipy.misc.imread(filenames[i])
-        numpy.testing.assert_array_equal(image[:,:,i], data)
+        numpy.testing.assert_allclose(image[:,:,i], data, rtol=0.04, atol=0)
