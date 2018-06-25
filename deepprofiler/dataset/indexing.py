@@ -1,7 +1,7 @@
 import pandas as pd
 
-import dataset.metadata
-import dataset.utils
+import deepprofiler.dataset.metadata
+import deepprofiler.dataset.utils
 
 
 def relative_paths(df, target, path, filename, root):
@@ -11,7 +11,7 @@ def relative_paths(df, target, path, filename, root):
 
 def create_metadata_index(config):
     # Load plate maps dataset and create labels
-    plate_maps = dataset.metadata.Metadata(
+    plate_maps = deepprofiler.dataset.metadata.Metadata(
         config["metadata"]["plate_maps"],
         "multi",
         config["metadata"]["platemap_separator"]
@@ -28,11 +28,11 @@ def create_metadata_index(config):
     print("Unique {}: {}".format(label_field, len(label_values)))
     for i in range(len(label_values)):
         maps.loc[lambda df: df[label_field] == label_values[i], label_field] = i
-        dataset.utils.printProgress(i + 1, len(label_values), prefix=label_field)
+        deepprofiler.dataset.utils.printProgress(i + 1, len(label_values), prefix=label_field)
 
     # Load barcodes and csv files
-    barcodes = dataset.metadata.Metadata(config["original_images"]["barcode_file"], "single")
-    load_data = dataset.metadata.Metadata(config["metadata"]["csv_list"], "multi")
+    barcodes = deepprofiler.dataset.metadata.Metadata(config["original_images"]["barcode_file"], "single")
+    load_data = deepprofiler.dataset.metadata.Metadata(config["metadata"]["csv_list"], "multi")
 
     # Merge two frames: csvs + barcodes to attach labels to each image
     columns = list(load_data.data.columns.values)
@@ -80,7 +80,7 @@ def create_metadata_index(config):
     for i in range(len(label_values)):
         mask1 = metadata[label_field] == i
         wells = metadata[mask1]["plate_well"].unique()
-        dataset.utils.printProgress(i + 1, len(label_values), "Replicates")
+        deepprofiler.dataset.utils.printProgress(i + 1, len(label_values), "Replicates")
         replicate = 1
         for j in range(len(wells)):
             mask2 = metadata["plate_well"] == wells[j]
@@ -97,7 +97,7 @@ def create_metadata_index(config):
     dframe.to_csv(config["metadata"]["labels_file"], index=False)
 
 def write_compression_index(config):
-    metadata = dataset.metadata.Metadata(config["metadata"]["filename"], dtype=None)
+    metadata = deepprofiler.dataset.metadata.Metadata(config["metadata"]["filename"], dtype=None)
     new_index = metadata.data
     for ch in config["original_images"]["channels"]:
         new_index[ch] = new_index[ch].str.split("/").str[-1]
