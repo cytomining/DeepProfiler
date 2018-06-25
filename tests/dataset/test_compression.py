@@ -75,7 +75,7 @@ def test_set_scaling_factor(compress):
 
 
 def test_target_path(compress, out_dir):
-    new_path = compress.target_path("/path/to/some/image.tiff")
+    new_path = compress.target_path("/tmp/image.tiff")
     assert new_path == out_dir + "/image.png"
 
 
@@ -91,9 +91,7 @@ def test_process_image(compress, out_dir):
     compress.stats["illum_correction_function"] = numpy.ones((16,16,3))
     compress.stats["upper_percentiles"] = [255, 255, 255]
     compress.stats["lower_percentiles"] = [0, 0, 0]
-
     compress.process_image(0, image, meta)
-
     filenames = glob.glob(os.path.join(out_dir,"*"))
     real_filenames = [os.path.join(out_dir, x) for x in ["dna.png", "er.png", "mito.png"]]
     filenames.sort()
@@ -101,5 +99,8 @@ def test_process_image(compress, out_dir):
     assert real_filenames == filenames
 
     for i in range(3):
+        assert os.path.exists(filenames[i])
         data = scipy.misc.imread(filenames[i])
         numpy.testing.assert_allclose(image[:,:,i], data, rtol=0.04, atol=0)
+        geq = (data >= image[:,:,i])
+        assert numpy.count_nonzero(geq) == geq.size

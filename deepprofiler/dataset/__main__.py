@@ -31,7 +31,8 @@ def cli(context, config, cores):
     context.obj["process"] = process
 
 
-# First deepprofiler.dataset tool: Create metadata files
+
+# First dataset tool: Create metadata files
 @cli.command()
 @click.pass_context
 def metadata(context):

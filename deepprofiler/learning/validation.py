@@ -4,6 +4,7 @@ import tensorflow as tf
 import pickle
 
 import deepprofiler.imaging.boxes
+import deepprofiler.imaging.cropping
 import deepprofiler.learning.metrics
 import deepprofiler.learning.models
 import deepprofiler.learning.training

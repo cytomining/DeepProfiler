@@ -44,7 +44,7 @@ class ImageDataset():
         return keys, images, targets, outlines
 
     def getTrainBatch(self, N):
-        #s = dataset.utils.tic()
+        #s = deepprofiler.dataset.utils.tic()
         # Batch size is N
         values = self.sampling_values.copy()
         # 1. Sample categories
