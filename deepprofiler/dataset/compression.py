@@ -2,6 +2,7 @@ import pickle as pickle
 
 import numpy
 import scipy.misc
+import scipy.stats
 import skimage.transform
 import os.path
 
