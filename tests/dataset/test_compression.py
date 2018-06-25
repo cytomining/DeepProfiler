@@ -101,6 +101,6 @@ def test_process_image(compress, out_dir):
     for i in range(3):
         assert os.path.exists(filenames[i])
         data = scipy.misc.imread(filenames[i])
+        numpy.testing.assert_allclose(image[:,:,i], data, rtol=0.04, atol=0)
         geq = (data >= image[:,:,i])
         assert numpy.count_nonzero(geq) == geq.size
-        # numpy.testing.assert_array_equal(image[:,:,i], data)

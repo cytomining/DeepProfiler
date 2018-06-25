@@ -272,7 +272,7 @@ class SingleImageCropGenerator(CropGenerator):
 
         batch = {"images": [], "locations": [], "targets": [[]]}
         batch["images"].append(image_array)
-        batch["locations"].append(imaging.boxes.getLocations(image_key, self.config, randomize=False))
+        batch["locations"].append(deepprofiler.imaging.boxes.getLocations(image_key, self.config, randomize=False))
         for i in range(num_targets):
             tgt = self.dset.targets[i]
             batch["targets"][0].append(tgt.get_values(meta))

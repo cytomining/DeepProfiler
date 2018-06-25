@@ -52,6 +52,7 @@ def test_channel_function(corrector):
     assert numpy.all(result >= 1)
 
 
+
 # def test_compute_all(corrector, mocker):  # Juan can remove mocker, it is a fun experiment
 #     mocker.spy(corrector, "channel_function")
 #
@@ -64,6 +65,7 @@ def test_channel_function(corrector):
 #     corrector.channel_function.assert_called_with(mocker.ANY, 1.5)  # TODO: Claire feels bad about mocker.ANY
 #
 #     assert not numpy.all(corrector.illum_corr_func == 0)
+
 
 
 def test_apply(corrector):
