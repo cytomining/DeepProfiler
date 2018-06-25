@@ -4,6 +4,8 @@ import time
 import logging
 import multiprocessing
 
+PI = 3.1415926539
+
 # From: http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
 # Print iterations progress
 def printProgress (iteration, total, prefix='Progress', suffix='Complete', decimals=1, barLength=100):

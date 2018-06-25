@@ -7,9 +7,31 @@ import imaging.boxes
 import learning.metrics
 import learning.models
 import learning.training
+import dataset.utils
 
 import keras
 
+import skimage.transform
+import warnings
+
+def save_images(fname, images):
+    colors = np.asarray(
+         [[0,   192, 64],
+         [192, 0,   64],
+         [0,   0,   255],
+         [255, 0,   0], 
+         [0,   255, 0]], dtype=np.uint8)
+    colors = colors[np.newaxis, np.newaxis, np.newaxis, :]
+    result = images[...,np.newaxis] * colors
+    result = np.sum(result, axis=3)
+    maxs = np.max(np.max(np.max(result, axis=1, keepdims=True), axis=2, keepdims=True),axis=3, keepdims=True)
+    result = result / maxs
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        os.makedirs(fname, exist_ok=True)
+        for i in range(result.shape[0]):
+            img = skimage.transform.rescale(result[i,...], 0.5)
+            skimage.io.imsave(fname + "/" + str(i) + ".jpg", img)
 
 class Validation(object):
 
@@ -103,68 +125,53 @@ class Validation(object):
 
     def process_batches(self, key, image_array, meta):
         # Prepare image for cropping
+        s = dataset.utils.tic()
         batch_size = self.config["validation"]["minibatch"] 
-        total_crops, pads = self.crop_generator.prepare_image(
+        total_crops = self.crop_generator.prepare_image(
                                    self.session, 
                                    image_array, 
                                    meta, 
                                    self.config["validation"]["sample_first_crops"]
                             )
-        batches = []
-        for batch in self.crop_generator.generate(self.session):
-            batches.append(batch)
+        if total_crops > 0:
+            # We expect all crops in a single batch
+            filebase = self.output_base(meta)
+            batches = [b for b in self.crop_generator.generate(self.session)]
+            self.predict(batches[0], meta)
+        dataset.utils.toc(str(total_crops)+" crops", s)
 
-        filebase = self.output_base(meta)
-        batch_data = {"total_crops": total_crops, "pads": pads, "batches": batches}
-        #with open(filebase + ".pkl", "wb") as output_file:
-        #    pickle.dump(batch_data, output_file)
-        self.predict(batch_data, meta)
+    def predict(self, batch, meta):
+        # batch[0] contains images, batch[i+1] contains the targets
+        features = np.zeros(shape=(batch[0].shape[0], self.num_features))
 
+        # Forward propagate crops into the network and get the outputs
+        output = self.model.predict(batch[0])
+        if type(output) is not list:
+            output = [output]
 
-    def predict(self, batch_data, meta):
-        features = np.zeros(shape=(batch_data["total_crops"], self.num_features))
+        # Compute performance metrics for each target
+        for i in range(len(self.metrics)):
+            metric_values = self.session.run(
+                    self.metrics[i].get_ops(), 
+                    feed_dict=self.metrics[i].set_inputs(batch[i+1], output[i])
+                )
+            self.metrics[i].update(metric_values, batch[0].shape[0])
 
-        bp = 0
-        for batch in batch_data["batches"]:
-            # Forward propagate crops into the network and get the outputs
-            output = self.model.predict(batch[0])
-            if type(output) is not list:
-                output = [output]
-            bp += 1
-
-            # Remove padded crops
-            if len(batch_data["batches"]) == bp and batch_data["pads"] > 0:
-                p = batch_data["pads"]
-                for i in range(len(batch)):
-                    batch[i] = batch[i][0:-p,...]
-                for i in range(len(output)):
-                    output[i] = output[i][0:-p,...]
-
-            # Compute performance metrics for each target
-            # batch[0] contains images, batch[i+1] contains the targets
-            for i in range(len(self.metrics)):
-                metric_values = self.session.run(
-                        self.metrics[i].get_ops(), 
-                        feed_dict=self.metrics[i].set_inputs(batch[i+1], output[i])
-                    )
-                self.metrics[i].update(metric_values, batch[0].shape[0])
-
-            # Extract features (again) 
-            # TODO: compute predictions and features at the same time
-            if self.save_features:
-                f = self.feat_extractor((batch[0], 0))
-                while len(f[0].shape) > 2: # 2D mean spatial pooling
-                    f[0] = np.mean(f[0], axis=1)
-                batch_size = batch[0].shape[0]
-                features[(bp - 1) * batch_size:bp * batch_size, :] = f[0]
-
+        # Extract features (again) 
+        # TODO: compute predictions and features at the same time
+        if self.save_features:
+            f = self.feat_extractor((batch[0], 0))
+            while len(f[0].shape) > 2: # 2D mean spatial pooling
+                f[0] = np.mean(f[0], axis=1)
+            batch_size = batch[0].shape[0]
+            features[:, :] = f[0]
 
         # Save features and report performance
         filebase = self.output_base(meta)
         if self.save_features:
-            if batch_data["pads"] > 0:
-                features = features[:-batch_data["pads"], :]
+            #features = features[:-batch_data["pads"], :]
             np.savez_compressed(filebase + ".npz", f=features)
+            save_images(filebase, batch[0])
             print(filebase, features.shape)
 
 
@@ -177,7 +184,7 @@ class Validation(object):
 
 def validate(config, dset, checkpoint_file):
     configuration = tf.ConfigProto()
-    configuration.gpu_options.allow_growth = True
+    #configuration.gpu_options.allow_growth = True
     configuration.gpu_options.visible_device_list = "0"
     session = tf.Session(config=configuration)
     keras.backend.set_session(session)

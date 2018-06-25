@@ -7,19 +7,6 @@ import learning.models
 import imaging.cropping
 
 
-def create_learning_rate_schedule(config):
-    def lrs(e):
-        new_lr = config["training"]["learning_rate"]
-        epochs = config["training"]["epochs"]
-        if    .0 <= e/epochs < .40: new_lr /= 1.
-        elif .40 <= e/epochs < .70: new_lr /= 10.
-        elif .70 <= e/epochs < .90: new_lr /= 100.
-        elif .90 <= e/epochs      : new_lr /= 1000.
-        print("Learning rate:", new_lr)
-        return new_lr
-    return lrs
-
-
 #################################################
 ## MAIN TRAINING ROUTINE
 #################################################
@@ -111,9 +98,7 @@ def learn_model(config, dset, epoch):
     csv_output = config["training"]["output"] + "/log.csv"
     callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
 
-    lrs = create_learning_rate_schedule(config)
-    lr_schedule = keras.callbacks.LearningRateScheduler(schedule=lrs)
-    callbacks = [callback_model_checkpoint, callback_csv, lr_schedule]
+    callbacks = [callback_model_checkpoint, callback_csv]
 
 
     previous_model = output_file.format(epoch=epoch-1)

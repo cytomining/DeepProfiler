@@ -59,7 +59,9 @@ def prepareBoxes(batch, config):
             for lkey in locations.index:
                 y = int(locations.loc[lkey, y_key])
                 x = int(locations.loc[lkey, x_key])
-                masks[i] = int(np.median(images[index][y-10,:y+10, x-10:x+10, -1]))
+                patch = images[index][max(y-5,0):y+5, max(x-5,0):x+5, -1]
+                if np.size(patch) > 0:
+                    masks[i] = int(np.median(patch))
                 i += 1
         # Pile up the resulting variables
         all_boxes.append(boxes)
