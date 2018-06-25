@@ -1,5 +1,5 @@
-import dataset.utils as utils
-import dataset.image_dataset
+import deepprofiler.dataset.utils as utils
+import deepprofiler.dataset.image_dataset
 import skimage.transform
 import numpy as np
 import os
@@ -111,7 +111,7 @@ def calculate_statistics(args):
     # Create Dataset object
     keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
 
-    dset = dataset.image_dataset.ImageDataset(
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(
         plate,
         config["metadata"]["label_field"],
         config["original_images"]["channels"],

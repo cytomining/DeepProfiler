@@ -3,12 +3,12 @@ import os
 
 import click
 
-import dataset.compression
-import dataset.image_dataset
-import dataset.indexing
-import dataset.illumination_statistics
-import dataset.metadata
-import dataset.utils
+import deepprofiler.dataset.compression
+import deepprofiler.dataset.image_dataset
+import deepprofiler.dataset.indexing
+import deepprofiler.dataset.illumination_statistics
+import deepprofiler.dataset.metadata
+import deepprofiler.dataset.utils
 
 
 # Main interaction point
@@ -26,7 +26,7 @@ def cli(context, config, cores):
     params["metadata"]["csv_list"] = os.path.join(params["metadata"]["path"], params["metadata"]["csv_list"])
     params["metadata"]["filename"] = os.path.join(params["metadata"]["path"], "metadata.csv")
     params["metadata"]["labels_file"] = os.path.join(params["metadata"]["path"], params["metadata"]["label_field"]+".csv")
-    process = dataset.utils.Parallel(params, numProcs=cores)
+    process = deepprofiler.dataset.utils.Parallel(params, numProcs=cores)
     context.obj["config"] = params
     context.obj["process"] = process
 
@@ -35,7 +35,7 @@ def cli(context, config, cores):
 @cli.command()
 @click.pass_context
 def metadata(context):
-    dataset.indexing.create_metadata_index(context.obj["config"])
+    deepprofiler.dataset.indexing.create_metadata_index(context.obj["config"])
 
 
 # Second dataset tool: Compute illumination statistics
@@ -43,8 +43,8 @@ def metadata(context):
 @click.pass_context
 def illumination(context):
     process = context.obj["process"]
-    metadata = dataset.metadata.read_plates(context.obj["config"]["metadata"]["filename"])
-    process.compute(dataset.illumination_statistics.calculate_statistics, metadata)
+    metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["metadata"]["filename"])
+    process.compute(deepprofiler.dataset.illumination_statistics.calculate_statistics, metadata)
 
 
 # Third dataset tool: Compress images
@@ -52,9 +52,9 @@ def illumination(context):
 @click.pass_context
 def compression(context):
     process = context.obj["process"]
-    metadata = dataset.metadata.read_plates(context.obj["config"]["metadata"]["filename"])
-    process.compute(dataset.compression.compress_plate, metadata)
-    dataset.indexing.write_compression_index(context.obj["config"])
+    metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["metadata"]["filename"])
+    process.compute(deepprofiler.dataset.compression.compress_plate, metadata)
+    deepprofiler.dataset.indexing.write_compression_index(context.obj["config"])
 
 
 # Fourth dataset tool: Find cell locations
@@ -62,8 +62,8 @@ def compression(context):
 @click.pass_context
 def locations(context):
     process = context.obj["process"]
-    metadata = dataset.metadata.read_plates(context.obj["config"]["metadata"]["filename"])
-    process.compute(dataset.metadata.create_cell_indices, metadata)
+    metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["metadata"]["filename"])
+    process.compute(deepprofiler.dataset.metadata.create_cell_indices, metadata)
 
 
 # Auxiliary tool: Split index in multiple parts
@@ -73,7 +73,7 @@ def locations(context):
               help="Number of parts to split the index",
               type=click.INT)
 def split_index(context, parts):
-    dataset.indexing.split_index(context.obj["config"], parts)
+    deepprofiler.dataset.indexing.split_index(context.obj["config"], parts)
 
 
 if __name__ == "__main__":
