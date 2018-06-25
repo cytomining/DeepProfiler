@@ -4,9 +4,9 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 
-import imaging.boxes
-import imaging.augmentations
-import imaging.cropset
+import deepprofiler.imaging.boxes
+import deepprofiler.imaging.augmentations
+import deepprofiler.imaging.cropset
 
 def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False):
     with tf.variable_scope("cropping"):
@@ -111,7 +111,7 @@ class CropGenerator(object):
             [tf.float32] + [tf.int32] * num_targets,
             shapes=self.input_variables["shapes"]["crops"]
         )
-        augmented_op = imaging.augmentations.aument_multiple(
+        augmented_op = deepprofiler.imaging.augmentations.aument_multiple(
             self.input_variables["labeled_crops"][0],
             self.config["queueing"]["augmentation_workers"]
         )
@@ -144,9 +144,9 @@ class CropGenerator(object):
             while not coord.should_stop():
                 try:
                     # Load images and cell boxes
-                    batch = imaging.boxes.loadBatch(self.dset, self.config)
+                    batch = deepprofiler.imaging.boxes.loadBatch(self.dset, self.config)
                     images = np.reshape(batch["images"], self.input_variables["shapes"]["batch"])
-                    boxes, box_ind, targets, masks = imaging.boxes.prepareBoxes(batch, self.config)
+                    boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepareBoxes(batch, self.config)
                     feed_dict = {
                             self.input_variables["image_ph"]:images,
                             self.input_variables["boxes_ph"]:boxes,
@@ -290,7 +290,7 @@ class SingleImageCropGenerator(CropGenerator):
         batch["locations"][0] = pd.concat((batch["locations"][0], padding), ignore_index=True)
 
 
-        boxes, box_ind, targets, mask_ind = imaging.boxes.prepareBoxes(batch, self.config)
+        boxes, box_ind, targets, mask_ind = deepprofiler.imaging.boxes.prepareBoxes(batch, self.config)
         batch["images"] = np.reshape(image_array, self.input_variables["shapes"]["batch"])
 
         feed_dict = {
@@ -338,21 +338,21 @@ class SetCropGenerator(CropGenerator):
             self.target_sizes.append(self.train_variables[t].shape[0])
 
         if self.config["model"]["type"] == "recurrent":
-            self.set_manager = imaging.cropset.CropSet(
+            self.set_manager = deepprofiler.imaging.cropset.CropSet(
                        self.config["model"]["sequence_length"],
                        self.config["queueing"]["random_queue_size"], 
                        self.input_variables["shapes"]["crops"],
                        self.target_sizes[0]
             )
         elif self.config["model"]["type"] == "mixup":
-            self.set_manager = imaging.cropset.Mixup(
+            self.set_manager = deepprofiler.imaging.cropset.Mixup(
                        self.config["model"]["alpha"],
                        self.config["queueing"]["random_queue_size"], 
                        self.input_variables["shapes"]["crops"],
                        self.target_sizes[0]
             )
         elif self.config["model"]["type"] == "same_label_mixup":
-            self.set_manager = imaging.cropset.SameLabelMixup(
+            self.set_manager = deepprofiler.imaging.cropset.SameLabelMixup(
                        self.config["model"]["alpha"],
                        self.config["queueing"]["random_queue_size"], 
                        self.input_variables["shapes"]["crops"],

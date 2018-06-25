@@ -3,9 +3,9 @@ import os
 
 import click
 
-import dataset.image_dataset
-import learning.training
-import learning.validation
+import deepprofiler.dataset.image_dataset
+import deepprofiler.learning.training
+import deepprofiler.learning.validation
 
 # Main interaction point
 @click.group()
@@ -24,16 +24,16 @@ def cli(context, config):
 @click.option("--epoch", default=1)
 @click.pass_context
 def training(context, epoch):
-    metadata = dataset.image_dataset.read_dataset(context.obj["config"])
-    learning.training.learn_model(context.obj["config"], metadata, epoch)
+    metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
+    deepprofiler.learning.training.learn_model(context.obj["config"], metadata, epoch)
 
 # Second learning tool: Training a recurrent network
 @cli.command()
 @click.option("--epoch", default=1)
 @click.pass_context
 def recurrent_training(context, epoch):
-    metadata = dataset.image_dataset.read_dataset(context.obj["config"])
-    learning.recurrent_training.learn_model(context.obj["config"], metadata, epoch)
+    metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
+    deepprofiler.learning.recurrent_training.learn_model(context.obj["config"], metadata, epoch)
 
 
 # Evaluate a network in the validation set
@@ -42,9 +42,9 @@ def recurrent_training(context, epoch):
 @click.option("--subset", default="val", type=click.Choice(["val", "train"]))
 @click.pass_context
 def validation(context, model, subset):
-    metadata = dataset.image_dataset.read_dataset(context.obj["config"])
+    metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     context.obj["config"]["validation"]["frame"] = subset
-    learning.validation.validate(context.obj["config"], metadata, model)
+    deepprofiler.learning.validation.validate(context.obj["config"], metadata, model)
 
 
 # Evaluate a network in the validation set
@@ -53,9 +53,9 @@ def validation(context, model, subset):
 @click.option("--subset", default="val", type=click.Choice(["val", "train"]))
 @click.pass_context
 def recurrent_validation(context, model, subset):
-    metadata = dataset.image_dataset.read_dataset(context.obj["config"])
+    metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     context.obj["config"]["validation"]["frame"] = subset
-    learning.recurrent_validation.validate(context.obj["config"], metadata, model)
+    deepprofiler.learning.recurrent_validation.validate(context.obj["config"], metadata, model)
 
 
 # Profile cells and extract features
@@ -66,13 +66,13 @@ def recurrent_validation(context, model, subset):
               default=-1, 
               type=click.INT)
 def profiling(context, part):
-    import learning.profiling
+    import deepprofiler.learning.profiling
     config = context.obj["config"]
     if part >= 0:
         partfile = "index-{0:03d}.csv".format(part)
         config["image_set"]["index"] = os.path.join(config["image_set"]["metadata"], partfile)
-    metadata = dataset.image_dataset.read_dataset(context.obj["config"])
-    learning.profiling.profile(context.obj["config"], metadata)
+    metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
+    deepprofiler.learning.profiling.profile(context.obj["config"], metadata)
 
 
 if __name__ == "__main__":
