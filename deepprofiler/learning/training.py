@@ -3,8 +3,8 @@ import os
 import tensorflow as tf
 import keras
 
-import learning.models
-import imaging.cropping
+import deepprofiler.learning.models
+import deepprofiler.imaging.cropping
 
 
 #################################################
@@ -17,13 +17,13 @@ def learn_model(config, dset, epoch):
     crop_graph = tf.Graph()
     with crop_graph.as_default():
         if config["model"]["type"] == "convnet":
-            crop_generator = imaging.cropping.CropGenerator(config, dset)
+            crop_generator = deepprofiler.imaging.cropping.CropGenerator(config, dset)
         elif config["model"]["type"] == "recurrent":
-            crop_generator = imaging.cropping.SetCropGenerator(config, dset)
+            crop_generator = deepprofiler.imaging.cropping.SetCropGenerator(config, dset)
         elif config["model"]["type"] == "mixup":
-            crop_generator = imaging.cropping.SetCropGenerator(config, dset)
+            crop_generator = deepprofiler.imaging.cropping.SetCropGenerator(config, dset)
         elif config["model"]["type"] == "mixup":
-            crop_generator = imaging.cropping.SetCropGenerator(config, dset)
+            crop_generator = deepprofiler.imaging.cropping.SetCropGenerator(config, dset)
         cpu_config = tf.ConfigProto( device_count={'CPU' : 1, 'GPU' : 0} )
         cpu_config.gpu_options.visible_device_list = ""
        
@@ -43,7 +43,7 @@ def learn_model(config, dset, epoch):
             config["sampling"]["box_size"],      # width
             len(config["image_set"]["channels"]) # channels
         )
-        model = learning.models.create_keras_resnet(
+        model = deepprofiler.learning.models.create_keras_resnet(
                     input_shape, 
                     dset.targets, 
                     config["training"]["learning_rate"], 
@@ -56,7 +56,7 @@ def learn_model(config, dset, epoch):
             config["sampling"]["box_size"],      # width
             len(config["image_set"]["channels"]) # channels
         )
-        model = learning.models.create_recurrent_keras_resnet(
+        model = deepprofiler.learning.models.create_recurrent_keras_resnet(
                     input_shape, 
                     dset.targets, 
                     config["training"]["learning_rate"], 
@@ -69,7 +69,7 @@ def learn_model(config, dset, epoch):
             config["sampling"]["box_size"],      # width
             len(config["image_set"]["channels"]) # channels
         )
-        model = learning.models.create_keras_resnet(
+        model = deepprofiler.learning.models.create_keras_resnet(
                     input_shape, 
                     dset.targets, 
                     config["training"]["learning_rate"], 
@@ -81,7 +81,7 @@ def learn_model(config, dset, epoch):
             config["sampling"]["box_size"],      # width
             len(config["image_set"]["channels"]) # channels
         )
-        model = learning.models.create_keras_resnet(
+        model = deepprofiler.learning.models.create_keras_resnet(
                     input_shape, 
                     dset.targets, 
                     config["training"]["learning_rate"], 

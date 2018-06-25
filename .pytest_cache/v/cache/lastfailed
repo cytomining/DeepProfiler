@@ -1,0 +1,3 @@
+{
+  "tests/dataset/test_illumination_correction.py::test_compute_all": true
+}

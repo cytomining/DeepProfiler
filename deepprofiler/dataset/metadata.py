@@ -1,6 +1,6 @@
 import pandas as pd
 
-import dataset.utils
+import deepprofiler.dataset.utils
 import sqlite3
 
 
@@ -23,7 +23,7 @@ def conditionalWellName(row):
 def read_plates(metaFile):
     metadata = Metadata(metaFile)
     plates = metadata.data["Metadata_Plate"].unique()
-    dataset.utils.logger.info("Total plates: {}".format(len(plates)))
+    deepprofiler.dataset.utils.logger.info("Total plates: {}".format(len(plates)))
     for i in range(len(plates)):  #  & (df.Metadata_Well == "a01")
         plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[i]), copy=True)
         yield plate
@@ -99,7 +99,7 @@ def write_locations(field, query_template, plate_name, row, conn, config):
         row["Metadata_Site"],
         field
     )
-    dataset.utils.check_path(loc_file)
+    deepprofiler.dataset.utils.check_path(loc_file)
     locations.to_csv(loc_file, index=False)
 
 
@@ -127,7 +127,7 @@ def create_cell_indices(args):
     for index, row in plate.data.iterrows():
         write_locations("Cells", query_template, plate_name, row, conn, config)
         write_locations("Nuclei", query_template, plate_name, row, conn, config)
-        dataset.utils.printProgress(iteration, len(plate.data), prefix='Locations in plate ' + str(plate_name))
+        deepprofiler.dataset.utils.printProgress(iteration, len(plate.data), prefix='Locations in plate ' + str(plate_name))
         iteration += 1
     print("")
 

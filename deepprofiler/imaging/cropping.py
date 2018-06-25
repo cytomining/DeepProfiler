@@ -5,9 +5,9 @@ import time
 import numpy as np
 import tensorflow as tf
 
-import imaging.boxes
-import imaging.augmentations
-import imaging.cropset
+import deepprofiler.imaging.boxes
+import deepprofiler.imaging.augmentations
+import deepprofiler.imaging.cropset
 
 import dataset.utils
 
@@ -127,9 +127,9 @@ class CropGenerator(object):
             while not coord.should_stop():
                 try:
                     # Load images and cell boxes
-                    batch = imaging.boxes.loadBatch(self.dset, self.config)
+                    batch = deepprofiler.imaging.boxes.loadBatch(self.dset, self.config)
                     images = np.reshape(batch["images"], self.input_variables["shapes"]["batch"])
-                    boxes, box_ind, targets, masks = imaging.boxes.prepareBoxes(batch, self.config)
+                    boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepareBoxes(batch, self.config)
                     feed_dict = {
                             self.input_variables["image_ph"]:images,
                             self.input_variables["boxes_ph"]:boxes,
@@ -275,7 +275,7 @@ class SingleImageCropGenerator(CropGenerator):
 
         batch = {"images": [], "locations": [], "targets": [[]]}
         batch["images"].append(image_array)
-        batch["locations"].append(imaging.boxes.getLocations(image_key, self.config, randomize=False))
+        batch["locations"].append(deepprofiler.imaging.boxes.getLocations(image_key, self.config, randomize=False))
         for i in range(num_targets):
             tgt = self.dset.targets[i]
             batch["targets"][0].append(tgt.get_values(meta))
@@ -342,21 +342,21 @@ class SetCropGenerator(CropGenerator):
             self.target_sizes.append(self.train_variables[t].shape[1])
 
         if self.config["model"]["type"] == "recurrent":
-            self.set_manager = imaging.cropset.CropSet(
+            self.set_manager = deepprofiler.imaging.cropset.CropSet(
                        self.config["model"]["sequence_length"],
                        self.config["queueing"]["queue_size"], 
                        self.input_variables["shapes"]["crops"],
                        self.target_sizes[0]
             )
         elif self.config["model"]["type"] == "mixup":
-            self.set_manager = imaging.cropset.Mixup(
+            self.set_manager = deepprofiler.imaging.cropset.Mixup(
                        self.config["model"]["alpha"],
                        self.config["queueing"]["queue_size"], 
                        self.input_variables["shapes"]["crops"],
                        self.target_sizes[0]
             )
         elif self.config["model"]["type"] == "same_label_mixup":
-            self.set_manager = imaging.cropset.SameLabelMixup(
+            self.set_manager = deepprofiler.imaging.cropset.SameLabelMixup(
                        self.config["model"]["alpha"],
                        self.config["queueing"]["queue_size"], 
                        self.input_variables["shapes"]["crops"],

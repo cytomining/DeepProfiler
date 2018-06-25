@@ -16,10 +16,10 @@ except:
     print("export PYTHONPATH=/home/ubuntu/models/slim")
     sys.exit()
 
-import learning.training
-import imaging.boxes
-import imaging.cropping
-from dataset.utils import tic, toc
+import deepprofiler.learning.training
+import deepprofiler.imaging.boxes
+import deepprofiler.imaging.cropping
+from deepprofiler.dataset.utils import tic, toc
 
 
 num_features = 1536
@@ -42,7 +42,8 @@ def profile(config, dset):
         config["sampling"]["box_size"],      # width
         len(config["image_set"]["channels"]) # channels
     )
-    crop_generator = imaging.cropping.SingleImageCropGenerator(config, dset)
+
+    crop_generator = deepprofiler.imaging.cropping.SingleImageCropGenerator(config, dset)
     num_channels = len(config["image_set"]["channels"])
 
     # Setup pretrained model 

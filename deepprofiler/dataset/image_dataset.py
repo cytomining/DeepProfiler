@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
 
-import dataset.pixels
-import dataset.utils
-import dataset.metadata
-import dataset.target
+import deepprofiler.dataset.pixels
+import deepprofiler.dataset.utils
+import deepprofiler.dataset.metadata
+import deepprofiler.dataset.target
 
 
 class ImageDataset():
@@ -44,7 +44,7 @@ class ImageDataset():
         return keys, images, targets, outlines
 
     def getTrainBatch(self, N):
-        #s = dataset.utils.tic()
+        #s = deepprofiler.dataset.utils.tic()
         # Batch size is N
         values = self.sampling_values.copy()
         # 1. Sample categories
@@ -69,7 +69,7 @@ class ImageDataset():
         # 4. Open images
         batch = {'keys': keys, 'images': [], 'targets': targets}
         for i in range(len(images)):
-            image_array = dataset.pixels.openImage(images[i], outlines[i])
+            image_array = deepprofiler.dataset.pixels.openImage(images[i], outlines[i])
             # TODO: Implement pixel normalization using control statistics
             #image_array -= 128.0
             batch['images'].append(image_array)
@@ -91,7 +91,7 @@ class ImageDataset():
             index = img[0]
             meta = img[2]
             if check(meta):
-                image = dataset.pixels.openImage(img[1][1], img[1][2])
+                image = deepprofiler.dataset.pixels.openImage(img[1][1], img[1][2])
                 f(index, image, meta)
         return
 
@@ -110,7 +110,7 @@ class ImageDataset():
 
 def read_dataset(config):
     # Read metadata and split dataset in training and validation
-    metadata = dataset.metadata.Metadata(config["image_set"]["index"], dtype=None)
+    metadata = deepprofiler.dataset.metadata.Metadata(config["image_set"]["index"], dtype=None)
 
     # Add outlines if specified
     outlines = None
@@ -139,7 +139,7 @@ def read_dataset(config):
 
     # Add training targets
     for t in config["training"]["targets"]:
-        new_target = dataset.target.MetadataColumnTarget(t, metadata.data[t].unique())
+        new_target = deepprofiler.dataset.target.MetadataColumnTarget(t, metadata.data[t].unique())
         dset.add_target(new_target)
 
     # Activate outlines for masking if needed

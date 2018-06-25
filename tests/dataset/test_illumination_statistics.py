@@ -1,4 +1,4 @@
-import dataset.illumination_statistics
+import deepprofiler.dataset.illumination_statistics
 import numpy
 import numpy.testing
 import numpy.random
@@ -7,7 +7,7 @@ import pytest
 
 @pytest.fixture(scope="function")
 def illumination_stats():
-    istats = dataset.illumination_statistics.IlluminationStatistics(
+    istats = deepprofiler.dataset.illumination_statistics.IlluminationStatistics(
         16,
         ["DNA", "ER", "Mito"],
         2,

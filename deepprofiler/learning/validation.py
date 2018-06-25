@@ -3,11 +3,11 @@ import numpy as np
 import tensorflow as tf
 import pickle
 
-import imaging.boxes
-import learning.metrics
-import learning.models
-import learning.training
-import dataset.utils
+import deepprofiler.imaging.boxes
+import deepprofiler.imaging.cropping
+import deepprofiler.learning.metrics
+import deepprofiler.learning.models
+import deepprofiler.learning.training
 
 import keras
 
@@ -65,8 +65,8 @@ class Validation(object):
                 self.config["sampling"]["box_size"],      # width
                 len(self.config["image_set"]["channels"]) # channels
             )
-            self.model = learning.models.create_keras_resnet(input_shape, self.dset.targets, is_training=False)
-            self.crop_generator = imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
+            self.model = deepprofiler.learning.models.create_keras_resnet(input_shape, self.dset.targets, is_training=False)
+            self.crop_generator = deepprofiler.imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
         elif self.config["model"]["type"] == "recurrent":
             print("RECURRENT MODEL")
             input_shape = (
@@ -75,8 +75,8 @@ class Validation(object):
                 self.config["sampling"]["box_size"],      # width
                 len(self.config["image_set"]["channels"]) # channels
             )
-            self.model = learning.models.create_recurrent_keras_resnet(input_shape, self.dset.targets, is_training=False)
-            self.crop_generator = imaging.cropping.SingleImageCropSetGenerator(self.config, self.dset)
+            self.model = deepprofiler.learning.models.create_recurrent_keras_resnet(input_shape, self.dset.targets, is_training=False)
+            self.crop_generator = deepprofiler.imaging.cropping.SingleImageCropSetGenerator(self.config, self.dset)
        
         print("Checkpoint:", checkpoint_file)
         self.model.load_weights(checkpoint_file)
@@ -89,7 +89,7 @@ class Validation(object):
         # Configure metrics for each target
         for i in range(len(self.dset.targets)):
             tgt = self.dset.targets[i]
-            mtr = learning.metrics.Metrics(name=tgt.field_name, k=self.config["validation"]["top_k"])
+            mtr = deepprofiler.learning.metrics.Metrics(name=tgt.field_name, k=self.config["validation"]["top_k"])
             mtr.configure_ops(tgt.index)
             self.metrics.append(mtr)
 
