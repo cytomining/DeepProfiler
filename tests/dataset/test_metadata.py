@@ -47,10 +47,13 @@ def test_read_plates(out_dir):
     df.to_csv(filename, index=False)
     generator = deepprofiler.dataset.metadata.read_plates(filename)
     plates = 0
+    total = 0
     for item in generator:
         assert len(set(item.data['Metadata_Plate'])) == 1
         plates += 1
+        total += len(item.data)
     assert plates == 4
+    assert total == len(df)
 
 
 def test_load_single(metadata, dataframe, out_dir):
