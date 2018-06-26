@@ -1,33 +1,35 @@
 import deepprofiler.dataset.target
+import numpy as np
 import pytest
 
 from random import shuffle
 
 
 @pytest.fixture(scope='function')
-def target():
+def values():
+    return np.random.randint(0, 100, 10).tolist()
+
+
+@pytest.fixture(scope='function')
+def target(values):
     field_name = 'test'
-    values = list(range(10))
     shuffle(values)
     return deepprofiler.dataset.target.MetadataColumnTarget(field_name, values)
 
 
-def test_init(target):
+def test_init(target, values):
     field_name = 'test'
-    values = list(range(10))
     shuffle(values)
     assert target.field_name == field_name
     assert len(target.index) == len(values)
     assert list(target.index) == sorted(values)
 
 
-def test_get_values(target):
-    record = {'test': 0}
-    values = list(range(10))
-    assert target.get_values(record) == values[0]
+def test_get_values(target, values):
+    record = {'test': values[0]}
+    assert target.get_values(record) == 0
 
 
-def test_shape(target):
-    values = list(range(10))
+def test_shape(target, values):
     assert len(target.shape) == 2
-    assert target.shape[1] == len(values)
+    assert target.shape[1] == len(set(values))
