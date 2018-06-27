@@ -9,7 +9,7 @@ import deepprofiler.imaging.boxes
 import deepprofiler.imaging.augmentations
 import deepprofiler.imaging.cropset
 
-import dataset.utils
+import deepprofiler.dataset.utils
 
 def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False):
     with tf.variable_scope("cropping"):
@@ -98,7 +98,7 @@ class CropGenerator(object):
         num_targets = len(self.dset.targets)
 
         # Outputs and queue of the data augmentation graph
-        augmented_op = imaging.augmentations.augment_multiple(
+        augmented_op = deepprofiler.imaging.augmentations.augment_multiple(
             self.input_variables["labeled_crops"][0],
             self.config["training"]["minibatch"]
         )
@@ -284,7 +284,7 @@ class SingleImageCropGenerator(CropGenerator):
             batch["locations"][0] = batch["locations"][0].head(self.batch_size)
 
         has_orientation = len(batch["locations"][0].columns) > 2
-        boxes, box_ind, targets, mask_ind = imaging.boxes.prepareBoxes(batch, self.config)
+        boxes, box_ind, targets, mask_ind = deepprofiler.imaging.boxes.prepareBoxes(batch, self.config)
         batch["images"] = np.reshape(image_array, self.input_variables["shapes"]["batch"])
 
         feed_dict = {
@@ -302,7 +302,7 @@ class SingleImageCropGenerator(CropGenerator):
 
         if has_orientation:
             # Align cells by rotating to the major axis of nuclei
-            feed_dict[self.angles] = (batch["locations"][0]["OOrientation"]*dataset.utils.PI)/180.
+            feed_dict[self.angles] = (batch["locations"][0]["OOrientation"]*deepprofiler.dataset.utils.PI)/180.
             output = session.run(self.aligned_labeled, feed_dict)
         else:
             output = session.run(self.input_variables["labeled_crops"], feed_dict)
