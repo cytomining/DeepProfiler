@@ -77,7 +77,7 @@ class Compress():
             # TODO: Can this operation be applied at once in all channels?
             image = img[:, :, c] / self.stats["illum_correction_function"][:, :, c]
             # Downscale
-            image = skimage.transform.resize(image, self.output_shape, mode="reflect")
+            image = skimage.transform.resize(image, self.output_shape, mode="reflect", anti_aliasing=True)
             # Clip illumination values
             plate_stats = False
             if plate_stats:
