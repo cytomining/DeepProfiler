@@ -2,12 +2,12 @@ import deepprofiler.dataset.target
 import numpy as np
 import pytest
 
-from random import shuffle
+from random import sample, shuffle
 
 
 @pytest.fixture(scope='function')
 def values():
-    return np.random.randint(0, 100, 10).tolist()
+    return sample(range(100), 10)
 
 
 @pytest.fixture(scope='function')
@@ -32,4 +32,4 @@ def test_get_values(target, values):
 
 def test_shape(target, values):
     assert len(target.shape) == 2
-    assert target.shape[1] == len(set(values))
+    assert target.shape[1] == len(values)
