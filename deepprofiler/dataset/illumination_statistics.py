@@ -56,7 +56,7 @@ class IlluminationStatistics():
                 raise ValueError("Images in this plate don't match: required=",
                                  self.original_image_size, " found=", img.shape)
         # Rescale original image to half
-        thumb = skimage.transform.resize(img, self.scale, mode="reflect", preserve_range=True)
+        thumb = skimage.transform.resize(img, self.scale, mode="reflect", anti_aliasing=True, preserve_range=True)
         if self.mean_image is None:
             self.mean_image = np.zeros_like(thumb, dtype=np.float64)
         # Add image to current mean values
