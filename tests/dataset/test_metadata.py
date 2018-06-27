@@ -1,4 +1,5 @@
 import os
+import random
 
 import deepprofiler.dataset.metadata
 import numpy as np
@@ -7,7 +8,7 @@ import pytest
 
 
 def __rand_array():
-    return np.random.randint(0, 100, 10)
+    return np.array(random.sample(range(100), 10))
 
 
 @pytest.fixture(scope='function')
@@ -40,7 +41,7 @@ def test_parse_delimiter():
 def test_read_plates(out_dir):
     filename = os.path.join(out_dir, 'test.csv')
     df = pd.DataFrame({
-        'Metadata_Plate': ['plate0', 'plate1', 'plate1', 'plate2', 'plate2', 'plate2', 'plate3', 'plate3', 'plate3', 'plate3'],
+        'Metadata_Plate': [0, 1, 1, 2, 2, 2, 3, 3, 3, 3],
         'Metadata_Well': __rand_array(),
         'Metadata_Site': __rand_array()
     }, dtype=int)
@@ -102,13 +103,13 @@ def test_split_metadata(metadata, dataframe, out_dir):
 
 def test_merge_outlines(metadata, dataframe, out_dir):
     metadata.loadSingle(os.path.join(out_dir, 'test.csv'), 'default', int)
-    dataframe2 = pd.DataFrame({
+    outlines = pd.DataFrame({
         'Metadata_Plate': __rand_array(),
         'Metadata_Well': __rand_array(),
         'Metadata_Site': __rand_array()
     }, dtype=int)
-    metadata.mergeOutlines(dataframe2)
-    merged = pd.merge(metadata.data, dataframe2, on=["Metadata_Plate", "Metadata_Well", "Metadata_Site"])
+    metadata.mergeOutlines(outlines)
+    merged = pd.merge(metadata.data, outlines, on=["Metadata_Plate", "Metadata_Well", "Metadata_Site"])
     pd.testing.assert_frame_equal(metadata.data, merged)
 
 
