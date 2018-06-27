@@ -18,15 +18,31 @@ def printProgress (iteration, total, prefix='Progress', suffix='Complete', decim
         suffix      - Optional  : suffix string (Str)
         decimals    - Optional  : positive number of decimals in percent complete (Int)
         barLength   - Optional  : character length of bar (Int)
-    """
-    formatStr       = "{0:." + str(decimals) + "f}"
-    percents        = formatStr.format(100 * (iteration / float(total)))
-    filledLength    = int(round(barLength * iteration / float(total)))
-    bar             = '#' * filledLength + '-' * (barLength - filledLength)
-    sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
-    sys.stdout.flush()
-    if iteration == total:
-        sys.stdout.write('\n')
+    """ 
+    if all(t >= 0 for t in [iteration,total,barLength]) and iteration <= total:
+        formatStr       = "{0:." + str(decimals) + "f}"
+        percents        = formatStr.format(100 * (iteration / float(total)))
+        filledLength    = int(round(barLength * iteration / float(total)))
+        bar             = '#' * filledLength + '-' * (barLength - filledLength)
+        sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
+        sys.stdout.flush()
+        if iteration == total:
+            sys.stdout.write('\n')
+            sys.stdout.flush()
+    elif sum([iteration<0,total<0,barLength<0]) > 1:
+        sys.stdout.write('\rError: printProgress() function received multiple negative values.')
+        sys.stdout.flush()
+    elif iteration < 0:
+        sys.stdout.write('\rError: printProgress() function received a negative "iteration" value.')
+        sys.stdout.flush()
+    elif total < 0:
+        sys.stdout.write('\rError: printProgress() function received a negative "total" value.')
+        sys.stdout.flush()
+    elif barLength < 0:
+        sys.stdout.write('\rError: printProgress() function received a negative "barLength" value.')
+        sys.stdout.flush()
+    elif iteration > total:
+        sys.stdout.write('\rError: printProgress() function received an "iteration" value greater than the "total" value.')
         sys.stdout.flush()
 
 ################################################################################
