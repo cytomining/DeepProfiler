@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/broadinstitute/DeepProfiler.svg?branch=master)](https://travis-ci.org/broadinstitute/DeepProfiler)
+
 # DeepProfiler
 Morphological profiling using deep learning 
 
