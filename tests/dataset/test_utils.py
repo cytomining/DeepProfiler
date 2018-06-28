@@ -4,7 +4,7 @@ import sys
 import os
 from io import StringIO
 import multiprocessing
-
+import shutil
 
 def test_printProgress():
     # setup the environment
@@ -90,15 +90,18 @@ def test_printProgress():
     
     sys.stdout.close()  # close the stream 
     sys.stdout = backup # restore original stdout
-    
-def test_check_path():
-    test_filename = 'filefolder/dog/cat/test.jpg'
+
+def test_check_path(): 
+    #feeds check_path() a made up filename and checks if the function creates the directory for that file
+
+    test_filename = "tmp/filefolder/dog/cat/test.jpg"
     deepprofiler.dataset.utils.check_path(test_filename)
-    assert os.path.isdir("filefolder/dog/cat/")    
+    assert os.path.isdir("tmp/filefolder/dog/cat/") 
+    shutil.rmtree("tmp")   
 
 #tests for class Parallel
 
-def test_init():
+def test_init(): 
     cpus =  multiprocessing.cpu_count()
     parallel = deepprofiler.dataset.utils.Parallel([])
     assert parallel.fixed_args == []

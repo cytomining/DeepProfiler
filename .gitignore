@@ -1,6 +1,9 @@
 # pytest
 .pytest_cache/
 
+# macOS
+.DS_Store
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -92,7 +95,3 @@ ENV/
 .ropeproject
 
 .idea
-*.json
-
-# Other
-*.csv
