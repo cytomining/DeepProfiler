@@ -1,0 +1,14 @@
+{
+  "original_images": {
+    "channels": [
+      "DNA",
+      "Tubulin",
+      "Actin"
+    ],
+    "file_format": "tif"
+  },
+  "metadata": {
+    "path": "DeepProfiler/deepprofiler/examples/metadata/tmp",
+    "filename": "DeepProfiler/deepprofiler/examples/metadata/metadata.csv"
+  }
+}
