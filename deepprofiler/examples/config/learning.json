@@ -1,0 +1,62 @@
+{
+  "image_set": {
+    "channels": [
+      "DNA",
+      "Tubulin",
+      "Actin"
+    ],
+    "width": 1280,
+    "height": 1024,
+    "path": "deepprofiler/examples/compressed/",
+    "metadata": "deepprofiler/examples/metadata/",
+    "index": "deepprofiler/examples/metadata/metadata.csv",
+    "mask_objects": false,
+    "crop_set_length": 3
+  },
+  "model": {
+    "type": "mixup",
+    "alpha": 0.2
+  },
+  "sampling": {
+    "images": 20,
+    "locations": 50,
+    "locations_field": "Nuclei",
+    "box_size": 92,
+    "field": "Compound_Concentration"
+  },
+  "queueing": {
+    "queue_size": 500,
+    "fifo_queue_size": 500,
+    "random_queue_size": 500,
+    "min_size": 100,
+    "loading_workers": 1,
+    "cropping_workers": 1,
+    "augmentation_workers": 1
+  },
+  "training": {
+    "epochs": 3,
+    "steps": 10,
+    "minibatch": 16,
+    "targets": [
+        "Compound_Concentration"
+    ],
+    "split_field": "Replicate",
+    "training_values": [1],
+    "validation_values": [2],
+    "learning_rate": 0.0001,
+    "output": "deepprofiler/examples/experiments/test/"
+  },
+  "validation": {
+    "top_k": 1,
+    "minibatch": 16,
+    "frame": "train",
+    "sample_first_crops": true,
+    "save_features": false
+  },
+  "profiling": {
+    "feature_layer": "Allele_embed",
+    "output_dir": "deepprofiler/examples/experiments/test/profiling/",
+    "url": "http://download.tensorflow.org/models/inception_resnet_v2_2016_08_30.tar.gz",
+    "checkpoint": "deepprofiler/examples/experiments/test/checkpoints/"
+  }
+}
