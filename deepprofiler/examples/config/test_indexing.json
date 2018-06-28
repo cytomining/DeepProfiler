@@ -8,7 +8,7 @@
     "file_format": "tif"
   },
   "metadata": {
-    "path": "DeepProfiler/deepprofiler/examples/metadata/tmp",
-    "filename": "DeepProfiler/deepprofiler/examples/metadata/metadata.csv"
+    "path": "deepprofiler/examples/metadata/tmp",
+    "filename": "deepprofiler/examples/metadata/metadata.csv"
   }
 }
