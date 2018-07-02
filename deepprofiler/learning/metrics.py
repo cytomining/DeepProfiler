@@ -32,7 +32,7 @@ class Metrics(object):
         self.label_dict = label_dict
         num_classes = len(label_dict)
         with tf.name_scope(self.name + "_metric"):
-            self.true_labels = tf.placeholder(tf.int32, shape=(None))
+            self.true_labels = tf.placeholder(tf.int32, shape=(None,))
             self.predictions = tf.placeholder(tf.float32, shape=(None, num_classes))
             one_hot_true_labels = tf.one_hot(self.true_labels, num_classes)
 
