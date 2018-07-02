@@ -75,33 +75,3 @@ class Mixup(CropSet):
             labels[i, sample.loc[idx[0],"target"]] += lam
             labels[i, sample.loc[idx[1],"target"]] += 1. - lam
         return data, labels
-
-
-class SameLabelMixup(CropSet):
-
-    def __init__(self, alpha, table_size, crop_shape, target_size):
-        super().__init__(2, table_size, crop_shape, target_size)
-        self.alpha = alpha
-
-
-    def batch(self, batch_size,seed=None):
-        targets = self.labels["target"].unique()
-        s, w, h, c = self.crops.shape
-        data = np.zeros( (batch_size, w, h, c) )
-        labels = np.zeros((batch_size, self.target_size))
-       
-        np.random.seed(seed)
-        random.seed(seed)
-        for i in range(batch_size):
-            lam = np.random.beta(self.alpha, self.alpha)
-            random.shuffle(targets)
-            t = targets[0]
-            sample = self.labels[self.labels["target"] == t]
-            if len(sample) <= 2:
-                sample = sample.sample(n=2, replace=True,random_state=seed)
-            else:
-                sample = sample.sample(n=2, replace=False,random_state=seed)
-            index = sample.index.tolist()
-            data[i,:,:,:] = lam*self.crops[index[0], ...] + (1. - lam)*self.crops[index[1],...]
-            labels[i, t] = 1.0
-        return data, labels
