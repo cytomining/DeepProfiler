@@ -5,6 +5,7 @@ cache: pip
 install:
   - pip install -r requirements.txt
   - pip install codecov
+  - pip install pytest pytest-cov
 script:
   - pytest --cov=./ tests/
 after_success:
