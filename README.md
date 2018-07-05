@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/broadinstitute/DeepProfiler.svg?branch=master)](https://travis-ci.org/broadinstitute/DeepProfiler)
+[![codecov](https://codecov.io/gh/broadinstitute/DeepProfiler/branch/master/graph/badge.svg)](https://codecov.io/gh/broadinstitute/DeepProfiler)
 
 # DeepProfiler
 Morphological profiling using deep learning 
