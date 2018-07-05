@@ -47,7 +47,6 @@ def test_split_index():
     test_outputs = [pd.read_csv("deepprofiler/examples/metadata/tmp/index-000.csv", index_col=0),
                     pd.read_csv("deepprofiler/examples/metadata/tmp/index-001.csv", index_col=0),
                     pd.read_csv("deepprofiler/examples/metadata/tmp/index-002.csv", index_col=0)]
-    print(test_outputs[0])
     assert test_outputs[0].shape == (12,9)
     assert test_outputs[1].shape == (12,9)
     assert test_outputs[2].shape == (12,9)
