@@ -33,7 +33,7 @@ class CropSet(object):
             self.add_crops(crops[left_space:,...], labels[left_space:,...])
 
 
-    def batch(self, batch_size,seed=None):
+    def batch(self, batch_size, seed=None):
         targets = self.labels["target"].unique()
         s, w, h, c = self.crops.shape
         data = np.zeros( (batch_size, self.set_size, w, h, c) )
@@ -60,7 +60,7 @@ class Mixup(CropSet):
         self.alpha = alpha
 
 
-    def batch(self, batch_size,seed=None):
+    def batch(self, batch_size, seed=None):
         np.random.seed(seed)
         targets = self.labels["target"].unique()
         s, w, h, c = self.crops.shape
@@ -69,7 +69,7 @@ class Mixup(CropSet):
         
         for i in range(batch_size):
             lam = np.random.beta(self.alpha, self.alpha)
-            sample = self.labels.sample(n=2,random_state=seed)
+            sample = self.labels.sample(n=2, random_state=seed)
             idx = sample.index.tolist()
             data[i,:,:,:] = lam*self.crops[idx[0],...] + (1. - lam)*self.crops[idx[1],...]
             labels[i, sample.loc[idx[0],"target"]] += lam
