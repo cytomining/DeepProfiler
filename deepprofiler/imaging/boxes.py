@@ -7,7 +7,7 @@ import random
 ## BOUNDING BOX HANDLING
 #################################################
 
-def getLocations(image_key, config, randomize=True,seed=None):
+def getLocations(image_key, config, randomize=True, seed=None):
     keys = image_key.split("/")
     locations_file = "{}/locations/{}-{}.csv".format(
         keys[0],
@@ -19,7 +19,7 @@ def getLocations(image_key, config, randomize=True,seed=None):
         locations = pd.read_csv(locations_path)
         random_sample = config["sampling"]["locations"]
         if randomize and random_sample is not None and random_sample < len(locations):
-            return locations.sample(random_sample,random_state=seed)
+            return locations.sample(random_sample, random_state=seed)
         else:
             return locations
     else:
