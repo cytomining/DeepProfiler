@@ -3,14 +3,14 @@ import pytest
 import pandas as pd
 import json
 import os
-import tempfile
 import shutil
 
 
 def test_relative_paths():
-    test_input = pd.DataFrame(data={'path': ['/Users/pytest/Documents/Plate1/','/Users/pytest/Documents/Plate2/','/Users/pytest/Documents/Plate2/'],'filename': ['test1.tiff','test2.tiff','test3.tiff']})
-    test_output = deepprofiler.dataset.indexing.relative_paths(test_input,'target','path','filename','/Users/pytest/Documents')
-    expected_output = pd.DataFrame(data={'target': ['/Plate1/test1.tiff','/Plate2/test2.tiff','/Plate2/test3.tiff']})
+    test_input = pd.DataFrame(data={'path': ['/Users/pytest/Documents/Plate1/', '/Users/pytest/Documents/Plate2/', '/Users/pytest/Documents/Plate2/'],
+                                    'filename': ['test1.tiff', 'test2.tiff', 'test3.tiff']})
+    test_output = deepprofiler.dataset.indexing.relative_paths(test_input, 'target', 'path', 'filename', '/Users/pytest/Documents')
+    expected_output = pd.DataFrame(data={'target': ['/Plate1/test1.tiff', '/Plate2/test2.tiff', '/Plate2/test3.tiff']})
     assert test_output.shape == (3,1)
     assert test_output.equals(expected_output)
     
@@ -41,9 +41,9 @@ def test_split_index():
                   "deepprofiler/examples/metadata/tmp/index-002.csv"]
     deepprofiler.dataset.indexing.write_compression_index(config)
     deepprofiler.dataset.indexing.split_index(config, test_parts)   
-    assert os.path.exists(test_paths[0]) == True
-    assert os.path.exists(test_paths[1]) == True
-    assert os.path.exists(test_paths[2]) == True
+    assert os.path.exists(test_paths[0])
+    assert os.path.exists(test_paths[1])
+    assert os.path.exists(test_paths[2])
     test_outputs = [pd.read_csv("deepprofiler/examples/metadata/tmp/index-000.csv", index_col=0),
                     pd.read_csv("deepprofiler/examples/metadata/tmp/index-001.csv", index_col=0),
                     pd.read_csv("deepprofiler/examples/metadata/tmp/index-002.csv", index_col=0)]
