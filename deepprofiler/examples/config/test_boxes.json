@@ -1,0 +1,14 @@
+{
+  "image_set": {
+    "width": 1280,
+    "height": 1024,
+    "path": "deepprofiler/examples/compressed/",
+    "mask_objects": false
+  },
+  "sampling": {
+    "images": 20,
+    "locations": 50,
+    "locations_field": "Nuclei",
+    "box_size": 16
+  }
+}

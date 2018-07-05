@@ -1,12 +1,13 @@
 import numpy as np
 import pandas as pd
 import os
+import random
 
 #################################################
 ## BOUNDING BOX HANDLING
 #################################################
 
-def getLocations(image_key, config, randomize=True):
+def getLocations(image_key, config, randomize=True, seed=None):
     keys = image_key.split("/")
     locations_file = "{}/locations/{}-{}.csv".format(
         keys[0],
@@ -18,7 +19,7 @@ def getLocations(image_key, config, randomize=True):
         locations = pd.read_csv(locations_path)
         random_sample = config["sampling"]["locations"]
         if randomize and random_sample is not None and random_sample < len(locations):
-            return locations.sample(random_sample)
+            return locations.sample(random_sample, random_state=seed)
         else:
             return locations
     else:
@@ -26,6 +27,10 @@ def getLocations(image_key, config, randomize=True):
         x_key = config["sampling"]["locations_field"] + "_Location_Center_X"
         return pd.DataFrame(columns=[x_key, y_key])
 
+def loadBatch(dataset, config):
+    batch = dataset.getTrainBatch(config["sampling"]["images"])
+    batch["locations"] = [ getLocations(x, config) for x in batch["keys"] ]
+    return batch
 
 def prepareBoxes(batch, config):
     locationsBatch = batch["locations"]
@@ -75,10 +80,3 @@ def prepareBoxes(batch, config):
               np.concatenate(all_masks)
              )
     return result
-
-
-def loadBatch(dataset, config):
-    batch = dataset.getTrainBatch(config["sampling"]["images"])
-    batch["locations"] = [ getLocations(x, config) for x in batch["keys"] ]
-    return batch
-
