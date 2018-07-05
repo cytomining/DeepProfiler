@@ -41,7 +41,7 @@ def augment(crop):
         augmented = tf.contrib.image.rotate(augmented, angle[0], interpolation="BILINEAR")
 
         # Illumination changes
-        illum_s = tf.random_uniform([1], minval=0.8, maxval=1.2, dtype=tf.float64)
+        illum_s = tf.random_uniform([1], minval=0.8, maxval=1.2, dtype=tf.float32)
         #illum_t = tf.random_uniform([1], minval=-0.2, maxval=0.2, dtype=tf.float32)
         augmented = augmented * illum_s
         #augmented = augmented + illum_t

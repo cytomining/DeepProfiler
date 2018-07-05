@@ -99,7 +99,7 @@ class CropGenerator(object):
 
         # Outputs and queue of the data augmentation graph
         augmented_op = deepprofiler.imaging.augmentations.augment_multiple(
-            tf.cast(self.input_variables["labeled_crops"][0], tf.float64),
+            tf.cast(self.input_variables["labeled_crops"][0], tf.float32),
             self.config["training"]["minibatch"]
         )
         train_inputs = tf.tuple([augmented_op] + self.input_variables["labeled_crops"][1:]) 
