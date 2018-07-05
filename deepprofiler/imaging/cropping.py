@@ -99,7 +99,7 @@ class CropGenerator(object):
 
         # Outputs and queue of the data augmentation graph
         augmented_op = deepprofiler.imaging.augmentations.augment_multiple(
-            self.input_variables["labeled_crops"][0],
+            tf.cast(self.input_variables["labeled_crops"][0], tf.float32),
             self.config["training"]["minibatch"]
         )
         train_inputs = tf.tuple([augmented_op] + self.input_variables["labeled_crops"][1:]) 
@@ -121,6 +121,7 @@ class CropGenerator(object):
     def training_queues(self, sess):
         coord = tf.train.Coordinator()
         lock = threading.Lock()
+        self.exception_occurred = False
 
         # Enqueueing threads for raw images
         def data_loading_thread():
@@ -174,6 +175,7 @@ class CropGenerator(object):
                     import traceback
                     traceback.print_exc()
                     print(".", end="", flush=True)
+                    self.exception_occurred = True
                     return
 
         load_threads = []
@@ -286,7 +288,6 @@ class SingleImageCropGenerator(CropGenerator):
         has_orientation = len(batch["locations"][0].columns) > 2
         boxes, box_ind, targets, mask_ind = deepprofiler.imaging.boxes.prepareBoxes(batch, self.config)
         batch["images"] = np.reshape(image_array, self.input_variables["shapes"]["batch"])
-
         feed_dict = {
             self.input_variables["image_ph"]: batch["images"],
             self.input_variables["boxes_ph"]: boxes,
@@ -308,7 +309,6 @@ class SingleImageCropGenerator(CropGenerator):
             output = session.run(self.input_variables["labeled_crops"], feed_dict)
 
         output = {"image_batch": output[0], "target_0": output[1]}
-
         # Remove crops without any content TODO: enable multiple targets
         valid = np.sum(output["image_batch"], axis=(1,2,3)) > 0
         self.image_pool = output["image_batch"][valid, ...]
@@ -318,7 +318,7 @@ class SingleImageCropGenerator(CropGenerator):
 
 
     def generate(self, session, global_step=0):
-        yield self.image_pool, self.label_pool
+        yield [self.image_pool, self.label_pool]
 
 
 #######################################################
@@ -340,7 +340,6 @@ class SetCropGenerator(CropGenerator):
         targets.sort()
         for t in targets:
             self.target_sizes.append(self.train_variables[t].shape[1])
-
         if self.config["model"]["type"] == "recurrent":
             self.set_manager = deepprofiler.imaging.cropset.CropSet(
                        self.config["model"]["sequence_length"],

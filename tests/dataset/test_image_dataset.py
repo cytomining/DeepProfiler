@@ -102,7 +102,6 @@ def test_scan(dataset, out_dir):
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data['R'][i // 3]), images[:, :, i])
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data['G'][i // 3]), images[:, :, i + 1])
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data['B'][i // 3]), images[:, :, i + 2])
-    # f = lambda index, image, meta: print(index, image, meta)
     data = {'index': [], 'image': [], 'meta': []}
 
     def func(index, image, meta):

@@ -117,5 +117,5 @@ def test_write_locations():
     pass  # TODO not supported
 
 
-def create_cell_indices():
+def test_create_cell_indices():
     pass  # TODO not supported
