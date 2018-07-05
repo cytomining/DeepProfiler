@@ -354,13 +354,6 @@ class SetCropGenerator(CropGenerator):
                        self.input_variables["shapes"]["crops"],
                        self.target_sizes[0]
             )
-        elif self.config["model"]["type"] == "same_label_mixup":
-            self.set_manager = deepprofiler.imaging.cropset.SameLabelMixup(
-                       self.config["model"]["alpha"],
-                       self.config["queueing"]["queue_size"], 
-                       self.input_variables["shapes"]["crops"],
-                       self.target_sizes[0]
-            )
 
 
 
