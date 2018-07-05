@@ -1,3 +1,4 @@
+import gc
 import threading
 import pandas as pd
 import time
@@ -236,6 +237,7 @@ class CropGenerator(object):
     def stop(self, session):
         self.coord.request_stop()
         self.coord.join(self.queue_threads)
+        gc.collect()
 
 
 #######################################################
