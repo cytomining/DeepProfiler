@@ -1,4 +1,3 @@
-import gc
 import os
 import random
 
@@ -123,7 +122,6 @@ def test_learn_model(config, dataset, data, locations, out_dir):
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0001.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0002.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "log.csv"))
-    gc.collect()
     epoch = 3
     config['training']['epochs'] = 4
     deepprofiler.learning.training.learn_model(config, dataset, epoch)

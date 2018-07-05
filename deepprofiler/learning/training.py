@@ -1,3 +1,4 @@
+import gc
 import os
 
 import tensorflow as tf
@@ -30,7 +31,7 @@ def learn_model(config, dset, epoch):
         crop_session = tf.Session(config = cpu_config)
 
         crop_generator.start(crop_session)
-
+        gc.collect()
     # Start main session
     configuration = tf.ConfigProto()
     configuration.gpu_options.visible_device_list = "0"
@@ -124,4 +125,4 @@ def learn_model(config, dset, epoch):
     crop_generator.stop(crop_session)
     crop_session.close()
     print(" All set.")
-
+    gc.collect()
