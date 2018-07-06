@@ -4,7 +4,7 @@ import pytest
 import tensorflow as tf
 
 import deepprofiler.dataset.target
-import deepprofiler.learning.models
+import deepprofiler.learning.model
 
 
 @pytest.fixture(scope='function')
@@ -17,7 +17,7 @@ def targets():
 def test_make_regularizer():
     transforms = [np.random.uniform(0, 1, (100, 100)) for i in range(10)]
     reg_lambda = np.random.uniform(0, 10)
-    loss = deepprofiler.learning.models.make_regularizer(transforms, reg_lambda)
+    loss = deepprofiler.learning.model.make_regularizer(transforms, reg_lambda)
     expected = 0
     for i in range(len(transforms)):
         for j in range(i+1, len(transforms)):
@@ -30,7 +30,7 @@ def test_create_keras_resnet(targets):
     lr = 0.001
     embed_dims = 256
     reg_lambda = np.random.uniform(0, 10)
-    model = deepprofiler.learning.models.create_keras_resnet(input_shape, targets, lr, embed_dims, reg_lambda)
+    model = deepprofiler.learning.model.create_keras_resnet(input_shape, targets, lr, embed_dims, reg_lambda)
     assert model.input_shape == (None,) + input_shape
     assert model.output_shape == (None, 10)
 
@@ -51,6 +51,6 @@ def test_create_keras_vgg(targets):
     lr = 0.001
     embed_dims = 256
     reg_lambda = np.random.uniform(0, 10)
-    model = deepprofiler.learning.models.create_keras_vgg(input_shape, targets, lr, embed_dims, reg_lambda)
+    model = deepprofiler.learning.model.create_keras_vgg(input_shape, targets, lr, embed_dims, reg_lambda)
     assert model.input_shape == (None,) + input_shape
     assert model.output_shape == (None, 10)

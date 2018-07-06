@@ -8,7 +8,7 @@ import deepprofiler.dataset.utils
 import deepprofiler.imaging.boxes
 import deepprofiler.imaging.cropping
 import deepprofiler.learning.metrics
-import deepprofiler.learning.models
+import deepprofiler.learning.model
 import deepprofiler.learning.training
 
 import keras
@@ -67,7 +67,7 @@ class Validation(object):
                 self.config["sampling"]["box_size"],      # width
                 len(self.config["image_set"]["channels"]) # channels
             )
-            self.model = deepprofiler.learning.models.create_keras_resnet(input_shape, self.dset.targets, is_training=False)
+            self.model = deepprofiler.learning.model.create_keras_resnet(input_shape, self.dset.targets, is_training=False)
             self.crop_generator = deepprofiler.imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
         elif self.config["model"]["type"] == "recurrent":
             print("RECURRENT MODEL")
@@ -77,7 +77,7 @@ class Validation(object):
                 self.config["sampling"]["box_size"],      # width
                 len(self.config["image_set"]["channels"]) # channels
             )
-            self.model = deepprofiler.learning.models.create_recurrent_keras_resnet(input_shape, self.dset.targets, is_training=False)
+            self.model = deepprofiler.learning.model.create_recurrent_keras_resnet(input_shape, self.dset.targets, is_training=False)
             self.crop_generator = deepprofiler.imaging.cropping.SingleImageCropSetGenerator(self.config, self.dset)
        
         print("Checkpoint:", checkpoint_file)
