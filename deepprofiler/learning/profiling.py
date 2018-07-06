@@ -35,40 +35,45 @@ def crop_transform(crop_ph):
     return rgb_data
 
 
-def profile(config, dset):
+class Profile(object):
+    
+    def __init__(self, config, dset):
+        self.config = config
+        self.dset = dset
+        
+    def configure(self):
+        crop_shape = (
+                self.config["sampling"]["box_size"],      # height
+                self.config["sampling"]["box_size"],      # width
+                len(self.config["image_set"]["channels"]) # channels
+                )
 
-    crop_shape = (
-        config["sampling"]["box_size"],      # height
-        config["sampling"]["box_size"],      # width
-        len(config["image_set"]["channels"]) # channels
-    )
+        self.crop_generator = deepprofiler.imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
+        self.num_channels = len(self.config["image_set"]["channels"])
 
-    crop_generator = deepprofiler.imaging.cropping.SingleImageCropGenerator(config, dset)
-    num_channels = len(config["image_set"]["channels"])
-
-    # Setup pretrained model 
-    raw_crops = tf.placeholder(tf.float32, shape=(None, crop_shape[0], crop_shape[1], crop_shape[2]))
-    network_input = crop_transform(raw_crops)
-    url = config["profiling"]["url"]
-    checkpoint = config["profiling"]["checkpoint"]
-    if not os.path.isfile(checkpoint):
-        dataset_utils.download_and_uncompress_tarball(url, os.path.dirname(checkpoint))
-    with slim.arg_scope(inception.inception_resnet_v2_arg_scope()):
-        _, endpoints = inception.inception_resnet_v2(network_input, num_classes=1001, is_training=False)
-    init_fn = slim.assign_from_checkpoint_fn(checkpoint, slim.get_model_variables())
+        # Setup pretrained model 
+        self.raw_crops = tf.placeholder(tf.float32, shape=(None, crop_shape[0], crop_shape[1], crop_shape[2]))
+        network_input = crop_transform(self.raw_crops)
+        url = self.config["profiling"]["url"]
+        checkpoint = self.config["profiling"]["checkpoint"]
+        if not os.path.isfile(checkpoint):
+            dataset_utils.download_and_uncompress_tarball(url, os.path.dirname(checkpoint))
+        with slim.arg_scope(inception.inception_resnet_v2_arg_scope()):
+            _, self.endpoints = inception.inception_resnet_v2(network_input, num_classes=1001, is_training=False)
+        init_fn = slim.assign_from_checkpoint_fn(checkpoint, slim.get_model_variables())
+    
+        # Session configuration
+        configuration = tf.ConfigProto()
+        configuration.gpu_options.allow_growth = True
+        configuration.gpu_options.visible_device_list = self.config["profiling"]["gpu"]
    
-    # Session configuration
-    configuration = tf.ConfigProto()
-    configuration.gpu_options.allow_growth = True
-    configuration.gpu_options.visible_device_list = config["profiling"]["gpu"]
-   
-    sess = tf.Session(config=configuration)
-    init_fn(sess)
-    crop_generator.start(sess)
+        self.sess = tf.Session(config=configuration)
+        init_fn(self.sess)
+        self.crop_generator.start(self.sess)
 
 
-    def check(meta):
-        output_file = config["profiling"]["output_dir"] + "/{}_{}_{}.npz"
+    def check(self, meta):
+        output_file = self.config["profiling"]["output_dir"] + "/{}_{}_{}.npz"
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
 
         # Check if features were computed before
@@ -80,50 +85,51 @@ def profile(config, dset):
 
     
     # Function to process a single image
-    def extract_features(key, image_array, meta):
-        output_file = config["profiling"]["output_dir"] + "/{}_{}_{}.npz"
+    def extract_features(self, key, image_array, meta):
+        output_file = self.config["profiling"]["output_dir"] + "/{}_{}_{}.npz"
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
 
-        batch_size = config["validation"]["minibatch"]
-        image_key, image_names, outlines = dset.getImagePaths(meta)
-        total_crops, pads = crop_generator.prepare_image(
-                                   sess,
+        batch_size = self.config["validation"]["minibatch"]
+        image_key, image_names, outlines = self.dset.getImagePaths(meta)
+        total_crops = self.crop_generator.prepare_image(
+                                   self.sess,
                                    image_array,
                                    meta,
-                                   config["validation"]["sample_first_crops"]
+                                   self.config["validation"]["sample_first_crops"]
                             )
 
         # Initialize data buffer
-        data = np.zeros(shape=(num_channels, total_crops, num_features))
+        data = np.zeros(shape=(self.num_channels, total_crops, num_features))
         b = 0
         start = tic()
 
         # Extract features in batches
         batches = []
-        for batch in crop_generator.generate(sess):
+        for batch in self.crop_generator.generate(self.sess):
             crops = batch[0]
-            feats = sess.run(endpoints['PreLogitsFlatten'], feed_dict={raw_crops:crops})
-            feats = np.reshape(feats, (num_channels, batch_size, num_features))
+            feats = self.sess.run(self.endpoints['PreLogitsFlatten'], feed_dict={self.raw_crops:crops})
+            feats = np.reshape(feats, (self.num_channels, batch_size, num_features))
             data[:, b * batch_size:(b + 1) * batch_size, :] = feats
             b += 1
             batches.append(batch)
 
-        # Remove paddings and concatentate features of all channels
-        if pads > 0:
-            data = data[:, :-pads, :]
+        # Concatentate features of all channels
         data = np.moveaxis(data, 0, 1)
         data = np.reshape(data, (data.shape[0], data.shape[1]*data.shape[2]))
 
         # Save features
         np.savez_compressed(output_file, f=data)
-        toc(image_key + " (" + str(data.shape[0]-pads) + " cells)", start)
+        toc(image_key + " (" + str(data.shape[0]) + " cells)", start)
 
         # Save crops TODO: parameterize saving crops or a sample of them.
         if False:
-            batch_data = {"total_crops": total_crops, "pads": pads, "batches": batches}
+            batch_data = {"total_crops": total_crops, "batches": batches}
             with open(output_file.replace(".npz", ".pkl"), "wb") as batch_file:
                 pickle.dump(batch_data, batch_file)
 
         
-    dset.scan(extract_features, frame="all", check=check)
+def profile(config, dset):
+    profile = Profile(config, dset)
+    profile.configure()
+    dset.scan(profile.extract_features, frame="all", check=profile.check)
     print("Profiling: done")
