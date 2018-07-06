@@ -26,7 +26,8 @@ def out_dir(tmpdir):
 def config(out_dir):
     return {
         "model": {
-            "type": "convnet"
+            "type": "convnet",
+            "name": "keras_resnet"
         },
         "sampling": {
             "images": 12,
@@ -46,6 +47,10 @@ def config(out_dir):
             "output": out_dir,
             "epochs": 2,
             "steps": 12,
+            "minibatch": 2,
+            "visible_gpus": "0"
+        },
+        "validation": {
             "minibatch": 2
         },
         "queueing": {
