@@ -7,26 +7,20 @@ import pickle
 
 import tensorflow as tf
 from tensorflow.contrib import slim
-try:
-    from nets import inception
-    from datasets import dataset_utils
-except:
-    import sys
-    print("Make sure you have installed tensorflow/models and it's accessible in the environment")
-    print("export PYTHONPATH=/home/ubuntu/models/slim")
-    sys.exit()
 
 import deepprofiler.learning.training
 import deepprofiler.imaging.boxes
 import deepprofiler.imaging.cropping
 from deepprofiler.dataset.utils import tic, toc
+import deepprofiler.learning.models
 
+import keras
+from keras.models import Model
 
 num_features = 1536
-image_size = inception.inception_resnet_v2.default_image_size
 
+def crop_transform(crop_ph, image_size):
 
-def crop_transform(crop_ph):
     crops_shape = crop_ph.shape
     resized_crops = tf.image.resize_images(crop_ph, size=(image_size, image_size))
     reordered_channels = tf.transpose(resized_crops, [3, 0, 1, 2])
@@ -40,20 +34,30 @@ class Profile(object):
     def __init__(self, config, dset):
         self.config = config
         self.dset = dset
-        
-    def configure(self):
+        self.num_channels = len(self.config["image_set"]["channels"])
         crop_shape = (
                 self.config["sampling"]["box_size"],      # height
                 self.config["sampling"]["box_size"],      # width
                 len(self.config["image_set"]["channels"]) # channels
                 )
+        self.raw_crops = tf.placeholder(tf.float32, shape=(None, crop_shape[0], crop_shape[1], crop_shape[2]))
+        
+    def configure_inception_resnet(self):
+
+        try:
+            from nets import inception
+            from datasets import dataset_utils
+        except:
+            import sys
+            print("Make sure you have installed tensorflow/models and it's accessible in the environment")
+            print("export PYTHONPATH=/home/ubuntu/models/slim")
+            sys.exit()
+
+        image_size = inception.inception_resnet_v2.default_image_size
 
         self.crop_generator = deepprofiler.imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
-        self.num_channels = len(self.config["image_set"]["channels"])
-
         # Setup pretrained model 
-        self.raw_crops = tf.placeholder(tf.float32, shape=(None, crop_shape[0], crop_shape[1], crop_shape[2]))
-        network_input = crop_transform(self.raw_crops)
+        network_input = crop_transform(self.raw_crops, image_size)
         url = self.config["profiling"]["url"]
         checkpoint = self.config["profiling"]["checkpoint"]
         if not os.path.isfile(checkpoint):
@@ -71,6 +75,33 @@ class Profile(object):
         init_fn(self.sess)
         self.crop_generator.start(self.sess)
 
+    def configure_resnet(self):
+         # Create model and load weights
+        batch_size = self.config["validation"]["minibatch"]
+        self.config["training"]["minibatch"] = batch_size
+        feature_layer = self.config["profiling"]["feature_layer"]
+
+        if self.config["model"]["type"] in ["convnet", "mixup", "same_label_mixup"]:
+            input_shape = (
+                self.config["sampling"]["box_size"],      # height
+                self.config["sampling"]["box_size"],      # width
+                len(self.config["image_set"]["channels"]) # channels
+            )
+            self.model = deepprofiler.learning.models.create_keras_resnet(input_shape, self.dset.targets, is_training=False)
+            self.crop_generator = deepprofiler.imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
+       
+        self.model.load_weights(self.config["profiling"]["checkpoint"])
+
+        feature_embedding = self.model.get_layer(self.config["profiling"]["feature_layer"]).output
+        self.feat_extractor = keras.backend.function([self.model.input], [feature_embedding])
+
+        # Session configuration
+        configuration = tf.ConfigProto()
+        configuration.gpu_options.allow_growth = True
+        configuration.gpu_options.visible_device_list = self.config["profiling"]["gpu"]
+   
+        self.sess = tf.Session(config=configuration)
+        self.crop_generator.start(self.sess)
 
     def check(self, meta):
         output_file = self.config["profiling"]["output_dir"] + "/{}_{}_{}.npz"
@@ -107,7 +138,10 @@ class Profile(object):
         batches = []
         for batch in self.crop_generator.generate(self.sess):
             crops = batch[0]
-            feats = self.sess.run(self.endpoints['PreLogitsFlatten'], feed_dict={self.raw_crops:crops})
+            if self.config["model"]["type"] == "inception_resnet":
+                feats = self.sess.run(self.endpoints['PreLogitsFlatten'], feed_dict={self.raw_crops:crops})
+            if self.config["model"]["type"] in ["convnet", "mixup", "same_label_mixup"]:
+                feats = self.feat_extractor((batch[0], 0))
             feats = np.reshape(feats, (self.num_channels, batch_size, num_features))
             data[:, b * batch_size:(b + 1) * batch_size, :] = feats
             b += 1
@@ -130,6 +164,9 @@ class Profile(object):
         
 def profile(config, dset):
     profile = Profile(config, dset)
-    profile.configure()
+    if config["model"]["type"] == "inception_resnet":
+        profile.configure_inception_resnet()
+    if config["model"]["type"] in ["convnet", "mixup", "same_label_mixup"]:
+        profile.configure_resnet()
     dset.scan(profile.extract_features, frame="all", check=profile.check)
     print("Profiling: done")
