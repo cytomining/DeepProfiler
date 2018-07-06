@@ -27,7 +27,8 @@ def config(out_dir):
     return {
         "model": {
             "type": "convnet",
-            "name": "keras_resnet"
+            "name": "keras_resnet",
+            "crop_generator": "crop_generator"
         },
         "sampling": {
             "images": 12,
