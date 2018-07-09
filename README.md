@@ -1,4 +1,4 @@
-<img src="images/logo/logo_fullsize.png" alt="drawing" width="600px" align="center"/>
+![DeepProfiler](images/banner.png)
 
 -----------------
 
