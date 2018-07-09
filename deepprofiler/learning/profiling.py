@@ -104,6 +104,10 @@ class Profile(object):
         self.crop_generator.start(self.sess)
 
     def check(self, meta):
+        output_folder = self.config["profiling"]["output_dir"]
+        if not os.path.isdir(output_folder):
+            os.mkdir(self.config["profiling"]["output_dir"])
+        
         output_file = self.config["profiling"]["output_dir"] + "/{}_{}_{}.npz"
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
 
