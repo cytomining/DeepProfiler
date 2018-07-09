@@ -1,3 +1,7 @@
+![DeepProfiler](images/logo/logo.pdf)
+
+-----------------
+
 [![Build Status](https://travis-ci.org/broadinstitute/DeepProfiler.svg?branch=master)](https://travis-ci.org/broadinstitute/DeepProfiler)
 [![codecov](https://codecov.io/gh/broadinstitute/DeepProfiler/branch/master/graph/badge.svg)](https://codecov.io/gh/broadinstitute/DeepProfiler)
 [![Requirements Status](https://requires.io/github/broadinstitute/DeepProfiler/requirements.svg?branch=master)](https://requires.io/github/broadinstitute/DeepProfiler/requirements/?branch=master)

@@ -125,7 +125,7 @@ class Validation(object):
 
     def process_batches(self, key, image_array, meta):
         # Prepare image for cropping
-        s = dataset.utils.tic()
+        s = deepprofiler.dataset.utils.tic()
         batch_size = self.config["validation"]["minibatch"] 
         total_crops = self.crop_generator.prepare_image(
                                    self.session, 
@@ -138,7 +138,7 @@ class Validation(object):
             filebase = self.output_base(meta)
             batches = [b for b in self.crop_generator.generate(self.session)]
             self.predict(batches[0], meta)
-        dataset.utils.toc(str(total_crops)+" crops", s)
+        deepprofiler.dataset.utils.toc(str(total_crops)+" crops", s)
 
     def predict(self, batch, meta):
         # batch[0] contains images, batch[i+1] contains the targets
