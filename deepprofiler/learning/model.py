@@ -4,9 +4,6 @@ import random
 
 import tensorflow as tf
 import numpy as np
-import tensorflow.contrib.slim.nets
-
-import keras_resnet.models
 import keras
 
 
@@ -17,10 +14,10 @@ class DeepProfilerModel(object):
         self.config = config
         self.dset = dset
         self.crop_generator = crop_generator
-        self.seed = None
+        self.random_seed = None
 
     def seed(self, seed):
-        self.seed = seed
+        self.random_seed = seed
         random.seed(seed)
         np.random.seed(seed)
         tf.set_random_seed(seed)
@@ -59,6 +56,7 @@ class DeepProfilerModel(object):
 
         epochs = self.config["training"]["epochs"]
         steps = self.config["training"]["steps"]
+        keras.backend.get_session().run(tf.initialize_all_variables())
         self.model.fit_generator(
             generator=self.crop_generator.generate(crop_session),
             steps_per_epoch=steps,

@@ -68,8 +68,6 @@ def metadata(out_dir):
         'R': [str(x) + '.png' for x in __rand_array()],
         'G': [str(x) + '.png' for x in __rand_array()],
         'B': [str(x) + '.png' for x in __rand_array()],
-        # 'R_Location_Center_X': __rand_array(),
-        # 'R_Location_Center_Y': __rand_array(),
         'Sampling': [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
         'Split': [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
         'Target': [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
