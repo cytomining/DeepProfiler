@@ -33,7 +33,7 @@ class CropSet(object):
             self.add_crops(crops[left_space:,...], labels[left_space:,...])
 
 
-    def batch(self, batch_size):
+    def batch(self, batch_size, seed=None):
         targets = self.labels["target"].unique()
         s, w, h, c = self.crops.shape
         data = np.zeros( (batch_size, self.set_size, w, h, c) )
@@ -44,9 +44,9 @@ class CropSet(object):
             t = targets[0]
             sample = self.labels[self.labels["target"] == t]
             if len(sample) > self.set_size:
-                sample = sample.sample(n=self.set_size, replace=False)
+                sample = sample.sample(n=self.set_size, replace=False, random_state=seed)
             else:
-                sample = sample.sample(n=self.set_size, replace=True)
+                sample = sample.sample(n=self.set_size, replace=True, random_state=seed)
             index = sample.index.tolist()
             data[i,:,:,:,:] = self.crops[index, ...]
             labels[i, t] = 1.0
@@ -60,7 +60,8 @@ class Mixup(CropSet):
         self.alpha = alpha
 
 
-    def batch(self, batch_size):
+    def batch(self, batch_size, seed=None):
+        np.random.seed(seed)
         targets = self.labels["target"].unique()
         s, w, h, c = self.crops.shape
         data = np.zeros( (batch_size, w, h, c) )
@@ -68,37 +69,9 @@ class Mixup(CropSet):
         
         for i in range(batch_size):
             lam = np.random.beta(self.alpha, self.alpha)
-            sample = self.labels.sample(n=2)
+            sample = self.labels.sample(n=2, random_state=seed)
             idx = sample.index.tolist()
             data[i,:,:,:] = lam*self.crops[idx[0],...] + (1. - lam)*self.crops[idx[1],...]
             labels[i, sample.loc[idx[0],"target"]] += lam
             labels[i, sample.loc[idx[1],"target"]] += 1. - lam
-        return data, labels
-
-
-class SameLabelMixup(CropSet):
-
-    def __init__(self, alpha, table_size, crop_shape, target_size):
-        super().__init__(2, table_size, crop_shape, target_size)
-        self.alpha = alpha
-
-
-    def batch(self, batch_size):
-        targets = self.labels["target"].unique()
-        s, w, h, c = self.crops.shape
-        data = np.zeros( (batch_size, w, h, c) )
-        labels = np.zeros((batch_size, self.target_size))
-
-        for i in range(batch_size):
-            lam = np.random.beta(self.alpha, self.alpha)
-            random.shuffle(targets)
-            t = targets[0]
-            sample = self.labels[self.labels["target"] == t]
-            if len(sample) <= 2:
-                sample = sample.sample(n=2, replace=True)
-            else:
-                sample = sample.sample(n=2, replace=False)
-            index = sample.index.tolist()
-            data[i,:,:,:] = lam*self.crops[index[0], ...] + (1. - lam)*self.crops[index[1],...]
-            labels[i, t] = 1.0
         return data, labels
