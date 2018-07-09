@@ -1,5 +1,6 @@
-![DeepProfiler](images/logo/logo_medium.png)
-
+<div  style="height: 100px width: 100 px;" align="center" markdown="1">
+    ![DeepProfiler](images/logo/logo_fullsize.png)
+</div>
 -----------------
 
 [![Build Status](https://travis-ci.org/broadinstitute/DeepProfiler.svg?branch=master)](https://travis-ci.org/broadinstitute/DeepProfiler)
