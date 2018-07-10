@@ -23,13 +23,6 @@ def define_model(config, dset):
     encoded_shape = encoded._keras_shape[1:]
     encoder = Model(input_image, encoded)
 
-    # x = Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(encoded)
-    # x = UpSampling2D((2, 2))(x)
-    # x = Conv2DTranspose(16, (3, 3), activation='relu', padding='same')(x)
-    # x = UpSampling2D((2, 2))(x)
-    # x = Conv2DTranspose(8, (3, 3), activation='relu')(x)
-    # x = UpSampling2D((2, 2))(x)
-    # decoded = Conv2DTranspose(len(config["image_set"]["channels"]), (3, 3), activation='sigmoid', padding='same')(x)
     decoder_input = Input(encoded_shape)
     decoder = Sequential([
         Conv2DTranspose(32, (3, 3), activation='relu', padding='same'),

@@ -26,8 +26,9 @@ def out_dir(tmpdir):
 def config(out_dir):
     return {
         "model": {
-            "name": "resnet18",
-            "crop_generator": "crop_generator"
+            "name": "cnn",
+            "crop_generator": "crop_generator",
+            "feature_dim": 128
         },
         "sampling": {
             "images": 12,

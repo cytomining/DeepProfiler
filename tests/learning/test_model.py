@@ -29,10 +29,9 @@ def out_dir(tmpdir):
 def config(out_dir):
     return {
         "model": {
-            "name": "resnet18",
+            "name": "cnn",
             "crop_generator": "crop_generator",
-            "latent_dim": 128,
-            "epsilon_std": 1.0
+            "feature_dim": 128
         },
         "sampling": {
             "images": 12,
@@ -120,11 +119,6 @@ def locations(out_dir, metadata, config):
             'R_Location_Center_Y': np.random.randint(0, 128, (config['sampling']['locations']))
         })
         locs.to_csv(path, index=False)
-
-
-# @pytest.fixture(scope='function')
-# def crop_generator(config, dataset):
-#     return deepprofiler.imaging.cropping.CropGenerator(config, dataset)
 
 
 @pytest.fixture(scope='function')
