@@ -26,8 +26,7 @@ def out_dir(tmpdir):
 def config(out_dir):
     return {
         "model": {
-            "type": "convnet",
-            "name": "keras_resnet",
+            "name": "resnet18",
             "crop_generator": "crop_generator"
         },
         "sampling": {

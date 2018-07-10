@@ -9,8 +9,8 @@ import keras
 
 class DeepProfilerModel(object):
 
-    def __init__(self, model, config, dset, crop_generator):
-        self.model = model
+    def __init__(self, config, dset, crop_generator):
+        self.model = None
         self.config = config
         self.dset = dset
         self.crop_generator = crop_generator
@@ -23,6 +23,8 @@ class DeepProfilerModel(object):
         tf.set_random_seed(seed)
 
     def train(self, epoch):
+        if not self.model:
+            raise ValueError("Model is not defined!")
         # Create cropping graph
         crop_graph = tf.Graph()
         with crop_graph.as_default():

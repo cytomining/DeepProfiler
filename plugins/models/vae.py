@@ -2,11 +2,14 @@ import keras
 from keras import backend as K
 from keras import objectives
 from keras.layers import *
-from keras.models import Model
+from keras.models import Model, Sequential
 from keras.optimizers import Adam
+
+from deepprofiler.learning.model import DeepProfilerModel
 
 
 def define_model(config, dset):
+
     def sampling(args):
         z_mean, z_log_sigma = args
         epsilon = K.random_normal(shape=(config['training']['minibatch'], config['model']['latent_dim']),
@@ -37,16 +40,29 @@ def define_model(config, dset):
     z_mean = Dense(config['model']['latent_dim'], name='z_mean')(x)
     z_log_sigma = Dense(config['model']['latent_dim'], name='z_log_sigma')(x)
     z = Lambda(sampling, output_shape=(config['model']['latent_dim'],), name='z')([z_mean, z_log_sigma])
+    encoder = Model(input_image, z_mean)
 
-    x = Reshape(encoded_shape)(z)
-    x = Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
-    x = UpSampling2D((2, 2))(x)
-    x = Conv2DTranspose(16, (3, 3), activation='relu', padding='same')(x)
-    x = UpSampling2D((2, 2))(x)
-    x = Conv2DTranspose(8, (3, 3), activation='relu')(x)
-    x = UpSampling2D((2, 2))(x)
-    decoded = Conv2DTranspose(len(config["image_set"]["channels"]), (3, 3), activation='sigmoid', padding='same')(x)
+    decoder_input = Input((config['model']['latent_dim'],))
+    decoder = Sequential([
+        Reshape(encoded_shape),
+        Conv2DTranspose(32, (3, 3), activation='relu', padding='same'),
+        UpSampling2D((2, 2)),
+        Conv2DTranspose(16, (3, 3), activation='relu', padding='same'),
+        UpSampling2D((2, 2)),
+        Conv2DTranspose(8, (3, 3), activation='relu'),
+        UpSampling2D((2, 2)),
+        Conv2DTranspose(len(config["image_set"]["channels"]), (3, 3), activation='sigmoid', padding='same')
+    ], name='decoded')
+    decoded = decoder(z)
+    generator = Model(decoder_input, decoder(decoder_input))
 
     vae = Model(input_image, decoded)
     vae.compile(optimizer=Adam(lr=config['training']['learning_rate']), loss=vae_loss)
-    return vae
+
+    return vae, encoder, generator
+
+
+class ModelClass(DeepProfilerModel):
+    def __init__(self, config, dset, generator):
+        super(ModelClass, self).__init__(config, dset, generator)
+        self.model, self.encoder, self.generator = define_model(config, dset)

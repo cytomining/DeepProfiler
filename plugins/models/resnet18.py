@@ -3,16 +3,19 @@ import keras_resnet
 import keras_resnet.models
 import tensorflow as tf
 
-
-def make_regularizer(transforms, reg_lambda):
-    loss = 0
-    for i in range(len(transforms)):
-        for j in range(i+1, len(transforms)):
-            loss += reg_lambda * tf.reduce_sum(tf.abs(tf.matmul(transforms[i], transforms[j], transpose_a=True, transpose_b=False)))
-    return loss
+from deepprofiler.learning.model import DeepProfilerModel
 
 
 def define_model(config, dset):
+
+    def make_regularizer(transforms, reg_lambda):
+        loss = 0
+        for i in range(len(transforms)):
+            for j in range(i + 1, len(transforms)):
+                loss += reg_lambda * tf.reduce_sum(
+                    tf.abs(tf.matmul(transforms[i], transforms[j], transpose_a=True, transpose_b=False)))
+        return loss
+
     # 1. Create ResNet architecture to extract features
     input_shape = (
         config["sampling"]["box_size"],  # height
@@ -55,3 +58,10 @@ def define_model(config, dset):
     model.compile(optimizer, loss_func, ["categorical_accuracy"])
 
     return model
+
+
+class ModelClass(DeepProfilerModel):
+    def __init__(self, config, dset, generator):
+        super(ModelClass, self).__init__(config, dset, generator)
+        self.model = define_model(config, dset)
+
