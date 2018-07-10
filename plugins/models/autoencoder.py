@@ -30,18 +30,17 @@ def define_model(config, dset):
     # x = Conv2DTranspose(8, (3, 3), activation='relu')(x)
     # x = UpSampling2D((2, 2))(x)
     # decoded = Conv2DTranspose(len(config["image_set"]["channels"]), (3, 3), activation='sigmoid', padding='same')(x)
-    decoder_input = Input((config['model']['latent_dim'],))
+    decoder_input = Input(encoded_shape)
     decoder = Sequential([
-        Reshape(encoded_shape),
         Conv2DTranspose(32, (3, 3), activation='relu', padding='same'),
         UpSampling2D((2, 2)),
         Conv2DTranspose(16, (3, 3), activation='relu', padding='same'),
         UpSampling2D((2, 2)),
-        Conv2DTranspose(8, (3, 3), activation='relu'),
+        Conv2DTranspose(8, (3, 3), activation='relu', padding='same'),
         UpSampling2D((2, 2)),
         Conv2DTranspose(len(config["image_set"]["channels"]), (3, 3), activation='sigmoid', padding='same')
     ], name='decoded')
-    decoded = decoder(z)
+    decoded = decoder(encoded)
     decoder = Model(decoder_input, decoder(decoder_input))
 
     autoencoder = Model(input_image, decoded)

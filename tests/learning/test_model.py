@@ -30,7 +30,9 @@ def config(out_dir):
     return {
         "model": {
             "name": "resnet18",
-            "crop_generator": "crop_generator"
+            "crop_generator": "crop_generator",
+            "latent_dim": 128,
+            "epsilon_std": 1.0
         },
         "sampling": {
             "images": 12,
@@ -120,9 +122,17 @@ def locations(out_dir, metadata, config):
         locs.to_csv(path, index=False)
 
 
+# @pytest.fixture(scope='function')
+# def crop_generator(config, dataset):
+#     return deepprofiler.imaging.cropping.CropGenerator(config, dataset)
+
+
 @pytest.fixture(scope='function')
 def crop_generator(config, dataset):
-    return deepprofiler.imaging.cropping.CropGenerator(config, dataset)
+    module = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))
+    importlib.invalidate_caches()
+    generator = module.define_crop_generator(config, dataset)
+    return generator
 
 
 @pytest.fixture(scope='function')
@@ -131,11 +141,6 @@ def model(config, dataset, crop_generator):
     importlib.invalidate_caches()
     dpmodel = module.ModelClass(config, dataset, crop_generator)
     return dpmodel
-
-
-# @pytest.fixture(scope='function')
-# def deep_profiler_model(model, config, dataset, crop_generator):
-#     return DeepProfilerModel(config, dataset, crop_generator)
 
 
 def test_init(config, dataset, crop_generator):
