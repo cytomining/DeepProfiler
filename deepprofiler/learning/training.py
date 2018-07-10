@@ -19,10 +19,9 @@ def learn_model(config, dset, epoch=1, seed=None):
     crop_module = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))
     importlib.invalidate_caches()
 
-    model = model_module.define_model(config, dset)
     crop_generator = crop_module.define_crop_generator(config, dset)
+    model = model_module.ModelClass(config, dset, crop_generator)
 
-    dpmodel = deepprofiler.learning.model.DeepProfilerModel(model, config, dset, crop_generator)
     if seed:
-        dpmodel.seed(seed)
-    dpmodel.train(epoch)
+        model.seed(seed)
+    model.train(epoch)

@@ -126,42 +126,42 @@ def crop_generator(config, dataset):
 
 
 @pytest.fixture(scope='function')
-def model(config, dataset):
+def model(config, dataset, crop_generator):
     module = importlib.import_module("plugins.models.{}".format(config['model']['name']))
     importlib.invalidate_caches()
-    mdl = module.define_model(config, dataset)
-    return mdl
+    dpmodel = module.ModelClass(config, dataset, crop_generator)
+    return dpmodel
 
 
-@pytest.fixture(scope='function')
-def deep_profiler_model(model, config, dataset, crop_generator):
-    return DeepProfilerModel(model, config, dataset, crop_generator)
+# @pytest.fixture(scope='function')
+# def deep_profiler_model(model, config, dataset, crop_generator):
+#     return DeepProfilerModel(config, dataset, crop_generator)
 
 
-def test_init(model, config, dataset, crop_generator):
-    dpmodel = DeepProfilerModel(model, config, dataset, crop_generator)
-    assert dpmodel.model == model
+def test_init(config, dataset, crop_generator):
+    dpmodel = DeepProfilerModel(config, dataset, crop_generator)
+    assert dpmodel.model is None
     assert dpmodel.config == config
     assert dpmodel.dset == dataset
     assert dpmodel.crop_generator == crop_generator
     assert dpmodel.random_seed is None
 
 
-def test_seed(deep_profiler_model):
+def test_seed(model):
     seed = random.randint(0, 256)
-    deep_profiler_model.seed(seed)
-    assert deep_profiler_model.random_seed == seed
+    model.seed(seed)
+    assert model.random_seed == seed
 
 
-def test_train(deep_profiler_model, out_dir, data, locations):
+def test_train(model, out_dir, data, locations):
     epoch = 1
-    deep_profiler_model.train(epoch)
+    model.train(epoch)
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0001.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0002.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "log.csv"))
     epoch = 3
-    deep_profiler_model.config['training']['epochs'] = 4
-    deep_profiler_model.train(epoch)
+    model.config['training']['epochs'] = 4
+    model.train(epoch)
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0003.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0004.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "log.csv"))

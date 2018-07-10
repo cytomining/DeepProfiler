@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import gc
 import os
 import random
@@ -7,7 +8,7 @@ import numpy as np
 import keras
 
 
-class DeepProfilerModel(object):
+class DeepProfilerModel(ABC):
 
     def __init__(self, config, dset, crop_generator):
         self.model = None
