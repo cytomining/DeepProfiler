@@ -125,7 +125,7 @@ def locations(out_dir, metadata, config):
 def crop_generator(config, dataset):
     module = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))
     importlib.invalidate_caches()
-    generator = module.define_crop_generator(config, dataset)
+    generator = module.GeneratorClass(config, dataset)
     return generator
 
 

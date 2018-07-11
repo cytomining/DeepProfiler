@@ -19,7 +19,7 @@ def learn_model(config, dset, epoch=1, seed=None):
     crop_module = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))
     importlib.invalidate_caches()
 
-    crop_generator = crop_module.define_crop_generator(config, dset)
+    crop_generator = crop_module.GeneratorClass(config, dset)
     model = model_module.ModelClass(config, dset, crop_generator)
 
     if seed:
