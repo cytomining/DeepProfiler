@@ -8,7 +8,7 @@ resnet_utils = slim.nets.resnet_utils
 
 import keras_resnet.models
 import keras
-
+from keras.metrics import top_k_categorical_accuracy
 
 def make_regularizer(transforms, reg_lambda):
     loss = 0
@@ -18,7 +18,11 @@ def make_regularizer(transforms, reg_lambda):
     return loss
 
 
-def create_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=256, reg_lambda=10, is_training=True):
+def create_keras_resnet(input_shape, targets, config, learning_rate=0.001, embed_dims=256, reg_lambda=10, is_training=True):
+
+    def custom_top_k(y_true, y_pred):
+        return top_k_categorical_accuracy(y_true, y_pred, k=config["validation"]["top_k"])
+
     embed_dims = [256, 256]
     # 1. Create ResNet architecture to extract features
     input_image = keras.layers.Input(input_shape)
@@ -58,12 +62,16 @@ def create_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=25
     print(model.summary())
     print([t.shape for t in transforms])
     optimizer = keras.optimizers.Adam(lr=learning_rate)
-    model.compile(optimizer, loss_func, ["categorical_accuracy"])
+    model.compile(optimizer, loss_func, metrics=[keras.metrics.categorical_accuracy,custom_top_k])
 
     return model
 
 
-def create_recurrent_keras_resnet(input_shape, targets, learning_rate=0.001, embed_dims=256, reg_lambda=10, is_training=True):
+def create_recurrent_keras_resnet(input_shape, targets, config, learning_rate=0.001, embed_dims=256, reg_lambda=10, is_training=True):
+
+    def custom_top_k(y_true, y_pred):
+        return top_k_categorical_accuracy(y_true, y_pred, k=config["validation"]["top_k"])
+
     classes = targets[0].shape[1] # TODO: support for multiple targets
     input_set = keras.layers.Input(input_shape)
     net = keras_resnet.models.TimeDistributedResNet18(input_set, include_top=False)#, freeze_bn=not is_training)
@@ -74,11 +82,15 @@ def create_recurrent_keras_resnet(input_shape, targets, learning_rate=0.001, emb
 
     print(model.summary())
     optimizer = keras.optimizers.Adam(lr=learning_rate)
-    model.compile(optimizer, "categorical_crossentropy", ["categorical_accuracy"])
+    model.compile(optimizer, loss="categorical_crossentropy", metrics=[keras.metrics.categorical_accuracy,custom_top_k])
     return model
 
 
-def create_keras_vgg(input_shape, targets, learning_rate=0.001, embed_dims=256, reg_lambda=10, is_training=True):
+def create_keras_vgg(input_shape, targets, config, learning_rate=0.001, embed_dims=256, reg_lambda=10, is_training=True):
+    
+    def custom_top_k(y_true, y_pred):
+        return top_k_categorical_accuracy(y_true, y_pred, k=config["validation"]["top_k"])
+    
     embed_dims = [256, 256]
     # 1. Create ResNet architecture to extract features
     input_image = keras.layers.Input(input_shape)
@@ -142,6 +154,6 @@ def create_keras_vgg(input_shape, targets, learning_rate=0.001, embed_dims=256, 
     print(model.summary())
     print([t.shape for t in transforms])
     optimizer = keras.optimizers.Adam(lr=learning_rate)
-    model.compile(optimizer, loss_func, ["categorical_accuracy"])
+    model.compile(optimizer, loss_func, metrics=[keras.metrics.categorical_accuracy,custom_top_k])
 
     return model
