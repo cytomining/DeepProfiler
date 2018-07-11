@@ -1,3 +1,5 @@
+import deepprofiler.learning.training
+
 import os
 import random
 
@@ -10,7 +12,6 @@ import tensorflow as tf
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.metadata
 import deepprofiler.dataset.target
-import deepprofiler.learning.training
 
 
 def __rand_array():
