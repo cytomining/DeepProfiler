@@ -18,35 +18,35 @@ def test_relative_paths():
     #missing examples to properly test/too large
     
 def test_write_compression_index():
-    temp = os.path.dirname("deepprofiler/examples/metadata/tmp/")
+    temp = os.path.dirname("tests/files/metadata/tmp/")
     if os.path.exists(temp) == False:
         os.makedirs(temp)
-    open_file = open("deepprofiler/examples/config/test_indexing.json")
+    open_file = open("tests/files/config/test_config.json")
     config = json.load(open_file)
     deepprofiler.dataset.indexing.write_compression_index(config)
-    test_output = pd.read_csv("deepprofiler/examples/metadata/tmp/index.csv", index_col=0)
+    test_output = pd.DataFrame.from_csv("tests/files/metadata/tmp/index.csv", index_col=0)
     assert test_output.shape == (36,9)
     assert test_output.values[31][5] == 'Week1_22123/pngs/Week1_150607_B03_s2_w25CEC2D43-E105-42BB-BC00-6962B3ADEBED.png'   
     shutil.rmtree(temp)    
 
 def test_split_index():
-    temp = os.path.dirname("deepprofiler/examples/metadata/tmp/")
+    temp = os.path.dirname("tests/files/metadata/tmp/")
     if os.path.exists(temp) == False:
         os.makedirs(temp)
-    open_file = open("deepprofiler/examples/config/test_indexing.json")
+    open_file = open("tests/files/config/test_config.json")
     config = json.load(open_file)
     test_parts = 3
-    test_paths = ["deepprofiler/examples/metadata/tmp/index-000.csv",
-                  "deepprofiler/examples/metadata/tmp/index-001.csv",
-                  "deepprofiler/examples/metadata/tmp/index-002.csv"]
+    test_paths = ["tests/files/metadata/tmp/index-000.csv",
+                  "tests/files/metadata/tmp/index-001.csv",
+                  "tests/files/metadata/tmp/index-002.csv"]
     deepprofiler.dataset.indexing.write_compression_index(config)
     deepprofiler.dataset.indexing.split_index(config, test_parts)   
-    assert os.path.exists(test_paths[0])
-    assert os.path.exists(test_paths[1])
-    assert os.path.exists(test_paths[2])
-    test_outputs = [pd.read_csv("deepprofiler/examples/metadata/tmp/index-000.csv", index_col=0),
-                    pd.read_csv("deepprofiler/examples/metadata/tmp/index-001.csv", index_col=0),
-                    pd.read_csv("deepprofiler/examples/metadata/tmp/index-002.csv", index_col=0)]
+    assert os.path.exists(test_paths[0]) == True
+    assert os.path.exists(test_paths[1]) == True
+    assert os.path.exists(test_paths[2]) == True
+    test_outputs = [pd.DataFrame.from_csv("tests/files/metadata/tmp/index-000.csv"),
+                    pd.DataFrame.from_csv("tests/files/metadata/tmp/index-001.csv"),
+                    pd.DataFrame.from_csv("tests/files/metadata/tmp/index-002.csv")]
     assert test_outputs[0].shape == (12,9)
     assert test_outputs[1].shape == (12,9)
     assert test_outputs[2].shape == (12,9)
