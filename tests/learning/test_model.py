@@ -2,11 +2,9 @@ import importlib
 import os
 import random
 
-import keras
 import numpy as np
 import pandas as pd
 import pytest
-import tensorflow as tf
 import skimage.io
 
 import deepprofiler.dataset.target
