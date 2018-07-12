@@ -52,6 +52,14 @@ def config(out_dir):
         "queueing": {
             "loading_workers": 2,
             "queue_size": 2
+        },
+        "validation": {
+            "api_key":'rDrWV4m8ITk0PGyDDKWjEgS2q',
+            "project_name":'pytests',
+            "minibatch":2,
+            "frame":"train",
+            "sample_first_crops": True,
+            "top_k": 1
         }
     }
 

@@ -1,8 +1,8 @@
+from comet_ml import Experiment
+
 import gc
 import os
 import numpy as np
-
-from comet_ml import Experiment
 
 import tensorflow as tf
 import keras
