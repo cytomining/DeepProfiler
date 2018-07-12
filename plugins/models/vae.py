@@ -8,7 +8,14 @@ from keras.optimizers import Adam
 from deepprofiler.learning.model import DeepProfilerModel
 
 
+##################################################
+# Convolutional variational autoencoder with
+# alternating convolutions and max pooling
+##################################################
+
+
 def define_model(config, dset):
+    # Define input layer
     input_shape = (
         config["sampling"]["box_size"],  # height
         config["sampling"]["box_size"],  # width
@@ -19,6 +26,7 @@ def define_model(config, dset):
     if config['model']['conv_blocks'] < 1:
         raise ValueError("At least 1 convolutional block is required.")
 
+    # Add convolutional blocks to encoder based on number specified in config, with increasing number of filters
     x = input_image
     for i in range(config['model']['conv_blocks']):
         x = Conv2D(8 * 2 ** i, (3, 3), activation='relu', padding='same')(x)
@@ -26,9 +34,11 @@ def define_model(config, dset):
     encoded_shape = x._keras_shape[1:]
     x = Flatten()(x)
 
+    # Define mean and log variance layers
     z_mean = Dense(config['model']['latent_dim'], name='z_mean')(x)
     z_log_sigma = Dense(config['model']['latent_dim'], name='z_log_sigma')(x)
 
+    # Sampling function for latent variable
     def sampling(args):
         z_mean, z_log_sigma = args
         epsilon = K.random_normal(shape=(config['training']['minibatch'], config['model']['latent_dim']),
@@ -38,6 +48,7 @@ def define_model(config, dset):
     z = Lambda(sampling, output_shape=(config['model']['latent_dim'],), name='z')([z_mean, z_log_sigma])
     encoder = Model(input_image, z_mean)
 
+    # Define decoder
     decoder_input = Input((config['model']['latent_dim'],))
     decoder_layers = []
     decoder_layers.append(Reshape(encoded_shape))
@@ -52,8 +63,10 @@ def define_model(config, dset):
     decoded = decoder(z)
     generator = Model(decoder_input, decoder(decoder_input))
 
+    # Define VAE
     vae = Model(input_image, decoded)
 
+    # Define variational loss function
     def vae_loss(x, x_decoded_mean):
         x = K.flatten(x)
         x_decoded_mean = K.flatten(x_decoded_mean)

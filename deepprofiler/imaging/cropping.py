@@ -25,6 +25,7 @@ def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes
         crops = crops / max_intensities
     return crops
 
+# TODO: implement abstract crop generator
 class CropGenerator(object):
 
     def __init__(self, config, dset):

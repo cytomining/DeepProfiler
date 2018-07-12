@@ -8,6 +8,12 @@ import numpy as np
 import keras
 
 
+##################################################
+# This class should be used as an abstract base
+# class for plugin models.
+##################################################
+
+
 class DeepProfilerModel(ABC):
 
     def __init__(self, config, dset, crop_generator):
@@ -24,7 +30,7 @@ class DeepProfilerModel(ABC):
         tf.set_random_seed(seed)
 
     def train(self, epoch):
-        if not self.model:
+        if self.model is None:
             raise ValueError("Model is not defined!")
         print(self.model.summary())
         # Create cropping graph

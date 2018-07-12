@@ -6,15 +6,15 @@ import tensorflow as tf
 from deepprofiler.learning.model import DeepProfilerModel
 
 
-def define_model(config, dset):
+##################################################
+# ResNet architecture as defined in "Deep Residual
+# Learning for Image Recognition" by Kaiming He,
+# Xiangyu Zhang, Shaoqing Ren, Jian Sun
+# https://arxiv.org/abs/1512.03385
+##################################################
 
-    def make_regularizer(transforms, reg_lambda):
-        loss = 0
-        for i in range(len(transforms)):
-            for j in range(i + 1, len(transforms)):
-                loss += reg_lambda * tf.reduce_sum(
-                    tf.abs(tf.matmul(transforms[i], transforms[j], transpose_a=True, transpose_b=False)))
-        return loss
+
+def define_model(config, dset):
 
     # 1. Create ResNet architecture to extract features
     input_shape = (
@@ -39,21 +39,12 @@ def define_model(config, dset):
         class_outputs.append(y)
         i += 1
 
-    # 3. Define the regularized loss function
-    transforms = [v for v in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES) if v.name.find("_embed") != -1]
-    if len(transforms) > 1:
-        regularizer = make_regularizer(transforms, config["training"]["reg_lambda"])
-        def regularized_loss(y_true, y_pred):
-            loss = keras.losses.categorical_crossentropy(y_true, y_pred) + regularizer
-            return loss
-        loss_func = ["categorical_crossentropy"]*(len(transforms)-1) + [regularized_loss]
-    else:
-        loss_func = ["categorical_crossentropy"]
+    # 3. Define the loss function
+    loss_func = "categorical_crossentropy"
 
     # 4. Create and compile model
     model = keras.models.Model(inputs=input_image, outputs=class_outputs)
     print(model.summary())
-    print([t.shape for t in transforms])
     optimizer = keras.optimizers.Adam(lr=config["training"]["learning_rate"])
     model.compile(optimizer, loss_func, ["categorical_accuracy"])
 
