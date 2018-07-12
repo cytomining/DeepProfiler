@@ -20,7 +20,6 @@ class Validation(object):
 
     def process_batches(self, key, image_array, meta):
         # Prepare image for cropping
-        batch_size = self.config["validation"]["minibatch"] 
         total_crops = self.crop_generator.prepare_image(
                                    self.session, 
                                    image_array, 

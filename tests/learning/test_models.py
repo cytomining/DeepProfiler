@@ -75,7 +75,7 @@ def test_create_keras_resnet(config, targets):
     lr = 0.001
     embed_dims = 256
     reg_lambda = np.random.uniform(0, 10)
-    model = deepprofiler.learning.models.create_keras_resnet(input_shape, targets, config, lr, embed_dims, reg_lambda)
+    model = deepprofiler.learning.models.create_keras_resnet(input_shape, targets, config["validation"]["top_k"], lr, embed_dims, reg_lambda)
     assert model.input_shape == (None,) + input_shape
     assert model.output_shape == (None, 10)
 
@@ -96,6 +96,6 @@ def test_create_keras_vgg(config, targets):
     lr = 0.001
     embed_dims = 256
     reg_lambda = np.random.uniform(0, 10)
-    model = deepprofiler.learning.models.create_keras_vgg(input_shape, targets, config, lr, embed_dims, reg_lambda)
+    model = deepprofiler.learning.models.create_keras_vgg(input_shape, targets, config["validation"]["top_k"], lr, embed_dims, reg_lambda)
     assert model.input_shape == (None,) + input_shape
     assert model.output_shape == (None, 10)

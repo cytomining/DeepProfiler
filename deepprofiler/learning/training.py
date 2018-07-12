@@ -68,7 +68,7 @@ def learn_model(config, dset, epoch):
         model = deepprofiler.learning.models.create_keras_resnet(
                     input_shape, 
                     dset.targets,
-                    config, 
+                    config["validation"]["top_k"], 
                     config["training"]["learning_rate"], 
                     is_training=True
                 )
@@ -82,7 +82,7 @@ def learn_model(config, dset, epoch):
         model = deepprofiler.learning.models.create_recurrent_keras_resnet(
                     input_shape, 
                     dset.targets, 
-                    config,
+                    config["validation"]["top_k"],
                     config["training"]["learning_rate"], 
                     is_training=True
                 )
@@ -96,7 +96,7 @@ def learn_model(config, dset, epoch):
         model = deepprofiler.learning.models.create_keras_resnet(
                     input_shape, 
                     dset.targets,
-                    config, 
+                    config["validation"]["top_k"], 
                     config["training"]["learning_rate"], 
                     is_training=True
                 )
