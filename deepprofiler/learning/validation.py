@@ -61,7 +61,7 @@ class Validation(object):
         self.config["training"]["minibatch"] = batch_size
         feature_layer = self.config["profiling"]["feature_layer"]
 
-        if self.config["model"]["type"] in ["convnet", "mixup", "same_label_mixup"]:
+        if self.config["model"]["type"] in ["convnet", "mixup"]:
             input_shape = (
                 self.config["sampling"]["box_size"],      # height
                 self.config["sampling"]["box_size"],      # width

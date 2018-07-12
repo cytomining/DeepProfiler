@@ -76,18 +76,6 @@ def learn_model(config, dset, epoch):
                     config["training"]["learning_rate"], 
                     is_training=True
                 )
-    elif config["model"]["type"] == "same_label_mixup":
-        input_shape = (
-            config["sampling"]["box_size"],      # height 
-            config["sampling"]["box_size"],      # width
-            len(config["image_set"]["channels"]) # channels
-        )
-        model = deepprofiler.learning.models.create_keras_resnet(
-                    input_shape, 
-                    dset.targets, 
-                    config["training"]["learning_rate"], 
-                    is_training=True
-                )
 
     # keras-resnet model
     output_file = config["training"]["output"] + "/checkpoint_{epoch:04d}.hdf5"

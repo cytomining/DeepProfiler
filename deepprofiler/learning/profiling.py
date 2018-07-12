@@ -81,7 +81,7 @@ class Profile(object):
         self.config["training"]["minibatch"] = batch_size
         feature_layer = self.config["profiling"]["feature_layer"]
 
-        if self.config["model"]["type"] in ["convnet", "mixup", "same_label_mixup"]:
+        if self.config["model"]["type"] in ["convnet", "mixup"]:
             input_shape = (
                 self.config["sampling"]["box_size"],      # height
                 self.config["sampling"]["box_size"],      # width
@@ -144,7 +144,7 @@ class Profile(object):
             crops = batch[0]
             if self.config["model"]["type"] == "inception_resnet":
                 feats = self.sess.run(self.endpoints['PreLogitsFlatten'], feed_dict={self.raw_crops:crops})
-            if self.config["model"]["type"] in ["convnet", "mixup", "same_label_mixup"]:
+            if self.config["model"]["type"] in ["convnet", "mixup"]:
                 feats = self.feat_extractor((batch[0], 0))
             feats = np.reshape(feats, (self.num_channels, batch_size, num_features))
             data[:, b * batch_size:(b + 1) * batch_size, :] = feats
@@ -170,7 +170,7 @@ def profile(config, dset):
     profile = Profile(config, dset)
     if config["model"]["type"] == "inception_resnet":
         profile.configure_inception_resnet()
-    if config["model"]["type"] in ["convnet", "mixup", "same_label_mixup"]:
+    if config["model"]["type"] in ["convnet", "mixup"]:
         profile.configure_resnet()
     dset.scan(profile.extract_features, frame="all", check=profile.check)
     print("Profiling: done")
