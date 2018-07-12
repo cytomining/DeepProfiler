@@ -10,6 +10,7 @@ import keras
 from sklearn.metrics import confusion_matrix
 
 import deepprofiler.imaging.cropping
+import deepprofiler.learning.validation
 
 
 ##################################################
@@ -53,19 +54,22 @@ class DeepProfilerModel(ABC):
             crop_session = tf.Session(config=cpu_config)
             self.crop_generator.start(crop_session)
         gc.collect()
-
-        # Start main session
+        # Start val session
         configuration = tf.ConfigProto()
         configuration.gpu_options.visible_device_list = self.config["training"]["visible_gpus"]
+        crop_graph = tf.Graph()
+        with crop_graph.as_default():
+            val_session = tf.Session(config=configuration)
+            keras.backend.set_session(val_session)
+            val_crop_generator.start(val_session)
+            x_validation, y_validation = deepprofiler.learning.validation.validate(
+                self.config,
+                self.dset,
+                val_crop_generator,
+                val_session)
+        gc.collect()
+        # Start main session
         main_session = tf.Session(config=configuration)
-        val_session = tf.Session(config=configuration)
-        keras.backend.set_session(val_session)
-        val_crop_generator.start(val_session)
-        x_validation, y_validation = deepprofiler.learning.validation.validate(
-            config,
-            dset,
-            val_crop_generator,
-            val_session)
         keras.backend.set_session(main_session)
 
         output_file = self.config["training"]["output"] + "/checkpoint_{epoch:04d}.hdf5"

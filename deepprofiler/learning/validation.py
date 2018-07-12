@@ -1,3 +1,5 @@
+from comet_ml import Experiment
+
 import numpy as np
 
 import keras

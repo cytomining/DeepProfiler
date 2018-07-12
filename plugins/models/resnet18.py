@@ -1,3 +1,5 @@
+from comet_ml import Experiment
+
 import keras
 import keras_resnet
 import keras_resnet.models

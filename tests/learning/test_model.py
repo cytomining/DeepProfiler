@@ -53,13 +53,18 @@ def config(out_dir):
             "minibatch": 2,
             "visible_gpus": "0"
         },
-        "validation": {
-            "minibatch": 2,
-            "output": out_dir
-        },
         "queueing": {
             "loading_workers": 2,
             "queue_size": 2
+        },
+        "validation": {
+            "minibatch": 2,
+            "output": out_dir,
+            "api_key":'[REDACTED]',
+            "project_name":'pytests',
+            "frame":"train",
+            "sample_first_crops": True,
+            "top_k": 2
         }
     }
 
@@ -74,9 +79,9 @@ def metadata(out_dir):
         'R': [str(x) + '.png' for x in __rand_array()],
         'G': [str(x) + '.png' for x in __rand_array()],
         'B': [str(x) + '.png' for x in __rand_array()],
+        'Class': ['0', '1', '2', '3', '0', '1', '2', '3', '0', '1', '2', '3'],
         'Sampling': [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-        'Split': [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
-        'Target': [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
+        'Split': [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
     }, dtype=int)
     df.to_csv(filename, index=False)
     meta = deepprofiler.dataset.metadata.Metadata(filename)
@@ -90,7 +95,7 @@ def metadata(out_dir):
 def dataset(metadata, out_dir):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, 'Sampling', ['R', 'G', 'B'], out_dir, keygen)
-    target = deepprofiler.dataset.target.MetadataColumnTarget('Target', metadata.data['Target'].unique())
+    target = deepprofiler.dataset.target.MetadataColumnTarget('Class', metadata.data['Class'].unique())
     dset.add_target(target)
     return dset
 

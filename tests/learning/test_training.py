@@ -63,7 +63,7 @@ def config(out_dir):
             "project_name":'pytests',
             "frame":"train",
             "sample_first_crops": True,
-            "top_k": 1
+            "top_k": 2
         }
     }
 

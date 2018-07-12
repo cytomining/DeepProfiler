@@ -1,3 +1,5 @@
+from comet_ml import Experiment
+
 import keras
 from keras.layers import *
 from keras.metrics import top_k_categorical_accuracy

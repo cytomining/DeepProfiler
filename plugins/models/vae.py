@@ -1,3 +1,5 @@
+from comet_ml import Experiment
+
 import keras
 from keras import backend as K
 from keras import objectives
