@@ -1,8 +1,8 @@
-import deepprofiler.learning.training
-
+import gc
 import os
 import random
 
+import keras
 import numpy as np
 import pandas as pd
 import pytest
@@ -12,6 +12,10 @@ import tensorflow as tf
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.metadata
 import deepprofiler.dataset.target
+import deepprofiler.imaging.cropping
+import deepprofiler.learning.models
+import deepprofiler.learning.training
+import deepprofiler.learning.validation
 
 
 def __rand_array():
@@ -20,7 +24,7 @@ def __rand_array():
 
 @pytest.fixture(scope='function')
 def out_dir(tmpdir):
-    return os.path.abspath(tmpdir.mkdir("test_training"))
+    return os.path.abspath(tmpdir.mkdir("test_validation"))
 
 
 @pytest.fixture(scope='function')
@@ -45,21 +49,24 @@ def config(out_dir):
         "training": {
             "learning_rate": 0.001,
             "output": out_dir,
-            "epochs": 2,
+            "epochs": 0,
             "steps": 12,
             "minibatch": 2
         },
+        "validation": {
+            "minibatch": 2,
+            "save_features": True,
+            "sample_first_crops": False,
+            "frame": "val",
+            "top_k": 2
+        },
         "queueing": {
             "loading_workers": 2,
-            "queue_size": 2
+            "queue_size": 2,
+            "min_size": 0
         },
-        "validation": {
-            "api_key":'rDrWV4m8ITk0PGyDDKWjEgS2q',
-            "project_name":'pytests',
-            "minibatch":2,
-            "frame":"train",
-            "sample_first_crops": True,
-            "top_k": 1
+        "profiling": {
+            "feature_layer": "pool5"  # TODO: make this work with any model
         }
     }
 
@@ -124,16 +131,42 @@ def data(metadata, out_dir):
         skimage.io.imsave(os.path.join(out_dir, metadata.data['B'][i // 3]), images[:, :, i + 2])
 
 
-def test_learn_model(config, dataset, data, locations, out_dir):
-    epoch = 0
-    deepprofiler.learning.training.learn_model(config, dataset, epoch)
-    assert os.path.exists(os.path.join(out_dir, "checkpoint_0000.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "checkpoint_0001.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "checkpoint_0002.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "log.csv"))
-    epoch = 3
-    config['training']['epochs'] = 4
-    deepprofiler.learning.training.learn_model(config, dataset, epoch)
-    assert os.path.exists(os.path.join(out_dir, "checkpoint_0003.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "checkpoint_0004.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "log.csv"))
+@pytest.fixture(scope='function')
+def session():
+    configuration = tf.ConfigProto()
+    configuration.gpu_options.visible_device_list = "0"
+    session = tf.Session(config = configuration)
+    return session
+
+@pytest.fixture(scope='function')
+def crop_generator(config, dataset, session):
+    crop_generator = deepprofiler.imaging.cropping.SingleImageCropGenerator(config, dataset)
+    crop_generator.start(session)
+    return crop_generator
+
+@pytest.fixture(scope='function')
+def validation(config, dataset, crop_generator, session):
+    return deepprofiler.learning.validation.Validation(config, dataset, crop_generator, session)
+
+def test_init(config, dataset, crop_generator, session, validation):
+    validation = validation
+    config["queueing"]["min_size"] = 0
+    assert validation.config == config
+    assert validation.dset == dataset
+    assert validation.crop_generator == crop_generator
+    assert validation.session == session
+    assert validation.batch_images == []
+    assert validation.batch_labels == []
+
+def test_process_batches():
+    pass
+
+def test_validate(config, dataset, crop_generator, session, out_dir, data, locations, target):
+    test_images, test_labels = deepprofiler.learning.validation.validate(config, dataset, crop_generator, session)
+    assert test_labels.shape == (60,4)
+    assert test_images.shape == (60,16,16,3)
+    test_labels_amax = np.amax(test_labels, axis=1)
+    test_labels_amax_sum = 0
+    for term in test_labels_amax:
+        test_labels_amax_sum += term
+    assert test_labels_amax_sum == 60

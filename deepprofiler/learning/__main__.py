@@ -35,29 +35,6 @@ def recurrent_training(context, epoch):
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     deepprofiler.learning.recurrent_training.learn_model(context.obj["config"], metadata, epoch)
 
-
-# Evaluate a network in the validation set
-@cli.command()
-@click.option("--model", prompt="Checkpoint", help="keras-resnet model")
-@click.option("--subset", default="val", type=click.Choice(["val", "train"]))
-@click.pass_context
-def validation(context, model, subset):
-    metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
-    context.obj["config"]["validation"]["frame"] = subset
-    deepprofiler.learning.validation.validate(context.obj["config"], metadata, model)
-
-
-# Evaluate a network in the validation set
-@cli.command()
-@click.option("--model", prompt="Checkpoint", help="keras-resnet model")
-@click.option("--subset", default="val", type=click.Choice(["val", "train"]))
-@click.pass_context
-def recurrent_validation(context, model, subset):
-    metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
-    context.obj["config"]["validation"]["frame"] = subset
-    deepprofiler.learning.recurrent_validation.validate(context.obj["config"], metadata, model)
-
-
 # Profile cells and extract features
 @cli.command()
 @click.pass_context
