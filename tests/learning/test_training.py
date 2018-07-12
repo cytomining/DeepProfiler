@@ -28,7 +28,8 @@ def config(out_dir):
         "model": {
             "name": "cnn",
             "crop_generator": "crop_generator",
-            "feature_dim": 128
+            "feature_dim": 128,
+            "conv_blocks": 3
         },
         "sampling": {
             "images": 12,

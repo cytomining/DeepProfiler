@@ -26,6 +26,7 @@ class DeepProfilerModel(ABC):
     def train(self, epoch):
         if not self.model:
             raise ValueError("Model is not defined!")
+        print(self.model.summary())
         # Create cropping graph
         crop_graph = tf.Graph()
         with crop_graph.as_default():

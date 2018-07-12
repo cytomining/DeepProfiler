@@ -14,25 +14,26 @@ def define_model(config, dset):
     )
     input_image = keras.layers.Input(input_shape)
 
-    x = Conv2D(8, (3, 3), activation='relu', padding='same')(input_image)
-    x = MaxPooling2D((2, 2), padding='same')(x)
-    x = Conv2D(16, (3, 3), activation='relu', padding='same')(x)
-    x = MaxPooling2D((2, 2), padding='same')(x)
-    x = Conv2D(32, (3, 3), activation='relu', padding='same')(x)
-    encoded = MaxPooling2D((2, 2), padding='same', name='encoded')(x)
+    if config['model']['conv_blocks'] < 1:
+        raise ValueError("At least 1 convolutional block is required.")
+
+    x = input_image
+    for i in range(config['model']['conv_blocks']):
+        x = Conv2D(8 * 2 ** i, (3, 3), activation='relu', padding='same')(x)
+        x = MaxPooling2D((2, 2), padding='same')(x)
+    encoded = x
     encoded_shape = encoded._keras_shape[1:]
     encoder = Model(input_image, encoded)
 
     decoder_input = Input(encoded_shape)
-    decoder = Sequential([
-        Conv2DTranspose(32, (3, 3), activation='relu', padding='same'),
-        UpSampling2D((2, 2)),
-        Conv2DTranspose(16, (3, 3), activation='relu', padding='same'),
-        UpSampling2D((2, 2)),
-        Conv2DTranspose(8, (3, 3), activation='relu', padding='same'),
-        UpSampling2D((2, 2)),
-        Conv2DTranspose(len(config["image_set"]["channels"]), (3, 3), activation='sigmoid', padding='same')
-    ], name='decoded')
+    decoder_layers = []
+    for i in reversed(range(config['model']['conv_blocks'])):
+        decoder_layers.extend([
+            Conv2DTranspose(8 * 2 ** i, (3, 3), activation='relu', padding='same'),
+            UpSampling2D((2, 2))
+        ])
+    decoder_layers.append(Conv2DTranspose(len(config["image_set"]["channels"]), (3, 3), activation='sigmoid', padding='same'))
+    decoder = Sequential(decoder_layers, name='decoded')
     decoded = decoder(encoded)
     decoder = Model(decoder_input, decoder(decoder_input))
 

@@ -16,12 +16,13 @@ def define_model(config, dset):
     )
     input_image = keras.layers.Input(input_shape)
 
-    x = Conv2D(8, (3, 3), activation='relu', padding='same')(input_image)
-    x = MaxPooling2D((2, 2), padding='same')(x)
-    x = Conv2D(16, (3, 3), activation='relu', padding='same')(x)
-    x = MaxPooling2D((2, 2), padding='same')(x)
-    x = Conv2D(32, (3, 3), activation='relu', padding='same')(x)
-    x = MaxPooling2D((2, 2), padding='same')(x)
+    if config['model']['conv_blocks'] < 1:
+        raise ValueError("At least 1 convolutional block is required.")
+
+    x = input_image
+    for i in range(config['model']['conv_blocks']):
+        x = Conv2D(8 * 2 ** i, (3, 3), activation='relu', padding='same')(x)
+        x = MaxPooling2D((2, 2), padding='same')(x)
     encoded_shape = x._keras_shape[1:]
     x = Flatten()(x)
 
@@ -38,16 +39,16 @@ def define_model(config, dset):
     encoder = Model(input_image, z_mean)
 
     decoder_input = Input((config['model']['latent_dim'],))
-    decoder = Sequential([
-        Reshape(encoded_shape),
-        Conv2DTranspose(32, (3, 3), activation='relu', padding='same'),
-        UpSampling2D((2, 2)),
-        Conv2DTranspose(16, (3, 3), activation='relu', padding='same'),
-        UpSampling2D((2, 2)),
-        Conv2DTranspose(8, (3, 3), activation='relu', padding='same'),
-        UpSampling2D((2, 2)),
-        Conv2DTranspose(len(config["image_set"]["channels"]), (3, 3), activation='sigmoid', padding='same')
-    ], name='decoded')
+    decoder_layers = []
+    decoder_layers.append(Reshape(encoded_shape))
+    for i in reversed(range(config['model']['conv_blocks'])):
+        decoder_layers.extend([
+            Conv2DTranspose(8 * 2 ** i, (3, 3), activation='relu', padding='same'),
+            UpSampling2D((2, 2))
+        ])
+    decoder_layers.append(
+        Conv2DTranspose(len(config["image_set"]["channels"]), (3, 3), activation='sigmoid', padding='same'))
+    decoder = Sequential(decoder_layers, name='decoded')
     decoded = decoder(z)
     generator = Model(decoder_input, decoder(decoder_input))
 

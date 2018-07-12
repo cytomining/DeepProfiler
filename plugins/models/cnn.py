@@ -14,12 +14,13 @@ def define_model(config, dset):
     )
     input_image = keras.layers.Input(input_shape)
 
-    x = Conv2D(8, (3, 3), activation='relu', padding='same')(input_image)
-    x = MaxPooling2D((2, 2), padding='same')(x)
-    x = Conv2D(16, (3, 3), activation='relu', padding='same')(x)
-    x = MaxPooling2D((2, 2), padding='same')(x)
-    x = Conv2D(32, (3, 3), activation='relu', padding='same')(x)
-    x = MaxPooling2D((2, 2), padding='same')(x)
+    if config['model']['conv_blocks'] < 1:
+        raise ValueError("At least 1 convolutional block is required.")
+
+    x = input_image
+    for i in range(config['model']['conv_blocks']):
+        x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
+        x = MaxPooling2D((2, 2), padding='same')(x)
     x = Flatten()(x)
     features = Dense(config['model']['feature_dim'], activation='relu')(x)
 
