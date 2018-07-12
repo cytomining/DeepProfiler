@@ -22,10 +22,11 @@ def cli(context, config):
 # First learning tool: Training a network
 @cli.command()
 @click.option("--epoch", default=1)
+@click.option("--seed", default=None)
 @click.pass_context
-def training(context, epoch):
+def training(context, epoch, seed):
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
-    deepprofiler.learning.training.learn_model(context.obj["config"], metadata, epoch)
+    deepprofiler.learning.training.learn_model(context.obj["config"], metadata, epoch, seed)
 
 # Second learning tool: Training a recurrent network
 @cli.command()

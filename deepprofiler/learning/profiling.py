@@ -12,7 +12,6 @@ import deepprofiler.learning.training
 import deepprofiler.imaging.boxes
 import deepprofiler.imaging.cropping
 from deepprofiler.dataset.utils import tic, toc
-import deepprofiler.learning.models
 
 import keras
 from keras.models import Model
