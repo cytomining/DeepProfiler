@@ -78,7 +78,7 @@ class Profile(object):
     def configure_resnet(self):
          # Create model and load weights
         batch_size = self.config["validation"]["minibatch"]
-        self.config["training"]["minibatch"] = batch_size
+        self.config["model"]["params"]["batch_size"] = batch_size
         feature_layer = self.config["profiling"]["feature_layer"]
 
         if self.config["model"]["type"] in ["convnet", "mixup"]:

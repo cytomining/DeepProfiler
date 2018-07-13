@@ -163,7 +163,7 @@ def test_train(model, out_dir, data, locations):
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0002.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "log.csv"))
     epoch = 3
-    model.config['training']['epochs'] = 4
+    model.config["model"]["params"]['epochs'] = 4
     model.train(epoch)
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0003.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0004.hdf5"))

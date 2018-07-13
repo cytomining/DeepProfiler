@@ -14,7 +14,11 @@ from deepprofiler.learning.model import DeepProfilerModel
 ##################################################
 
 
-def define_model(config, dset):
+def define_model(config, dset, metrics):
+
+    if metrics is None:
+        metrics = ["accuracy"]
+
     # Define input layer
     input_shape = (
         config["sampling"]["box_size"],  # height
@@ -50,12 +54,12 @@ def define_model(config, dset):
 
     # Define autoencoder
     autoencoder = Model(input_image, decoded)
-    autoencoder.compile(optimizer=Adam(lr=config['training']['learning_rate']), loss='mse')
+    autoencoder.compile(optimizer=Adam(lr=config["model"]["params"]['learning_rate']), loss='mse', metrics=metrics)
 
     return autoencoder, encoder, decoder
 
 
 class ModelClass(DeepProfilerModel):
-    def __init__(self, config, dset, generator):
+    def __init__(self, config, dset, generator, metrics):
         super(ModelClass, self).__init__(config, dset, generator)
-        self.model, self.encoder, self.decoder = define_model(config, dset)
+        self.model, self.encoder, self.decoder = define_model(config, dset, metrics)

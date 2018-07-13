@@ -183,14 +183,14 @@ def test_crop_generator_start(prepared_crop_generator):  # includes test for tra
 def test_crop_generator_sample_batch(prepared_crop_generator):
     sess = tf.Session()
     prepared_crop_generator.start(sess)
-    pool_index = np.zeros((prepared_crop_generator.config['training']['minibatch'],), dtype=int)
+    pool_index = np.zeros((prepared_crop_generator.config["model"]["params"]['batch_size'],), dtype=int)
     prepared_crop_generator.ready_to_sample = True
     data = prepared_crop_generator.sample_batch(pool_index)
-    assert np.array(data[0]).shape == (prepared_crop_generator.config['training']['minibatch'],
+    assert np.array(data[0]).shape == (prepared_crop_generator.config["model"]["params"]['batch_size'],
                                        prepared_crop_generator.config['sampling']['box_size'],
                                        prepared_crop_generator.config['sampling']['box_size'],
                                        len(prepared_crop_generator.config['image_set']['channels']))
-    assert data[1].shape == (prepared_crop_generator.config['training']['minibatch'], prepared_crop_generator.dset.targets[0].shape[1])
+    assert data[1].shape == (prepared_crop_generator.config["model"]["params"]['batch_size'], prepared_crop_generator.dset.targets[0].shape[1])
     assert data[2] == 0
     prepared_crop_generator.stop(sess)
 
@@ -203,13 +203,13 @@ def test_crop_generator_generate(prepared_crop_generator):
     test_steps = 3
     for i in range(test_steps):
         data = next(generator)
-        assert np.array(data[0]).shape == (prepared_crop_generator.config['training']['minibatch'],
+        assert np.array(data[0]).shape == (prepared_crop_generator.config["model"]["params"]['batch_size'],
                                            prepared_crop_generator.config['sampling']['box_size'],
                                            prepared_crop_generator.config['sampling']['box_size'],
                                            len(prepared_crop_generator.config['image_set']['channels']))
         assert len(data[1]) == len(prepared_crop_generator.dset.targets)
         for item in data[1]:
-            assert item.shape == (prepared_crop_generator.config['training']['minibatch'], prepared_crop_generator.dset.targets[0].shape[1])
+            assert item.shape == (prepared_crop_generator.config["model"]["params"]['batch_size'], prepared_crop_generator.dset.targets[0].shape[1])
     prepared_crop_generator.stop(sess)
 
 
@@ -230,7 +230,7 @@ def test_single_image_crop_generator_init(config, dataset):
 def test_single_image_crop_generator_start(single_image_crop_generator):
     sess = tf.Session()
     single_image_crop_generator.start(sess)
-    assert single_image_crop_generator.config["training"]["minibatch"] == single_image_crop_generator.config["validation"]["minibatch"]
+    assert single_image_crop_generator.config["model"]["params"]["batch_size"] == single_image_crop_generator.config["validation"]["minibatch"]
     assert hasattr(single_image_crop_generator, 'input_variables')
     assert single_image_crop_generator.angles.get_shape().as_list() == [None]
     assert single_image_crop_generator.aligned_labeled[0].get_shape().as_list() == [None,
@@ -307,7 +307,7 @@ def test_set_crop_generator_start(set_crop_generator, out_dir):
     assert not set_crop_generator.coord.joined
     assert not set_crop_generator.exception_occurred
     assert len(set_crop_generator.queue_threads) == set_crop_generator.config['queueing']['loading_workers']
-    assert set_crop_generator.batch_size == set_crop_generator.config["training"]["minibatch"]
+    assert set_crop_generator.batch_size == set_crop_generator.config["model"]["params"]["batch_size"]
     assert len(set_crop_generator.target_sizes) == len(set_crop_generator.dset.targets)
     assert set_crop_generator.set_manager.alpha == set_crop_generator.config["model"]["alpha"]
     assert set_crop_generator.set_manager.table_size == set_crop_generator.config["queueing"]["queue_size"]
@@ -328,11 +328,11 @@ def test_set_crop_generator_generate(set_crop_generator, out_dir):
     test_steps = 3
     for i in range(test_steps):
         data = next(generator)
-        assert np.array(data[0]).shape == (set_crop_generator.config["training"]["minibatch"],
+        assert np.array(data[0]).shape == (set_crop_generator.config["model"]["params"]["batch_size"],
                                            set_crop_generator.config['sampling']['box_size'],
                                            set_crop_generator.config['sampling']['box_size'],
                                            len(set_crop_generator.config['image_set']['channels']))
-        assert np.array(data[1]).shape == (set_crop_generator.config['training']['minibatch'],
+        assert np.array(data[1]).shape == (set_crop_generator.config["model"]["params"]['batch_size'],
                                            set_crop_generator.dset.targets[0].shape[1])
     set_crop_generator.stop(sess)
 
@@ -346,7 +346,7 @@ def test_single_image_crop_set_generator_init(config, dataset):
 def test_single_image_crop_set_generator_start(single_image_crop_set_generator):
     sess = tf.Session()
     single_image_crop_set_generator.start(sess)
-    assert single_image_crop_set_generator.config["training"]["minibatch"] == single_image_crop_set_generator.config["validation"]["minibatch"]
+    assert single_image_crop_set_generator.config["model"]["params"]["batch_size"] == single_image_crop_set_generator.config["validation"]["minibatch"]
     assert hasattr(single_image_crop_set_generator, 'input_variables')
     assert single_image_crop_set_generator.angles.get_shape().as_list() == [None]
     assert single_image_crop_set_generator.aligned_labeled[0].get_shape().as_list() == [None,
