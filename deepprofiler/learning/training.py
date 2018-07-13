@@ -35,8 +35,8 @@ def learn_model(config, dset, epoch=1, seed=None):
     importlib.invalidate_caches()
 
     crop_generator = crop_module.GeneratorClass
-    model = model_module.ModelClass(config, dset, crop_generator, metrics)
+    model = model_module.ModelClass(config, dset, crop_generator)
 
     if seed:
         model.seed(seed)
-    model.train(epoch)
+    model.train(epoch, metrics)

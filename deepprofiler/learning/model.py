@@ -23,10 +23,15 @@ class DeepProfilerModel(ABC):
 
     def __init__(self, config, dset, crop_generator):
         self.model = None
+        self.loss = None
+        self.optimizer = None
         self.config = config
         self.dset = dset
-        self.train_crop_generator = crop_generator()
+        self.train_crop_generator = crop_generator(config, dset, mode="train")
+        self.val_crop_generator = crop_generator(config, dset, mode="val")
         self.random_seed = None
+        if "comet_ml" not in config["model"].keys():
+            self.config["model"]["comet_ml"] = False
 
     def seed(self, seed):
         self.random_seed = seed
@@ -34,21 +39,22 @@ class DeepProfilerModel(ABC):
         np.random.seed(seed)
         tf.set_random_seed(seed)
 
-    def train(self, epoch, metrics):
+    def train(self, epoch, metrics=['accuracy']):
         if self.model is None:
             raise ValueError("Model is not defined!")
         print(self.model.summary())
+        self.model.compile(self.optimizer, self.loss, metrics)
         if not os.path.isdir(self.config["training"]["output"]):
             os.mkdir(self.config["training"]["output"])
-
-        experiment = Experiment(
-            api_key=self.config["validation"]["api_key"],
-            project_name=self.config["validation"]["project_name"]
-        )
+        if self.config["model"]["comet_ml"]:
+            experiment = Experiment(
+                api_key=self.config["validation"]["api_key"],
+                project_name=self.config["validation"]["project_name"]
+            )
         # Create cropping graph
         crop_graph = tf.Graph()
         with crop_graph.as_default():
-            val_crop_generator = deepprofiler.imaging.cropping.SingleImageCropGenerator(self.config, self.dset)
+            val_crop_generator = deepprofiler.imaging.cropping.SingleImageCropGenerator(self.config, self.dset) #TODO
             cpu_config = tf.ConfigProto(device_count={'CPU': 1, 'GPU': 0})
             cpu_config.gpu_options.visible_device_list = ""
             crop_session = tf.Session(config=cpu_config)
@@ -59,15 +65,15 @@ class DeepProfilerModel(ABC):
         configuration.gpu_options.visible_device_list = self.config["training"]["visible_gpus"]
         crop_graph = tf.Graph()
         with crop_graph.as_default():
-            val_session = tf.Session(config=configuration)
-            keras.backend.set_session(val_session)
-            val_crop_generator.start(val_session)
+            val_session = tf.Session(config=configuration) #TODO
+            keras.backend.set_session(val_session) #TODO
+            val_crop_generator.start(val_session) #TODO
             x_validation, y_validation = deepprofiler.learning.validation.validate(
                 self.config,
                 self.dset,
                 val_crop_generator,
-                val_session)
-        gc.collect()
+                val_session) #TODO
+        gc.collect() #TODO
         # Start main session
         main_session = tf.Session(config=configuration)
         keras.backend.set_session(main_session)
@@ -88,18 +94,12 @@ class DeepProfilerModel(ABC):
             self.model.load_weights(previous_model)
             print("Weights from previous model loaded:", previous_model)
 
-        epochs = self.config["training"]["epochs"]
-        steps = self.config["training"]["steps"]
+        epochs = self.config["model"]["params"]["epochs"]
+        steps = self.config["model"]["params"]["steps"]
 
-        params = {
-            'steps_per_epoch': steps,
-            'epochs': epochs,
-            'learning_rate': self.config["training"]["learning_rate"],
-            "k_value": self.config["validation"]["top_k"],
-            "training_batch_size": self.config["training"]["minibatch"],
-            "validation_batch_size": self.config["validation"]["minibatch"]
-        }
-        experiment.log_multiple_params(params)
+        if self.config["model"]["comet_ml"]:
+            params = self.config["model"]["params"]
+            experiment.log_multiple_params(params)
 
         keras.backend.get_session().run(tf.initialize_all_variables())
         self.model.fit_generator(
@@ -111,16 +111,6 @@ class DeepProfilerModel(ABC):
             initial_epoch=epoch - 1,
             validation_data=(x_validation, y_validation)
         )
-
-        pred = self.model.predict(x_validation)
-        new_pred = []
-        for line in pred:
-            new_pred.append(np.argmax(line))
-        new_y_validation = []
-        for line in y_validation:
-            new_y_validation.append(np.argmax(line))
-        output_confusion_matrix = confusion_matrix(new_y_validation, new_pred)
-        np.savetxt(self.config["training"]["output"] + "/confusion_matrix.txt", output_confusion_matrix)
 
         # Close session and stop threads
         print("Complete! Closing session.", end="", flush=True)

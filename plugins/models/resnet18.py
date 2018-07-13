@@ -4,7 +4,6 @@ import keras
 import keras_resnet
 import keras_resnet.models
 import tensorflow as tf
-from keras.metrics import top_k_categorical_accuracy
 
 from deepprofiler.learning.model import DeepProfilerModel
 
@@ -16,11 +15,7 @@ from deepprofiler.learning.model import DeepProfilerModel
 # https://arxiv.org/abs/1512.03385
 ##################################################
 
-
 def define_model(config, dset):
-    # Top k function
-    def custom_top_k(y_true, y_pred):
-        return top_k_categorical_accuracy(y_true, y_pred, k=config['validation']['top_k'])
 
     # 1. Create ResNet architecture to extract features
     input_shape = (
@@ -50,15 +45,13 @@ def define_model(config, dset):
 
     # 4. Create and compile model
     model = keras.models.Model(inputs=input_image, outputs=class_outputs)
-    print(model.summary())
-    optimizer = keras.optimizers.Adam(lr=config["training"]["learning_rate"])
-    model.compile(optimizer, loss_func, ["categorical_accuracy", custom_top_k])
+    optimizer = keras.optimizers.Adam(lr=config["model"]["params"]["learning_rate"])
 
-    return model
+    return model, optimizer, loss_func
 
 
 class ModelClass(DeepProfilerModel):
     def __init__(self, config, dset, generator):
         super(ModelClass, self).__init__(config, dset, generator)
-        self.model = define_model(config, dset)
+        self.model, self.optimizer, self.loss = define_model(config, dset)
 

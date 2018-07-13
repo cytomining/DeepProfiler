@@ -2,7 +2,6 @@ from comet_ml import Experiment
 
 import keras
 from keras.layers import *
-from keras.metrics import top_k_categorical_accuracy
 from keras.models import Model, Sequential
 from keras.optimizers import Adam
 
@@ -15,11 +14,7 @@ from deepprofiler.learning.model import DeepProfilerModel
 ##################################################
 
 
-def define_model(config, dset):
-    # Top k function
-    def custom_top_k(y_true, y_pred):
-        return top_k_categorical_accuracy(y_true, y_pred, k=config['validation']['top_k'])
-
+def define_model(config, dset, metrics):
     # Define input layer
     input_shape = (
         config["sampling"]["box_size"],  # height
@@ -49,13 +44,12 @@ def define_model(config, dset):
 
     # Define model
     model = Model(input_image, class_outputs)
-    model.compile(optimizer=Adam(lr=config['training']['learning_rate']),
-                  loss='categorical_crossentropy',
-                  metrics=['categorical_accuracy', custom_top_k])
-    return model
+    optimizer=Adam(lr=config["model"]["params"]['learning_rate'])
+    loss='categorical_crossentropy'
+    return model, optimizer, loss
 
 
 class ModelClass(DeepProfilerModel):
     def __init__(self, config, dset, generator):
         super(ModelClass, self).__init__(config, dset, generator)
-        self.model = define_model(config, dset)
+        self.model, self.optimizer, self.loss = define_model(config, dset)

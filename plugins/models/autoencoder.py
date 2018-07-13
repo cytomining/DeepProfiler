@@ -50,12 +50,13 @@ def define_model(config, dset):
 
     # Define autoencoder
     autoencoder = Model(input_image, decoded)
-    autoencoder.compile(optimizer=Adam(lr=config['training']['learning_rate']), loss='mse')
+    optimizer=Adam(lr=config["model"]["params"]['learning_rate'])
+    loss='mse'
 
-    return autoencoder, encoder, decoder
+    return autoencoder, encoder, decoder, optimizer, loss
 
 
 class ModelClass(DeepProfilerModel):
     def __init__(self, config, dset, generator):
         super(ModelClass, self).__init__(config, dset, generator)
-        self.model, self.encoder, self.decoder = define_model(config, dset)
+        self.model, self.encoder, self.decoder, self.optimizer, self.loss = define_model(config, dset)

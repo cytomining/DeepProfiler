@@ -43,7 +43,7 @@ def define_model(config, dset):
     # Sampling function for latent variable
     def sampling(args):
         z_mean, z_log_sigma = args
-        epsilon = K.random_normal(shape=(config['training']['minibatch'], config['model']['latent_dim']),
+        epsilon = K.random_normal(shape=(config["model"]["params"]['batch_size'], config['model']['latent_dim']),
                                   mean=0., stddev=config['model']['epsilon_std'])
         return z_mean + K.exp(z_log_sigma) * epsilon
 
@@ -76,12 +76,12 @@ def define_model(config, dset):
         kl_loss = - 0.5 * K.mean(1 + z_log_sigma - K.square(z_mean) - K.exp(z_log_sigma), axis=-1)
         return xent_loss + kl_loss
 
-    vae.compile(optimizer=Adam(lr=config['training']['learning_rate']), loss=vae_loss)
+    optimizer=Adam(lr=config["model"]["params"]['learning_rate'])
 
-    return vae, encoder, generator
+    return vae, encoder, generator, optimizer, vae_loss
 
 
 class ModelClass(DeepProfilerModel):
     def __init__(self, config, dset, generator):
         super(ModelClass, self).__init__(config, dset, generator)
-        self.model, self.encoder, self.generator = define_model(config, dset)
+        self.model, self.encoder, self.generator, self.optimizer, self.loss = define_model(config, dset)

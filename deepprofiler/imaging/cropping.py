@@ -102,7 +102,7 @@ class CropGenerator(object):
         # Outputs and queue of the data augmentation graph
         augmented_op = deepprofiler.imaging.augmentations.augment_multiple(
             tf.cast(self.input_variables["labeled_crops"][0], tf.float32),
-            self.config["training"]["minibatch"]
+            self.config["model"]["params"]["batch_size"]
         )
         train_inputs = tf.tuple([augmented_op] + self.input_variables["labeled_crops"][1:]) 
 
@@ -214,7 +214,7 @@ class CropGenerator(object):
         while not self.ready_to_sample:
             time.sleep(2)
         np.random.shuffle(pool_index)
-        idx = pool_index[0:self.config["training"]["minibatch"]]
+        idx = pool_index[0:self.config["model"]["params"]["batch_size"]]
         # TODO: make outputs for all targets
         data = [self.image_pool[idx,...], self.label_pool[0][idx,:], 0]
         return data
@@ -265,7 +265,7 @@ class SingleImageCropGenerator(CropGenerator):
     def start(self, session):
         # Define input data batches
         with tf.variable_scope("train_inputs"):
-            self.config["training"]["minibatch"] = self.config["validation"]["minibatch"]
+            self.config["model"]["params"]["batch_size"] = self.config["validation"]["minibatch"]
             self.build_input_graph()
             # Align cells by rotating nuclei
             self.angles = tf.placeholder(tf.float32, shape=[None], name="nuclei_angles")
@@ -337,7 +337,7 @@ class SetCropGenerator(CropGenerator):
     def start(self, session):
         super().start(session)
 
-        self.batch_size = self.config["training"]["minibatch"]
+        self.batch_size = self.config[["model"]["params"]["batch_size"]]
         self.target_sizes = []
         targets = [t for t in self.train_variables.keys() if t.startswith("target_")]
         targets.sort()
