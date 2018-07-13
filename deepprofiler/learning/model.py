@@ -7,7 +7,7 @@ import random
 import tensorflow as tf
 import numpy as np
 import keras
-from sklearn.metrics import confusion_matrix
+import sklearn.metrics
 
 import deepprofiler.imaging.cropping
 import deepprofiler.learning.validation
