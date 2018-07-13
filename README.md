@@ -6,6 +6,7 @@
 [![codecov](https://codecov.io/gh/broadinstitute/DeepProfiler/branch/master/graph/badge.svg)](https://codecov.io/gh/broadinstitute/DeepProfiler)
 [![Requirements Status](https://requires.io/github/broadinstitute/DeepProfiler/requirements.svg?branch=master)](https://requires.io/github/broadinstitute/DeepProfiler/requirements/?branch=master)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1966/badge)](https://bestpractices.coreinfrastructure.org/projects/1966)
+[![CometML](https://img.shields.io/badge/comet.ml-track-brightgreen.svg)](https://www.comet.ml)
 
 # DeepProfiler
 Morphological profiling using deep learning 
