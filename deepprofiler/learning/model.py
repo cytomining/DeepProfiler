@@ -25,7 +25,7 @@ class DeepProfilerModel(ABC):
         self.model = None
         self.config = config
         self.dset = dset
-        self.crop_generator = crop_generator
+        self.train_crop_generator = crop_generator()
         self.random_seed = None
 
     def seed(self, seed):
@@ -34,7 +34,7 @@ class DeepProfilerModel(ABC):
         np.random.seed(seed)
         tf.set_random_seed(seed)
 
-    def train(self, epoch):
+    def train(self, epoch, metrics):
         if self.model is None:
             raise ValueError("Model is not defined!")
         print(self.model.summary())
@@ -54,7 +54,7 @@ class DeepProfilerModel(ABC):
             crop_session = tf.Session(config=cpu_config)
             self.crop_generator.start(crop_session)
         gc.collect()
-        # Start val session
+        # Start validation session
         configuration = tf.ConfigProto()
         configuration.gpu_options.visible_device_list = self.config["training"]["visible_gpus"]
         crop_graph = tf.Graph()
