@@ -21,14 +21,14 @@ import deepprofiler.learning.validation
 
 class DeepProfilerModel(ABC):
 
-    def __init__(self, config, dset, crop_generator):
+    def __init__(self, config, dset, crop_generator, val_crop_generator):
         self.model = None
         self.loss = None
         self.optimizer = None
         self.config = config
         self.dset = dset
-        self.train_crop_generator = crop_generator(config, dset, mode="train")
-        self.val_crop_generator = crop_generator(config, dset, mode="val")
+        self.train_crop_generator = crop_generator(config, dset)
+        self.val_crop_generator = val_crop_generator(config, dset)
         self.random_seed = None
         if "comet_ml" not in config["model"].keys():
             self.config["model"]["comet_ml"] = False
@@ -39,7 +39,7 @@ class DeepProfilerModel(ABC):
         np.random.seed(seed)
         tf.set_random_seed(seed)
 
-    def train(self, epoch, metrics=['accuracy']):
+    def train(self, epoch, metrics):
         if self.model is None:
             raise ValueError("Model is not defined!")
         print(self.model.summary())
@@ -54,11 +54,10 @@ class DeepProfilerModel(ABC):
         # Create cropping graph
         crop_graph = tf.Graph()
         with crop_graph.as_default():
-            val_crop_generator = deepprofiler.imaging.cropping.SingleImageCropGenerator(self.config, self.dset) #TODO
             cpu_config = tf.ConfigProto(device_count={'CPU': 1, 'GPU': 0})
             cpu_config.gpu_options.visible_device_list = ""
             crop_session = tf.Session(config=cpu_config)
-            self.crop_generator.start(crop_session)
+            self.train_crop_generator.start(crop_session)
         gc.collect()
         # Start validation session
         configuration = tf.ConfigProto()
@@ -67,11 +66,11 @@ class DeepProfilerModel(ABC):
         with crop_graph.as_default():
             val_session = tf.Session(config=configuration) #TODO
             keras.backend.set_session(val_session) #TODO
-            val_crop_generator.start(val_session) #TODO
+            self.val_crop_generator.start(val_session) #TODO
             x_validation, y_validation = deepprofiler.learning.validation.validate(
                 self.config,
                 self.dset,
-                val_crop_generator,
+                self.val_crop_generator,
                 val_session) #TODO
         gc.collect() #TODO
         # Start main session
@@ -103,7 +102,7 @@ class DeepProfilerModel(ABC):
 
         keras.backend.get_session().run(tf.initialize_all_variables())
         self.model.fit_generator(
-            generator=self.crop_generator.generate(crop_session),
+            generator=self.train_crop_generator.generate(crop_session),
             steps_per_epoch=steps,
             epochs=epochs,
             callbacks=callbacks,
@@ -114,7 +113,7 @@ class DeepProfilerModel(ABC):
 
         # Close session and stop threads
         print("Complete! Closing session.", end="", flush=True)
-        self.crop_generator.stop(crop_session)
+        self.train_crop_generator.stop(crop_session)
         crop_session.close()
         print("All set.")
         gc.collect()

@@ -14,7 +14,7 @@ from deepprofiler.learning.model import DeepProfilerModel
 ##################################################
 
 
-def define_model(config, dset, metrics):
+def define_model(config, dset):
     # Define input layer
     input_shape = (
         config["sampling"]["box_size"],  # height
@@ -50,6 +50,6 @@ def define_model(config, dset, metrics):
 
 
 class ModelClass(DeepProfilerModel):
-    def __init__(self, config, dset, generator):
-        super(ModelClass, self).__init__(config, dset, generator)
+    def __init__(self, config, dset, generator, val_generator):
+        super(ModelClass, self).__init__(config, dset, generator, val_generator)
         self.model, self.optimizer, self.loss = define_model(config, dset)

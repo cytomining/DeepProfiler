@@ -1,4 +1,6 @@
-from deepprofiler.imaging.cropping import CropGenerator
+import deepprofiler.imaging.cropping 
 
 
-GeneratorClass = CropGenerator
+GeneratorClass = deepprofiler.imaging.cropping.CropGenerator
+
+SingleImageGeneratorClass = deepprofiler.imaging.cropping.SingleImageCropGenerator

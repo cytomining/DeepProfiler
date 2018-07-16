@@ -1,8 +1,6 @@
 from comet_ml import Experiment
 import importlib
 import keras.metrics
-import sklearn.metrics
-
 
 #################################################
 ## MAIN TRAINING ROUTINE
@@ -23,30 +21,22 @@ def learn_model(config, dset, epoch=1, seed=None):
             'top_k_categorical_accuracy',
             'sparse_top_k_categorical_accuracy'
         ]
-        sklearn_metrics = [
-            sklearn.metrics.accuracy_score,
-            sklearn.metrics.hamming_loss,
-            sklearn.metrics.jaccard_similarity_score,
-            sklearn.metrics.log_loss,
-            sklearn.metrics.matthews_corrcoef,
-            sklearn.metrics.precision_score,
-            sklearn.metrics.recall_score,
-            sklearn.metrics.zero_one_loss
-        ]
         if type(config['model']['metrics'] is list):
-            metrics = list(map(lambda metric: not importlib.import_module(
-                "plugins.metrics.{}".format(metric)).MetricClass(config).metric if metric not in keras_metrics, sklearn_metrics else metric,
+            metrics = list(map(lambda metric: importlib.import_module(
+                "plugins.metrics.{}".format(metric)).MetricClass(config, metric).f if metric not in keras_metrics else metric,
                           config['model']['metrics']))
-        if type(config['model']['metrics'] is dict):
-            metrics = {k: lambda metric: not importlib.import_module(
-                "plugins.metrics.{}".format(metric)).MetricClass(config).metric if metric not in keras_metrics, sklearn_metrics else metric
+        elif type(config['model']['metrics'] is dict):
+            metrics = {k: lambda metric: importlib.import_module(
+                "plugins.metrics.{}".format(metric)).MetricClass(config, metric).f if metric not in keras_metrics else metric
                        for k, v in config['model']['metrics'].items()}
     else:
-        metrics = None
+        metrics = ["accuracy"]
+        print("NONE")
     importlib.invalidate_caches()
 
     crop_generator = crop_module.GeneratorClass
-    model = model_module.ModelClass(config, dset, crop_generator)
+    val_crop_generator = crop_module.SingleImageGeneratorClass
+    model = model_module.ModelClass(config, dset, crop_generator, val_crop_generator)
 
     if seed:
         model.seed(seed)

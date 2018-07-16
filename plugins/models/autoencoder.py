@@ -57,6 +57,6 @@ def define_model(config, dset):
 
 
 class ModelClass(DeepProfilerModel):
-    def __init__(self, config, dset, generator):
-        super(ModelClass, self).__init__(config, dset, generator)
+    def __init__(self, config, dset, generator, val_generator):
+        super(ModelClass, self).__init__(config, dset, generator, val_generator)
         self.model, self.encoder, self.decoder, self.optimizer, self.loss = define_model(config, dset)
