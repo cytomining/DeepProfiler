@@ -30,7 +30,13 @@ def config(out_dir):
             "name": "cnn",
             "crop_generator": "crop_generator",
             "feature_dim": 128,
-            "conv_blocks": 3
+            "conv_blocks": 3,
+            "params": {
+                "epochs": 3,
+                "steps": 10,
+                "learning_rate": 0.0001,
+                "batch_size": 16
+            },
         },
         "sampling": {
             "images": 12,
@@ -126,27 +132,36 @@ def locations(out_dir, metadata, config):
 
 
 @pytest.fixture(scope='function')
-def crop_generator(config, dataset):
+def crop_generator(config):
     module = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))
     importlib.invalidate_caches()
-    generator = module.GeneratorClass(config, dataset)
+    generator = module.GeneratorClass
     return generator
 
 
 @pytest.fixture(scope='function')
-def model(config, dataset, crop_generator):
+def val_crop_generator(config):
+    module = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))
+    importlib.invalidate_caches()
+    generator = module.SingleImageGeneratorClass
+    return generator
+
+
+@pytest.fixture(scope='function')
+def model(config, dataset, crop_generator, val_crop_generator):
     module = importlib.import_module("plugins.models.{}".format(config['model']['name']))
     importlib.invalidate_caches()
-    dpmodel = module.ModelClass(config, dataset, crop_generator)
+    dpmodel = module.ModelClass(config, dataset, crop_generator, val_crop_generator)
     return dpmodel
 
 
-def test_init(config, dataset, crop_generator):
-    dpmodel = DeepProfilerModel(config, dataset, crop_generator)
+def test_init(config, dataset, crop_generator, val_crop_generator):
+    dpmodel = DeepProfilerModel(config, dataset, crop_generator, val_crop_generator)
     assert dpmodel.model is None
     assert dpmodel.config == config
     assert dpmodel.dset == dataset
-    assert dpmodel.crop_generator == crop_generator
+    assert isinstance(dpmodel.train_crop_generator, crop_generator)
+    assert isinstance(dpmodel.val_crop_generator, val_crop_generator)
     assert dpmodel.random_seed is None
 
 
@@ -157,8 +172,7 @@ def test_seed(model):
 
 
 def test_train(model, out_dir, data, locations):
-    epoch = 1
-    model.train(epoch)
+    model.train()
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0001.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0002.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "log.csv"))

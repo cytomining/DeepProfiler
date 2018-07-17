@@ -39,7 +39,7 @@ class DeepProfilerModel(ABC):
         np.random.seed(seed)
         tf.set_random_seed(seed)
 
-    def train(self, epoch, metrics):
+    def train(self, epoch=1, metrics=['accuracy']):
         if self.model is None:
             raise ValueError("Model is not defined!")
         print(self.model.summary())

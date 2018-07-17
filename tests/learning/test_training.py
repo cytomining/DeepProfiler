@@ -29,7 +29,13 @@ def config(out_dir):
             "name": "cnn",
             "crop_generator": "crop_generator",
             "feature_dim": 128,
-            "conv_blocks": 3
+            "conv_blocks": 3,
+            "params": {
+                "epochs": 3,
+                "steps": 10,
+                "learning_rate": 0.0001,
+                "batch_size": 16
+            }
         },
         "sampling": {
             "images": 12,

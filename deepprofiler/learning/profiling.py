@@ -35,12 +35,12 @@ class Profile(object):
         self.config = config
         self.dset = dset
         self.num_channels = len(self.config["image_set"]["channels"])
-        crop_shape = (
-                self.config["sampling"]["box_size"],      # height
-                self.config["sampling"]["box_size"],      # width
-                len(self.config["image_set"]["channels"]) # channels
-                )
-        self.raw_crops = tf.placeholder(tf.float32, shape=(None, crop_shape[0], crop_shape[1], crop_shape[2]))
+        # crop_shape = (
+        #         self.config["sampling"]["box_size"],      # height
+        #         self.config["sampling"]["box_size"],      # width
+        #         len(self.config["image_set"]["channels"]) # channels
+        #         )
+        # self.raw_crops = tf.placeholder(tf.float32, shape=(None, crop_shape[0], crop_shape[1], crop_shape[2]))
         self.crop_generator = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))\
             .GeneratorClass
         self.profile_crop_generator = importlib.import_module(

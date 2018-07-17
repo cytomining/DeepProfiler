@@ -28,7 +28,13 @@ def out_dir(tmpdir):
 def config(out_dir):
     return {
         "model": {
-            "type": "convnet"
+            "name": "cnn",
+            "params": {
+                "epochs": 3,
+                "steps": 10,
+                "learning_rate": 0.0001,
+                "batch_size": 16
+            }
         },
         "sampling": {
             "images": 12,
@@ -155,11 +161,11 @@ def test_init(config, dataset, crop_generator, session, validation):
     assert validation.dset == dataset
     assert validation.crop_generator == crop_generator
     assert validation.session == session
-    assert validation.batch_images == []
-    assert validation.batch_labels == []
+    assert validation.batch_inputs == []
+    assert validation.batch_outputs == []
 
 
-def test_process_batches():
+def test_process_batches():  # tested in test_validate
     pass
 
 
