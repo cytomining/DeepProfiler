@@ -261,10 +261,6 @@ class CropGenerator(object):
 
 class SingleImageCropGenerator(CropGenerator):
 
-    def __init__(self, config, dset):
-        super().__init__(config, dset)
-
-
     def start(self, session):
         # Define input data batches
         with tf.variable_scope("train_inputs"):

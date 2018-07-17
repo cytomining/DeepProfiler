@@ -19,8 +19,6 @@ from deepprofiler.dataset.utils import tic, toc
 import keras
 from keras.models import Model
 
-num_features = 1536
-
 
 def crop_transform(crop_ph, image_size):
     crops_shape = crop_ph.shape
@@ -43,22 +41,26 @@ class Profile(object):
                 len(self.config["image_set"]["channels"]) # channels
                 )
         self.raw_crops = tf.placeholder(tf.float32, shape=(None, crop_shape[0], crop_shape[1], crop_shape[2]))
-        self.crop_generator = importlib.import_module("plugins.crop_generators.{}".format(config['profiling']['crop_generator']))\
-            .GeneratorClass(config, dset)
+        self.crop_generator = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))\
+            .GeneratorClass
+        self.profile_crop_generator = importlib.import_module(
+            "plugins.crop_generators.{}".format(config['model']['crop_generator'])) \
+            .SingleImageGeneratorClass
         self.dpmodel = importlib.import_module("plugins.models.{}".format(config['model']['name']))\
-            .ModelClass(config, dset)
+            .ModelClass(config, dset, self.crop_generator, self.profile_crop_generator)
+        self.profile_crop_generator = self.profile_crop_generator(config, dset)
 
 
     def configure(self):
         checkpoint = self.config["profiling"]["checkpoint"]
         self.dpmodel.model.load_weights(checkpoint)
-        self.feat_extractor = keras.Model(self.dpmodel.model.input, self.dpmodel.model.get_layer(self.config["profiling"]["feature_layer"]))
+        self.feat_extractor = keras.Model(self.dpmodel.model.input, self.dpmodel.model.get_layer(self.config["profiling"]["feature_layer"]).output)
         # Session configuration
         configuration = tf.ConfigProto()
         configuration.gpu_options.allow_growth = True
         configuration.gpu_options.visible_device_list = self.config["profiling"]["gpu"]
         self.sess = tf.Session(config=configuration)
-        self.crop_generator.start(self.sess)
+        self.profile_crop_generator.start(self.sess)
 
 
     def check(self, meta):
@@ -83,31 +85,31 @@ class Profile(object):
 
         batch_size = self.config["validation"]["minibatch"]
         image_key, image_names, outlines = self.dset.getImagePaths(meta)
-        total_crops = self.crop_generator.prepare_image(
+        total_crops = self.profile_crop_generator.prepare_image(
                                    self.sess,
                                    image_array,
                                    meta,
                                    self.config["validation"]["sample_first_crops"]
                             )
-
+        num_features = self.config["model"]["feature_dim"]
         # Initialize data buffer
-        data = np.zeros(shape=(self.num_channels, total_crops, num_features))
+        data = np.zeros(shape=(total_crops, num_features))
         b = 0
         start = tic()
 
         # Extract features in batches
         batches = []
-        for batch in self.crop_generator.generate(self.sess):
+        for batch in self.profile_crop_generator.generate(self.sess):
             crops = batch[0]
-            feats = self.feat_extractor.predict(batch)
-            feats = np.reshape(feats, (self.num_channels, batch_size, num_features))
-            data[:, b * batch_size:(b + 1) * batch_size, :] = feats
+            feats = self.feat_extractor.predict(crops)
+            # feats = np.reshape(feats, (self.num_channels, batch_size, num_features))
+            data[b * batch_size:(b + 1) * batch_size, :] = feats
             b += 1
             batches.append(batch)
 
         # Concatentate features of all channels
-        data = np.moveaxis(data, 0, 1)
-        data = np.reshape(data, (data.shape[0], data.shape[1]*data.shape[2]))
+        # data = np.moveaxis(data, 0, 1)
+        # data = np.reshape(data, (data.shape[0], data.shape[1]*data.shape[2]))
 
         # Save features
         np.savez_compressed(output_file, f=data)
