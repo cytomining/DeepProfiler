@@ -35,6 +35,7 @@ def define_model(config, dset):
         x = MaxPooling2D((2, 2), padding='same')(x)
     encoded_shape = x._keras_shape[1:]
     x = Flatten()(x)
+    flattened_shape = x._keras_shape[1:]
 
     # Define mean and log variance layers
     z_mean = Dense(config['model']['latent_dim'], name='z_mean')(x)
@@ -53,6 +54,7 @@ def define_model(config, dset):
     # Define decoder
     decoder_input = Input((config['model']['latent_dim'],))
     decoder_layers = []
+    decoder_layers.append(Dense(flattened_shape[0], activation='relu', input_shape=(config['model']['latent_dim'],)))
     decoder_layers.append(Reshape(encoded_shape))
     for i in reversed(range(config['model']['conv_blocks'])):
         decoder_layers.extend([

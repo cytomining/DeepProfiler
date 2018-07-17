@@ -31,7 +31,6 @@ def learn_model(config, dset, epoch=1, seed=None):
                        for k, v in config['model']['metrics'].items()}
     else:
         metrics = ["accuracy"]
-        print("NONE")
     importlib.invalidate_caches()
 
     crop_generator = crop_module.GeneratorClass

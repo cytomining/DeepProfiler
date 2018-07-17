@@ -39,10 +39,16 @@ def define_model(config, dset):
     decoder_input = Input(encoded_shape)
     decoder_layers = []
     for i in reversed(range(config['model']['conv_blocks'])):
-        decoder_layers.extend([
-            Conv2DTranspose(8 * 2 ** i, (3, 3), activation='relu', padding='same'),
-            UpSampling2D((2, 2))
-        ])
+        if i == config['model']['conv_blocks'] - 1:
+            decoder_layers.extend([
+                Conv2DTranspose(8 * 2 ** i, (3, 3), activation='relu', padding='same', input_shape=encoded_shape),
+                UpSampling2D((2, 2))
+            ])
+        else:
+            decoder_layers.extend([
+                Conv2DTranspose(8 * 2 ** i, (3, 3), activation='relu', padding='same'),
+                UpSampling2D((2, 2))
+            ])
     decoder_layers.append(Conv2DTranspose(len(config["image_set"]["channels"]), (3, 3), activation='sigmoid', padding='same'))
     decoder = Sequential(decoder_layers, name='decoded')
     decoded = decoder(encoded)
