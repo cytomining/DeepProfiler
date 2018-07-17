@@ -32,10 +32,11 @@ def define_model(config, dset):
     x = input_image
     for i in range(config['model']['conv_blocks']):
         x = Conv2D(8 * 2 ** i, (3, 3), activation='relu', padding='same')(x)
-        x = MaxPooling2D((2, 2), padding='same')(x)
+        x = MaxPooling2D((2, 2))(x)
     encoded_shape = x._keras_shape[1:]
     x = Flatten()(x)
     flattened_shape = x._keras_shape[1:]
+
 
     # Define mean and log variance layers
     z_mean = Dense(config['model']['latent_dim'], name='z_mean')(x)

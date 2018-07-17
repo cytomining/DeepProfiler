@@ -30,7 +30,7 @@ def define_model(config, dset):
     x = input_image
     for i in range(config['model']['conv_blocks']):
         x = Conv2D(8 * 2 ** i, (3, 3), activation='relu', padding='same')(x)
-        x = MaxPooling2D((2, 2), padding='same')(x)
+        x = MaxPooling2D((2, 2))(x)
     encoded = x
     encoded_shape = encoded._keras_shape[1:]
     encoder = Model(input_image, encoded)
