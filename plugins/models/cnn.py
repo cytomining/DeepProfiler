@@ -32,7 +32,7 @@ def define_model(config, dset):
         x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
         x = MaxPooling2D((2, 2), padding='same')(x)
     x = Flatten()(x)
-    features = Dense(config['model']['feature_dim'], activation='relu')(x)
+    features = Dense(config['model']['feature_dim'], activation='relu', name='features')(x)
 
     # Create an output embedding for each target
     class_outputs = []
@@ -44,8 +44,8 @@ def define_model(config, dset):
 
     # Define model
     model = Model(input_image, class_outputs)
-    optimizer=Adam(lr=config["model"]["params"]['learning_rate'])
-    loss='categorical_crossentropy'
+    optimizer = Adam(lr=config["model"]["params"]['learning_rate'])
+    loss = 'categorical_crossentropy'
     return model, optimizer, loss
 
 

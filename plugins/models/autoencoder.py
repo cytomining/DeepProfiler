@@ -31,24 +31,23 @@ def define_model(config, dset):
     for i in range(config['model']['conv_blocks']):
         x = Conv2D(8 * 2 ** i, (3, 3), activation='relu', padding='same')(x)
         x = MaxPooling2D((2, 2))(x)
-    encoded = x
+    conv_shape = x._keras_shape[1:]
+    x = Flatten()(x)
+    flattened_shape = x._keras_shape[1:]
+    encoded = Dense(config["model"]["feature_dim"], name='encoded')(x)
     encoded_shape = encoded._keras_shape[1:]
     encoder = Model(input_image, encoded)
 
     # Build decoder
     decoder_input = Input(encoded_shape)
     decoder_layers = []
+    decoder_layers.append(Dense(flattened_shape[0], input_shape=encoded_shape))
+    decoder_layers.append(Reshape(conv_shape))
     for i in reversed(range(config['model']['conv_blocks'])):
-        if i == config['model']['conv_blocks'] - 1:
-            decoder_layers.extend([
-                Conv2DTranspose(8 * 2 ** i, (3, 3), activation='relu', padding='same', input_shape=encoded_shape),
-                UpSampling2D((2, 2))
-            ])
-        else:
-            decoder_layers.extend([
-                Conv2DTranspose(8 * 2 ** i, (3, 3), activation='relu', padding='same'),
-                UpSampling2D((2, 2))
-            ])
+        decoder_layers.extend([
+            Conv2DTranspose(8 * 2 ** i, (3, 3), activation='relu', padding='same'),
+            UpSampling2D((2, 2))
+        ])
     decoder_layers.append(Conv2DTranspose(len(config["image_set"]["channels"]), (3, 3), activation='sigmoid', padding='same'))
     decoder = Sequential(decoder_layers, name='decoded')
     decoded = decoder(encoded)
@@ -56,8 +55,8 @@ def define_model(config, dset):
 
     # Define autoencoder
     autoencoder = Model(input_image, decoded)
-    optimizer=Adam(lr=config["model"]["params"]['learning_rate'])
-    loss='mse'
+    optimizer = Adam(lr=config["model"]["params"]['learning_rate'])
+    loss = 'mse'
 
     return autoencoder, encoder, decoder, optimizer, loss
 

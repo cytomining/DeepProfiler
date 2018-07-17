@@ -16,7 +16,6 @@ from deepprofiler.learning.model import DeepProfilerModel
 ##################################################
 
 def define_model(config, dset):
-
     # 1. Create ResNet architecture to extract features
     input_shape = (
         config["sampling"]["box_size"],  # height

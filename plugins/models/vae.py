@@ -37,7 +37,6 @@ def define_model(config, dset):
     x = Flatten()(x)
     flattened_shape = x._keras_shape[1:]
 
-
     # Define mean and log variance layers
     z_mean = Dense(config['model']['latent_dim'], name='z_mean')(x)
     z_log_sigma = Dense(config['model']['latent_dim'], name='z_log_sigma')(x)
@@ -79,7 +78,7 @@ def define_model(config, dset):
         kl_loss = - 0.5 * K.mean(1 + z_log_sigma - K.square(z_mean) - K.exp(z_log_sigma), axis=-1)
         return xent_loss + kl_loss
 
-    optimizer=Adam(lr=config["model"]["params"]['learning_rate'])
+    optimizer = Adam(lr=config["model"]["params"]['learning_rate'])
 
     return vae, encoder, generator, optimizer, vae_loss
 
