@@ -29,14 +29,7 @@ def cli(context, config, cores):
     process = deepprofiler.dataset.utils.Parallel(params, numProcs=cores)
     context.obj["config"] = params
     context.obj["process"] = process
-
-
-
-# First dataset tool: Create metadata files
-@cli.command()
-@click.pass_context
-def metadata(context):
-    deepprofiler.dataset.indexing.create_metadata_index(context.obj["config"])
+    
 
 
 # Second dataset tool: Compute illumination statistics
