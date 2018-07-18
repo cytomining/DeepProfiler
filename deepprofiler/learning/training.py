@@ -37,6 +37,6 @@ def learn_model(config, dset, epoch=1, seed=None):
     val_crop_generator = crop_module.SingleImageGeneratorClass
     model = model_module.ModelClass(config, dset, crop_generator, val_crop_generator)
 
-    if seed:
+    if seed is not None:
         model.seed(seed)
     model.train(epoch, metrics)

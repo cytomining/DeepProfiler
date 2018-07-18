@@ -35,12 +35,6 @@ class Profile(object):
         self.config = config
         self.dset = dset
         self.num_channels = len(self.config["image_set"]["channels"])
-        # crop_shape = (
-        #         self.config["sampling"]["box_size"],      # height
-        #         self.config["sampling"]["box_size"],      # width
-        #         len(self.config["image_set"]["channels"]) # channels
-        #         )
-        # self.raw_crops = tf.placeholder(tf.float32, shape=(None, crop_shape[0], crop_shape[1], crop_shape[2]))
         self.crop_generator = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))\
             .GeneratorClass
         self.profile_crop_generator = importlib.import_module(
@@ -107,19 +101,9 @@ class Profile(object):
             b += 1
             batches.append(batch)
 
-        # Concatentate features of all channels
-        # data = np.moveaxis(data, 0, 1)
-        # data = np.reshape(data, (data.shape[0], data.shape[1]*data.shape[2]))
-
         # Save features
         np.savez_compressed(output_file, f=data)
         toc(image_key + " (" + str(data.shape[0]) + " cells)", start)
-
-        # Save crops TODO: parameterize saving crops or a sample of them.
-        # if False:
-        #     batch_data = {"total_crops": total_crops, "batches": batches}
-        #     with open(output_file.replace(".npz", ".pkl"), "wb") as batch_file:
-        #         pickle.dump(batch_data, batch_file)
 
         
 def profile(config, dset):
