@@ -1,11 +1,11 @@
 language: python
 python:
   - "3.6"
-cache: pip
+cache: pip3
 install:
-  - pip install -r requirements.txt
-  - pip install codecov
-  - pip install pytest pytest-cov
+  - pip3 install -r requirements.txt
+  - pip3 install codecov
+  - pip3 install pytest pytest-cov
 script:
   - pytest --cov=./ -v
 after_success:

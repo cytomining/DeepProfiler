@@ -1,5 +1,4 @@
-import deepprofiler.learning.training
-
+import importlib
 import os
 import random
 
@@ -7,11 +6,12 @@ import numpy as np
 import pandas as pd
 import pytest
 import skimage.io
-import tensorflow as tf
 
-import deepprofiler.dataset.image_dataset
-import deepprofiler.dataset.metadata
 import deepprofiler.dataset.target
+import deepprofiler.dataset.metadata
+import deepprofiler.dataset.image_dataset
+import deepprofiler.imaging.cropping
+from deepprofiler.learning.model import DeepProfilerModel
 
 
 def __rand_array():
@@ -20,14 +20,23 @@ def __rand_array():
 
 @pytest.fixture(scope='function')
 def out_dir(tmpdir):
-    return os.path.abspath(tmpdir.mkdir("test_training"))
+    return os.path.abspath(tmpdir.mkdir('test'))
 
 
 @pytest.fixture(scope='function')
 def config(out_dir):
     return {
         "model": {
-            "type": "convnet"
+            "name": "cnn",
+            "crop_generator": "crop_generator",
+            "feature_dim": 128,
+            "conv_blocks": 3,
+            "params": {
+                "epochs": 3,
+                "steps": 10,
+                "learning_rate": 0.0001,
+                "batch_size": 16
+            },
         },
         "sampling": {
             "images": 12,
@@ -47,19 +56,21 @@ def config(out_dir):
             "output": out_dir,
             "epochs": 2,
             "steps": 12,
-            "minibatch": 2
+            "minibatch": 2,
+            "visible_gpus": "0"
         },
         "queueing": {
             "loading_workers": 2,
             "queue_size": 2
         },
         "validation": {
-            "api_key":'rDrWV4m8ITk0PGyDDKWjEgS2q',
+            "minibatch": 2,
+            "output": out_dir,
+            "api_key":'[REDACTED]',
             "project_name":'pytests',
-            "minibatch":2,
             "frame":"train",
             "sample_first_crops": True,
-            "top_k": 1
+            "top_k": 2
         }
     }
 
@@ -87,16 +98,21 @@ def metadata(out_dir):
 
 
 @pytest.fixture(scope='function')
-def target():
-    return deepprofiler.dataset.target.MetadataColumnTarget("Class", ["0", "1", "2", "3"])
+def dataset(metadata, out_dir):
+    keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, 'Sampling', ['R', 'G', 'B'], out_dir, keygen)
+    target = deepprofiler.dataset.target.MetadataColumnTarget('Class', metadata.data['Class'].unique())
+    dset.add_target(target)
+    return dset
 
 
 @pytest.fixture(scope='function')
-def dataset(metadata, target, out_dir):
-    keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, 'Sampling', ['R', 'G', 'B'], out_dir, keygen)
-    dset.add_target(target)
-    return dset
+def data(metadata, out_dir):
+    images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
+    for i in range(0, 36, 3):
+        skimage.io.imsave(os.path.join(out_dir, metadata.data['R'][i // 3]), images[:, :, i])
+        skimage.io.imsave(os.path.join(out_dir, metadata.data['G'][i // 3]), images[:, :, i + 1])
+        skimage.io.imsave(os.path.join(out_dir, metadata.data['B'][i // 3]), images[:, :, i + 2])
 
 
 @pytest.fixture(scope='function')
@@ -116,24 +132,53 @@ def locations(out_dir, metadata, config):
 
 
 @pytest.fixture(scope='function')
-def data(metadata, out_dir):
-    images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
-    for i in range(0, 36, 3):
-        skimage.io.imsave(os.path.join(out_dir, metadata.data['R'][i // 3]), images[:, :, i])
-        skimage.io.imsave(os.path.join(out_dir, metadata.data['G'][i // 3]), images[:, :, i + 1])
-        skimage.io.imsave(os.path.join(out_dir, metadata.data['B'][i // 3]), images[:, :, i + 2])
+def crop_generator(config):
+    module = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))
+    importlib.invalidate_caches()
+    generator = module.GeneratorClass
+    return generator
 
 
-def test_learn_model(config, dataset, data, locations, out_dir):
-    epoch = 0
-    deepprofiler.learning.training.learn_model(config, dataset, epoch)
-    assert os.path.exists(os.path.join(out_dir, "checkpoint_0000.hdf5"))
+@pytest.fixture(scope='function')
+def val_crop_generator(config):
+    module = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))
+    importlib.invalidate_caches()
+    generator = module.SingleImageGeneratorClass
+    return generator
+
+
+@pytest.fixture(scope='function')
+def model(config, dataset, crop_generator, val_crop_generator):
+    module = importlib.import_module("plugins.models.{}".format(config['model']['name']))
+    importlib.invalidate_caches()
+    dpmodel = module.ModelClass(config, dataset, crop_generator, val_crop_generator)
+    return dpmodel
+
+
+def test_init(config, dataset, crop_generator, val_crop_generator):
+    dpmodel = DeepProfilerModel(config, dataset, crop_generator, val_crop_generator)
+    assert dpmodel.model is None
+    assert dpmodel.config == config
+    assert dpmodel.dset == dataset
+    assert isinstance(dpmodel.train_crop_generator, crop_generator)
+    assert isinstance(dpmodel.val_crop_generator, val_crop_generator)
+    assert dpmodel.random_seed is None
+
+
+def test_seed(model):
+    seed = random.randint(0, 256)
+    model.seed(seed)
+    assert model.random_seed == seed
+
+
+def test_train(model, out_dir, data, locations):
+    model.train()
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0001.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0002.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "log.csv"))
     epoch = 3
-    config['training']['epochs'] = 4
-    deepprofiler.learning.training.learn_model(config, dataset, epoch)
+    model.config["model"]["params"]['epochs'] = 4
+    model.train(epoch)
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0003.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0004.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "log.csv"))

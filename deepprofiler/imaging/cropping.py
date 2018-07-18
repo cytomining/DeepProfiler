@@ -1,3 +1,4 @@
+from comet_ml import Experiment
 import gc
 import threading
 import pandas as pd
@@ -5,6 +6,7 @@ import time
 
 import numpy as np
 import tensorflow as tf
+import keras
 
 import deepprofiler.imaging.boxes
 import deepprofiler.imaging.augmentations
@@ -25,11 +27,13 @@ def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes
         crops = crops / max_intensities
     return crops
 
+# TODO: implement abstract crop generator
 class CropGenerator(object):
 
-    def __init__(self, config, dset):
+    def __init__(self, config, dset): #TODO: add mode="train"
         self.config = config
         self.dset = dset
+        #TODO: add self.mode = mode
 
     #################################################
     ## INPUT GRAPH DEFINITION
@@ -101,7 +105,7 @@ class CropGenerator(object):
         # Outputs and queue of the data augmentation graph
         augmented_op = deepprofiler.imaging.augmentations.augment_multiple(
             tf.cast(self.input_variables["labeled_crops"][0], tf.float32),
-            self.config["training"]["minibatch"]
+            self.config["model"]["params"]["batch_size"]
         )
         train_inputs = tf.tuple([augmented_op] + self.input_variables["labeled_crops"][1:]) 
 
@@ -129,7 +133,7 @@ class CropGenerator(object):
             while not coord.should_stop():
                 try:
                     # Load images and cell boxes
-                    batch = deepprofiler.imaging.boxes.loadBatch(self.dset, self.config)
+                    batch = deepprofiler.imaging.boxes.loadBatch(self.dset, self.config) #TODO
                     images = np.reshape(batch["images"], self.input_variables["shapes"]["batch"])
                     boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepareBoxes(batch, self.config)
                     feed_dict = {
@@ -212,8 +216,8 @@ class CropGenerator(object):
     def sample_batch(self, pool_index):
         while not self.ready_to_sample:
             time.sleep(2)
-        np.random.shuffle(pool_index)
-        idx = pool_index[0:self.config["training"]["minibatch"]]
+        np.random.shuffle(pool_index) #TODO
+        idx = pool_index[0:self.config["model"]["params"]["batch_size"]]
         # TODO: make outputs for all targets
         data = [self.image_pool[idx,...], self.label_pool[0][idx,:], 0]
         return data
@@ -257,14 +261,10 @@ class CropGenerator(object):
 
 class SingleImageCropGenerator(CropGenerator):
 
-    def __init__(self, config, dset):
-        super().__init__(config, dset)
-
-
     def start(self, session):
         # Define input data batches
         with tf.variable_scope("train_inputs"):
-            self.config["training"]["minibatch"] = self.config["validation"]["minibatch"]
+            self.config["model"]["params"]["batch_size"] = self.config["validation"]["minibatch"]
             self.build_input_graph()
             # Align cells by rotating nuclei
             self.angles = tf.placeholder(tf.float32, shape=[None], name="nuclei_angles")
@@ -315,81 +315,11 @@ class SingleImageCropGenerator(CropGenerator):
         valid = np.sum(output["image_batch"], axis=(1,2,3)) > 0
         self.image_pool = output["image_batch"][valid, ...]
         self.label_pool = output["target_0"][valid, ...]  
+        num_classes = self.dset.targets[0].shape[1]
+        self.label_pool = keras.utils.to_categorical(self.label_pool,num_classes=num_classes)
 
         return total_crops 
 
 
     def generate(self, session, global_step=0):
         yield [self.image_pool, self.label_pool]
-
-
-#######################################################
-## SUB CLASS TO GENERATE SETS OF CROPS FOR SEQUENCE LEARNING
-#######################################################
-
-class SetCropGenerator(CropGenerator):
-
-    def __init__(self, config, dset):
-        super().__init__(config, dset)
-
-
-    def start(self, session):
-        super().start(session)
-
-        self.batch_size = self.config["training"]["minibatch"]
-        self.target_sizes = []
-        targets = [t for t in self.train_variables.keys() if t.startswith("target_")]
-        targets.sort()
-        for t in targets:
-            self.target_sizes.append(self.train_variables[t].shape[1])
-        if self.config["model"]["type"] == "recurrent":
-            self.set_manager = deepprofiler.imaging.cropset.CropSet(
-                       self.config["model"]["sequence_length"],
-                       self.config["queueing"]["queue_size"], 
-                       self.input_variables["shapes"]["crops"],
-                       self.target_sizes[0]
-            )
-        elif self.config["model"]["type"] == "mixup":
-            self.set_manager = deepprofiler.imaging.cropset.Mixup(
-                       self.config["model"]["alpha"],
-                       self.config["queueing"]["queue_size"], 
-                       self.input_variables["shapes"]["crops"],
-                       self.target_sizes[0]
-            )
-
-
-
-    def generate(self, sess, global_step=0):
-        pool_index = np.arange(self.image_pool.shape[0])
-        while True:
-            if self.coord.should_stop():
-                break
-            data = self.sample_batch(pool_index)
-            # Indices of data => [0] images, [1:-1] targets, [-1] summary
-            self.set_manager.add_crops(data[0], data[1]) #TODO: support for multiple targets
-            while not self.set_manager.ready:
-                data = self.sample_batch(pool_index)
-                self.set_manager.add_crops(data[0], data[1])
-
-            global_step += 1
-            batch = self.set_manager.batch(self.batch_size)
-
-            yield (batch[0], batch[1]) # TODO: support for multiple targets
-
-
-class SingleImageCropSetGenerator(SingleImageCropGenerator):
-
-    def __init__(self, config, dset):
-        super().__init__(config, dset)
-
-
-    def start(self, session):
-        super().start(session)
-
-
-    def generate(self, session, global_step=0):
-        reps = self.config["model"]["sequence_length"]
-        for batch in super().generate(session):
-            batch[0] = batch[0][:,np.newaxis,:,:,:]
-            batch[0] = np.tile(batch[0], (1,reps,1,1,1))
-            yield batch

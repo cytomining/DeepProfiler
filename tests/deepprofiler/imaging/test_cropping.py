@@ -53,7 +53,10 @@ def config(out_dir):
         "model": {
             "type": "mixup",
             "alpha": 0.2,
-            "sequence_length": 5
+            "sequence_length": 5,
+            "params": {
+                "batch_size": 2
+            }
         }
     }
 
@@ -68,8 +71,6 @@ def metadata(out_dir):
         'R': [str(x) + '.png' for x in __rand_array()],
         'G': [str(x) + '.png' for x in __rand_array()],
         'B': [str(x) + '.png' for x in __rand_array()],
-        # 'R_Location_Center_X': __rand_array(),
-        # 'R_Location_Center_Y': __rand_array(),
         'Sampling': [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
         'Split': [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
         'Target': [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
@@ -185,14 +186,14 @@ def test_crop_generator_start(prepared_crop_generator):  # includes test for tra
 def test_crop_generator_sample_batch(prepared_crop_generator):
     sess = tf.Session()
     prepared_crop_generator.start(sess)
-    pool_index = np.zeros((prepared_crop_generator.config['training']['minibatch'],), dtype=int)
+    pool_index = np.zeros((prepared_crop_generator.config["model"]["params"]['batch_size'],), dtype=int)
     prepared_crop_generator.ready_to_sample = True
     data = prepared_crop_generator.sample_batch(pool_index)
-    assert np.array(data[0]).shape == (prepared_crop_generator.config['training']['minibatch'],
+    assert np.array(data[0]).shape == (prepared_crop_generator.config["model"]["params"]['batch_size'],
                                        prepared_crop_generator.config['sampling']['box_size'],
                                        prepared_crop_generator.config['sampling']['box_size'],
                                        len(prepared_crop_generator.config['image_set']['channels']))
-    assert data[1].shape == (prepared_crop_generator.config['training']['minibatch'], prepared_crop_generator.dset.targets[0].shape[1])
+    assert data[1].shape == (prepared_crop_generator.config["model"]["params"]['batch_size'], prepared_crop_generator.dset.targets[0].shape[1])
     assert data[2] == 0
     prepared_crop_generator.stop(sess)
 
@@ -205,13 +206,13 @@ def test_crop_generator_generate(prepared_crop_generator):
     test_steps = 3
     for i in range(test_steps):
         data = next(generator)
-        assert np.array(data[0]).shape == (prepared_crop_generator.config['training']['minibatch'],
+        assert np.array(data[0]).shape == (prepared_crop_generator.config["model"]["params"]['batch_size'],
                                            prepared_crop_generator.config['sampling']['box_size'],
                                            prepared_crop_generator.config['sampling']['box_size'],
                                            len(prepared_crop_generator.config['image_set']['channels']))
         assert len(data[1]) == len(prepared_crop_generator.dset.targets)
         for item in data[1]:
-            assert item.shape == (prepared_crop_generator.config['training']['minibatch'], prepared_crop_generator.dset.targets[0].shape[1])
+            assert item.shape == (prepared_crop_generator.config["model"]["params"]['batch_size'], prepared_crop_generator.dset.targets[0].shape[1])
     prepared_crop_generator.stop(sess)
 
 
@@ -232,7 +233,7 @@ def test_single_image_crop_generator_init(config, dataset):
 def test_single_image_crop_generator_start(single_image_crop_generator):
     sess = tf.Session()
     single_image_crop_generator.start(sess)
-    assert single_image_crop_generator.config["training"]["minibatch"] == single_image_crop_generator.config["validation"]["minibatch"]
+    assert single_image_crop_generator.config["model"]["params"]["batch_size"] == single_image_crop_generator.config["validation"]["minibatch"]
     assert hasattr(single_image_crop_generator, 'input_variables')
     assert single_image_crop_generator.angles.get_shape().as_list() == [None]
     assert single_image_crop_generator.aligned_labeled[0].get_shape().as_list() == [None,
@@ -243,6 +244,7 @@ def test_single_image_crop_generator_start(single_image_crop_generator):
 
 
 def test_single_image_crop_generator_prepare_image(single_image_crop_generator, tmpdir):
+    num_classes = len(set(single_image_crop_generator.dset.meta.data['Target']))
     image = np.random.randint(0, 256, (128, 128, 3), dtype=np.uint8)
     meta = single_image_crop_generator.dset.meta.data.iloc[0]
     tmpdir.mkdir(os.path.join("test", meta['Metadata_Plate']))
@@ -266,10 +268,11 @@ def test_single_image_crop_generator_prepare_image(single_image_crop_generator, 
                                                                       single_image_crop_generator.config['sampling']['box_size'],
                                                                       single_image_crop_generator.config['sampling']['box_size'],
                                                                       len(single_image_crop_generator.config['image_set']['channels']))
-    assert np.array(single_image_crop_generator.label_pool).shape == (single_image_crop_generator.config['sampling']['locations'],)
+    assert np.array(single_image_crop_generator.label_pool).shape == (single_image_crop_generator.config['sampling']['locations'], num_classes)
 
 
 def test_single_image_crop_generator_generate(single_image_crop_generator, tmpdir):
+    num_classes = len(set(single_image_crop_generator.dset.meta.data['Target']))
     image = np.random.randint(0, 256, (128, 128, 3), dtype=np.uint8)
     meta = single_image_crop_generator.dset.meta.data.iloc[0]
     tmpdir.mkdir(os.path.join("test", meta['Metadata_Plate']))
@@ -292,98 +295,5 @@ def test_single_image_crop_generator_generate(single_image_crop_generator, tmpdi
                                            single_image_crop_generator.config['sampling']['box_size'],
                                            single_image_crop_generator.config['sampling']['box_size'],
                                            len(single_image_crop_generator.config['image_set']['channels']))
-        assert np.array(item[1]).shape == (single_image_crop_generator.config['sampling']['locations'],)
-        assert i == 0
-
-
-def test_set_crop_generator_init(config, dataset):
-    generator = deepprofiler.imaging.cropping.SetCropGenerator(config, dataset)
-    assert generator.config == config
-    assert generator.dset == dataset
-
-
-def test_set_crop_generator_start(set_crop_generator, out_dir):
-    set_crop_generator = prepared_crop_generator(set_crop_generator, out_dir)
-    sess = tf.Session()
-    set_crop_generator.start(sess)
-    assert not set_crop_generator.coord.joined
-    assert not set_crop_generator.exception_occurred
-    assert len(set_crop_generator.queue_threads) == set_crop_generator.config['queueing']['loading_workers']
-    assert set_crop_generator.batch_size == set_crop_generator.config["training"]["minibatch"]
-    assert len(set_crop_generator.target_sizes) == len(set_crop_generator.dset.targets)
-    assert set_crop_generator.set_manager.alpha == set_crop_generator.config["model"]["alpha"]
-    assert set_crop_generator.set_manager.table_size == set_crop_generator.config["queueing"]["queue_size"]
-    assert set_crop_generator.set_manager.target_size == set_crop_generator.target_sizes[0]
-    assert set_crop_generator.set_manager.crops.shape == (set_crop_generator.config["queueing"]["queue_size"],
-                                                          set_crop_generator.config['sampling']['box_size'],
-                                                          set_crop_generator.config['sampling']['box_size'],
-                                                          len(set_crop_generator.config['image_set']['channels']))
-    set_crop_generator.stop(sess)
-
-
-def test_set_crop_generator_generate(set_crop_generator, out_dir):
-    set_crop_generator = prepared_crop_generator(set_crop_generator, out_dir)
-    sess = tf.Session()
-    set_crop_generator.start(sess)
-    generator = set_crop_generator.generate(sess)
-    set_crop_generator.ready_to_sample = True
-    test_steps = 3
-    for i in range(test_steps):
-        data = next(generator)
-        assert np.array(data[0]).shape == (set_crop_generator.config["training"]["minibatch"],
-                                           set_crop_generator.config['sampling']['box_size'],
-                                           set_crop_generator.config['sampling']['box_size'],
-                                           len(set_crop_generator.config['image_set']['channels']))
-        assert np.array(data[1]).shape == (set_crop_generator.config['training']['minibatch'],
-                                           set_crop_generator.dset.targets[0].shape[1])
-    set_crop_generator.stop(sess)
-
-
-def test_single_image_crop_set_generator_init(config, dataset):
-    generator = deepprofiler.imaging.cropping.SingleImageCropSetGenerator(config, dataset)
-    assert generator.config == config
-    assert generator.dset == dataset
-
-
-def test_single_image_crop_set_generator_start(single_image_crop_set_generator):
-    sess = tf.Session()
-    single_image_crop_set_generator.start(sess)
-    assert single_image_crop_set_generator.config["training"]["minibatch"] == single_image_crop_set_generator.config["validation"]["minibatch"]
-    assert hasattr(single_image_crop_set_generator, 'input_variables')
-    assert single_image_crop_set_generator.angles.get_shape().as_list() == [None]
-    assert single_image_crop_set_generator.aligned_labeled[0].get_shape().as_list() == [None,
-                                                                                        single_image_crop_set_generator.config['sampling']['box_size'],
-                                                                                        single_image_crop_set_generator.config['sampling']['box_size'],
-                                                                                        len(single_image_crop_set_generator.config['image_set']['channels'])]
-    assert single_image_crop_set_generator.aligned_labeled[1].get_shape().as_list() == [None]
-
-
-def test_single_image_crop_set_generator_generate(single_image_crop_set_generator, tmpdir):
-    image = np.random.randint(0, 256, (128, 128, 3), dtype=np.uint8)
-    meta = single_image_crop_set_generator.dset.meta.data.iloc[0]
-    tmpdir.mkdir(os.path.join("test", meta['Metadata_Plate']))
-    path = os.path.abspath(tmpdir.mkdir(os.path.join("test", meta['Metadata_Plate'], 'locations')))
-    path = os.path.join(path,
-                        '{}-{}-{}.csv'.format(meta['Metadata_Well'],
-                                              meta['Metadata_Site'],
-                                              single_image_crop_set_generator.config['sampling']['locations_field']))
-    locations = pd.DataFrame({
-        'R_Location_Center_X': np.random.randint(0, 128, (single_image_crop_set_generator.config['sampling']['locations'])),
-        'R_Location_Center_Y': np.random.randint(0, 128, (single_image_crop_set_generator.config['sampling']['locations']))
-    })
-    locations.to_csv(path, index=False)
-    assert os.path.exists(path)
-    sess = tf.Session()
-    single_image_crop_set_generator.start(sess)
-    num_crops = single_image_crop_set_generator.prepare_image(sess, image, meta)
-    for i, item in enumerate(single_image_crop_set_generator.generate(sess)):
-        print(item[0].shape, item[1].shape)
-        assert item[0].shape == (
-            single_image_crop_set_generator.config["sampling"]["locations"],
-            single_image_crop_set_generator.config["model"]["sequence_length"],
-            single_image_crop_set_generator.config['sampling']['box_size'],
-            single_image_crop_set_generator.config['sampling']['box_size'],
-            len(single_image_crop_set_generator.config['image_set']['channels'])
-        )
-        assert item[1].shape == (single_image_crop_set_generator.config["sampling"]["locations"],)
+        assert np.array(item[1]).shape == (single_image_crop_generator.config['sampling']['locations'], num_classes)
         assert i == 0

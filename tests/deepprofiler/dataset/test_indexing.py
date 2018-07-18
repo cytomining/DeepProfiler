@@ -24,7 +24,7 @@ def test_write_compression_index():
     open_file = open("tests/files/config/test_config.json")
     config = json.load(open_file)
     deepprofiler.dataset.indexing.write_compression_index(config)
-    test_output = pd.DataFrame.from_csv("tests/files/metadata/tmp/index.csv", index_col=0)
+    test_output = pd.read_csv("tests/files/metadata/tmp/index.csv", index_col=0)
     assert test_output.shape == (36,9)
     assert test_output.values[31][5] == 'Week1_22123/pngs/Week1_150607_B03_s2_w25CEC2D43-E105-42BB-BC00-6962B3ADEBED.png'   
     shutil.rmtree(temp)    
@@ -44,9 +44,9 @@ def test_split_index():
     assert os.path.exists(test_paths[0]) == True
     assert os.path.exists(test_paths[1]) == True
     assert os.path.exists(test_paths[2]) == True
-    test_outputs = [pd.DataFrame.from_csv("tests/files/metadata/tmp/index-000.csv"),
-                    pd.DataFrame.from_csv("tests/files/metadata/tmp/index-001.csv"),
-                    pd.DataFrame.from_csv("tests/files/metadata/tmp/index-002.csv")]
+    test_outputs = [pd.read_csv("tests/files/metadata/tmp/index-000.csv", index_col=0),
+                    pd.read_csv("tests/files/metadata/tmp/index-001.csv", index_col=0),
+                    pd.read_csv("tests/files/metadata/tmp/index-002.csv", index_col=0)]
     assert test_outputs[0].shape == (12,9)
     assert test_outputs[1].shape == (12,9)
     assert test_outputs[2].shape == (12,9)

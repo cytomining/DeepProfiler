@@ -1,8 +1,6 @@
-import gc
 import os
 import random
 
-import keras
 import numpy as np
 import pandas as pd
 import pytest
@@ -13,7 +11,6 @@ import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.metadata
 import deepprofiler.dataset.target
 import deepprofiler.imaging.cropping
-import deepprofiler.learning.models
 import deepprofiler.learning.training
 import deepprofiler.learning.validation
 
@@ -31,7 +28,13 @@ def out_dir(tmpdir):
 def config(out_dir):
     return {
         "model": {
-            "type": "convnet"
+            "name": "cnn",
+            "params": {
+                "epochs": 3,
+                "steps": 10,
+                "learning_rate": 0.0001,
+                "batch_size": 16
+            }
         },
         "sampling": {
             "images": 12,
@@ -138,15 +141,18 @@ def session():
     session = tf.Session(config = configuration)
     return session
 
+
 @pytest.fixture(scope='function')
 def crop_generator(config, dataset, session):
     crop_generator = deepprofiler.imaging.cropping.SingleImageCropGenerator(config, dataset)
     crop_generator.start(session)
     return crop_generator
 
+
 @pytest.fixture(scope='function')
 def validation(config, dataset, crop_generator, session):
     return deepprofiler.learning.validation.Validation(config, dataset, crop_generator, session)
+
 
 def test_init(config, dataset, crop_generator, session, validation):
     validation = validation
@@ -155,11 +161,13 @@ def test_init(config, dataset, crop_generator, session, validation):
     assert validation.dset == dataset
     assert validation.crop_generator == crop_generator
     assert validation.session == session
-    assert validation.batch_images == []
-    assert validation.batch_labels == []
+    assert validation.batch_inputs == []
+    assert validation.batch_outputs == []
 
-def test_process_batches():
+
+def test_process_batches():  # tested in test_validate
     pass
+
 
 def test_validate(config, dataset, crop_generator, session, out_dir, data, locations, target):
     test_images, test_labels = deepprofiler.learning.validation.validate(config, dataset, crop_generator, session)
