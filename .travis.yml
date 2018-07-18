@@ -7,6 +7,6 @@ install:
   - pip3 install codecov
   - pip3 install pytest pytest-cov
 script:
-  - pytest --cov=./ -v
+  - travis_wait 30 pytest --cov=./ -v
 after_success:
   - codecov
