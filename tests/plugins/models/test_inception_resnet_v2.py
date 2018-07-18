@@ -27,8 +27,9 @@ def out_dir(tmpdir):
 def config(out_dir):
     return {
         "model": {
-            "name": "resnet18",
+            "name": "inception_resnet_v2",
             "crop_generator": "crop_generator",
+            "pretrained": False,
             "params": {
                 "epochs": 3,
                 "steps": 10,

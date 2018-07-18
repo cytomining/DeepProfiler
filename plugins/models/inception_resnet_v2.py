@@ -8,8 +8,12 @@ from deepprofiler.learning.model import DeepProfilerModel
 
 def define_model(config, dset):
     # Load InceptionResnetV2 architecture
+    if config["model"]["pretrained"]:
+        weights = "imagenet"
+    else:
+        weights = None
     model = inception_resnet_v2.InceptionResNetV2(
-        weights=None,
+        weights=weights,
         input_tensor=Input((
             config["sampling"]["box_size"],  # height
             config["sampling"]["box_size"],  # width
