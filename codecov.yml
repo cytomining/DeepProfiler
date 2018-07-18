@@ -21,4 +21,4 @@ comment:
 ignore:
   - "tests"  
   - "setup.py"      
-  - "scripts/normalize_bbbc021_metadata.py"
+  - "scripts"
