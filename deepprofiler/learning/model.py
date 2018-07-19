@@ -64,15 +64,15 @@ class DeepProfilerModel(ABC):
         configuration.gpu_options.visible_device_list = self.config["training"]["visible_gpus"]
         crop_graph = tf.Graph()
         with crop_graph.as_default():
-            val_session = tf.Session(config=configuration) #TODO
-            keras.backend.set_session(val_session) #TODO
-            self.val_crop_generator.start(val_session) #TODO
+            val_session = tf.Session(config=configuration)
+            keras.backend.set_session(val_session)
+            self.val_crop_generator.start(val_session)
             x_validation, y_validation = deepprofiler.learning.validation.validate(
                 self.config,
                 self.dset,
                 self.val_crop_generator,
-                val_session) #TODO
-        gc.collect() #TODO
+                val_session)
+        gc.collect()
         # Start main session
         main_session = tf.Session(config=configuration)
         keras.backend.set_session(main_session)
