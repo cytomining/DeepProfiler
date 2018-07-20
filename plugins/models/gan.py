@@ -15,6 +15,11 @@ from deepprofiler.learning.model import DeepProfilerModel
 import deepprofiler.learning.validation
 
 
+#######################################################
+# Based on https://github.com/eriklindernoren/Keras-GAN
+#######################################################
+
+
 class GAN(object):
     def __init__(self, config, crop_generator, val_crop_generator):
 
