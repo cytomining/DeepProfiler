@@ -140,6 +140,7 @@ class GAN(object):
 
                 # Plot the progress
                 print("Epoch %d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (init_epoch + epoch, d_loss[0], 100*d_loss[1], g_loss))
+            self.combined.save_weights(os.path.join(self.config['training']['output'], 'checkpoints/epoch_{}'.format(epoch)))
 
 
 class ModelClass(DeepProfilerModel):
@@ -151,6 +152,8 @@ class ModelClass(DeepProfilerModel):
         print(self.gan.combined.summary())
         if not os.path.isdir(self.config["training"]["output"]):
             os.mkdir(self.config["training"]["output"])
+        if not os.path.isdir(os.path.join(self.config["training"]["output"], "checkpoints")):
+            os.mkdir(os.path.join(self.config["training"]["output"], "checkpoints"))
         if self.config["model"]["comet_ml"]:
             experiment = Experiment(
                 api_key=self.config["validation"]["api_key"],
