@@ -140,7 +140,7 @@ class GAN(object):
 
                 # Plot the progress
                 print("Epoch %d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (init_epoch + epoch, d_loss[0], 100*d_loss[1], g_loss))
-            self.combined.save_weights(os.path.join(self.config['training']['output'], 'checkpoints/epoch_{}'.format(epoch)))
+            self.combined.save_weights(os.path.join(self.config['training']['output'], 'checkpoints/epoch_{}'.format(epoch + 1)))
 
 
 class ModelClass(DeepProfilerModel):
