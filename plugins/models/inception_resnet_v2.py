@@ -25,6 +25,7 @@ def define_model(config, dset):
         pooling=config["model"]["pooling"],
         classes=dset.targets[0].shape[1]
     )
+    base.get_layer(index=-1).name = "global_{}_pool".format(config["model"]["pooling"])
 
     # Create output embedding for each target
     class_outputs = []
