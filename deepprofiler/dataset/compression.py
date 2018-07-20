@@ -11,7 +11,7 @@ import deepprofiler.dataset.illumination_statistics
 import deepprofiler.dataset.image_dataset
 
 def png_dir(output_dir, plate_name):
-    return output_dir + "/" + plate_name + "/pngs/"
+    return output_dir + "/" + plate_name + "/"
 
 #################################################
 ## COMPRESSION OF TIFF IMAGES INTO PNGs
@@ -108,32 +108,32 @@ def compress_plate(args):
     plate_name = plate.data.iloc[0]["Metadata_Plate"]
 
     # Dataset configuration
-    statsfile = deepprofiler.dataset.illumination_statistics.illum_stats_filename(config["compression"]["output_dir"], plate_name)
+    statsfile = deepprofiler.dataset.illumination_statistics.illum_stats_filename(config["paths"]["intensities"], plate_name)
     stats = pickle.load( open(statsfile, "rb") )
     keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     dset = deepprofiler.dataset.image_dataset.ImageDataset(
         plate,
-        config["metadata"]["label_field"],
-        config["original_images"]["channels"],
-        config["original_images"]["path"],
+        config["prepare"]["metadata"]["label_field"],
+        config["prepare"]["images"]["channels"],
+        config["paths"]["images"],
         keyGen
     )
 
     # Configure compression object
-    plate_output_dir = png_dir(config["compression"]["output_dir"], plate_name)
+    plate_output_dir = png_dir(config["paths"]["compressed_images"], plate_name)
     compress = Compress(
         stats,
-        config["original_images"]["channels"],
+        config["prepare"]["images"]["channels"],
         plate_output_dir
     )
-    compress.set_formats(source_format=config["original_images"]["file_format"], target_format="png")
-    compress.set_scaling_factor(config["compression"]["scaling_factor"])
+    compress.set_formats(source_format=config["prepare"]["images"]["file_format"], target_format="png")
+    compress.set_scaling_factor(config["prepare"]["compression"]["scaling_factor"])
     compress.recompute_percentile(0.0001, side="lower_percentile")
     compress.recompute_percentile(0.9999, side="upper_percentile")
     compress.expected = dset.number_of_records("all")
 
     # Setup control samples filter (for computing control illumination statistics)
-    filter_func = lambda x: x[config["metadata"]["control_field"]] == config["metadata"]["control_value"]
+    filter_func = lambda x: x[config["prepare"]["metadata"]["control_field"]] == config["prepare"]["metadata"]["control_value"]
     compress.set_control_samples_filter(filter_func)
 
     # Run compression

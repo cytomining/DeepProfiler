@@ -34,35 +34,32 @@ class Profile(object):
     def __init__(self, config, dset):
         self.config = config
         self.dset = dset
-        self.num_channels = len(self.config["image_set"]["channels"])
-        self.crop_generator = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))\
+        self.num_channels = len(self.config["prepare"]["images"]["channels"])
+        self.crop_generator = importlib.import_module("plugins.crop_generators.{}".format(config["train"]['model']['crop_generator']))\
             .GeneratorClass
         self.profile_crop_generator = importlib.import_module(
-            "plugins.crop_generators.{}".format(config['model']['crop_generator'])) \
+            "plugins.crop_generators.{}".format(config["train"]['model']['crop_generator'])) \
             .SingleImageGeneratorClass
-        self.dpmodel = importlib.import_module("plugins.models.{}".format(config['model']['name']))\
+        self.dpmodel = importlib.import_module("plugins.models.{}".format(config["train"]['model']['name']))\
             .ModelClass(config, dset, self.crop_generator, self.profile_crop_generator)
         self.profile_crop_generator = self.profile_crop_generator(config, dset)
 
 
     def configure(self):
-        checkpoint = self.config["profiling"]["checkpoint"]
+        checkpoint = self.config["paths"]["checkpoints"]+"/"+self.config["profile"]["checkpoint"]
         self.dpmodel.model.load_weights(checkpoint)
-        self.feat_extractor = keras.Model(self.dpmodel.model.input, self.dpmodel.model.get_layer(self.config["profiling"]["feature_layer"]).output)
+        self.feat_extractor = keras.Model(self.dpmodel.model.input, self.dpmodel.model.get_layer(self.config["profile"]["feature_layer"]).output)
         # Session configuration
         configuration = tf.ConfigProto()
         configuration.gpu_options.allow_growth = True
-        configuration.gpu_options.visible_device_list = self.config["profiling"]["gpu"]
+        configuration.gpu_options.visible_device_list = self.config["profile"]["gpu"]
         self.sess = tf.Session(config=configuration)
         self.profile_crop_generator.start(self.sess)
 
 
     def check(self, meta):
-        output_folder = self.config["profiling"]["output_dir"]
-        if not os.path.isdir(output_folder):
-            os.mkdir(self.config["profiling"]["output_dir"])
-        
-        output_file = self.config["profiling"]["output_dir"] + "/{}_{}_{}.npz"
+        output_folder = self.config["paths"]["features"]
+        output_file = self.config["paths"]["features"] + "/{}_{}_{}.npz"
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
 
         # Check if features were computed before
@@ -74,18 +71,18 @@ class Profile(object):
     
     # Function to process a single image
     def extract_features(self, key, image_array, meta):
-        output_file = self.config["profiling"]["output_dir"] + "/{}_{}_{}.npz"
+        output_file = self.config["paths"]["features"] + "/{}_{}_{}.npz"
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
 
-        batch_size = self.config["validation"]["minibatch"]
+        batch_size = self.config["train"]["validation"]["batch_size"]
         image_key, image_names, outlines = self.dset.getImagePaths(meta)
         total_crops = self.profile_crop_generator.prepare_image(
                                    self.sess,
                                    image_array,
                                    meta,
-                                   self.config["validation"]["sample_first_crops"]
+                                   self.config["train"]["validation"]["sample_first_crops"]
                             )
-        num_features = self.config["model"]["feature_dim"]
+        num_features = self.config["train"]["model"]["params"]["feature_dim"]
         # Initialize data buffer
         data = np.zeros(shape=(total_crops, num_features))
         b = 0

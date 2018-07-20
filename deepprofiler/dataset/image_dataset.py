@@ -110,40 +110,40 @@ class ImageDataset():
 
 def read_dataset(config):
     # Read metadata and split dataset in training and validation
-    metadata = deepprofiler.dataset.metadata.Metadata(config["image_set"]["index"], dtype=None)
+    metadata = deepprofiler.dataset.metadata.Metadata(config["paths"]["index"], dtype=None)
 
     # Add outlines if specified
     outlines = None
-    if "outlines" in config["image_set"].keys() and config["image_set"]["outlines"] != "":
-        df = pd.read_csv(config["image_set"]["metadata"] + "/outlines.csv")
+    if "outlines" in config["prepare"].keys() and config["prepare"]["outlines"] != "":
+        df = pd.read_csv(config["paths"]["locations"] + "/outlines.csv")
         metadata.mergeOutlines(df)
-        outlines = config["image_set"]["outlines"]
+        outlines = config["paths"]["locations"]
 
     print(metadata.data.info())
 
     # Split training data
-    split_field = config["training"]["split_field"]
-    trainingFilter = lambda df: df[split_field].isin(config["training"]["training_values"])
-    validationFilter = lambda df: df[split_field].isin(config["training"]["validation_values"])
+    split_field = config["train"]['dset']["split_field"]
+    trainingFilter = lambda df: df[split_field].isin(config['train']["dset"]["training_values"])
+    validationFilter = lambda df: df[split_field].isin(config['train']["dset"]["validation_values"])
     metadata.splitMetadata(trainingFilter, validationFilter)
 
     # Create a dataset
     keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     dset = ImageDataset(
         metadata,
-        config["sampling"]["field"],
-        config["image_set"]["channels"],
-        config["image_set"]["path"],
+        config['train']["sampling"]["field"],
+        config['prepare']["images"]["channels"],
+        config["paths"]["images"],
         keyGen
     )
 
     # Add training targets
-    for t in config["training"]["targets"]:
+    for t in config['train']["dset"]["targets"]:
         new_target = deepprofiler.dataset.target.MetadataColumnTarget(t, metadata.data[t].unique())
         dset.add_target(new_target)
 
     # Activate outlines for masking if needed
-    if config["image_set"]["mask_objects"]:
+    if config['train']["dset"]["mask_objects"]:
         dset.outlines = outlines
 
     return dset

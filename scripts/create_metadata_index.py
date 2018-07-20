@@ -8,7 +8,7 @@ def relative_paths(df, target, path, filename, root):
     df[target] = df[path].str.replace(root, "") + df[filename]
     return df.drop([path, filename], axis=1)
 
-def printProgress (iteration, total, prefix='Progress', suffix='Complete', decimals=1, barLength=100):
+def printProgress (iteration, total, prefix='Progress', suffix='Complete', decimals=1, barLength=50):
     """
     Call in a loop to create terminal progress bar
     @params:

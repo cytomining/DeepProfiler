@@ -8,7 +8,7 @@ from .illumination_correction import IlluminationCorrection
 
 
 def illum_stats_filename(output_dir, plate_name):
-    return output_dir + "/" + plate_name + "/intensities/" + plate_name + ".pkl"
+    return output_dir + "/" + plate_name + "/" + plate_name + ".pkl"
 
 
 def percentile(prob, p):
@@ -102,7 +102,7 @@ def calculate_statistics(args):
 
     plateName = plate.data["Metadata_Plate"].iloc[0]
 
-    outfile = illum_stats_filename(config["compression"]["output_dir"], plateName)
+    outfile = illum_stats_filename(config["paths"]["intensities"], plateName)
 
     if os.path.isfile(outfile):
         print(outfile, "exists")
@@ -113,18 +113,18 @@ def calculate_statistics(args):
 
     dset = deepprofiler.dataset.image_dataset.ImageDataset(
         plate,
-        config["metadata"]["label_field"],
-        config["original_images"]["channels"],
-        config["original_images"]["path"],
+        config['prepare']["metadata"]["label_field"],
+        config['prepare']["images"]["channels"],
+        config["paths"]["images"],
         keyGen
     )
 
     # Prepare ImageStatistics object
     hist = IlluminationStatistics(
-        config["original_images"]["bits"],
-        config["original_images"]["channels"],
-        config["illumination_correction"]["down_scale_factor"],
-        config["illumination_correction"]["median_filter_size"],
+        config['prepare']["images"]["bits"],
+        config['prepare']["images"]["channels"],
+        config['prepare']["illumination_correction"]["down_scale_factor"],
+        config['prepare']["illumination_correction"]["median_filter_size"],
         name=plateName
     )
 
