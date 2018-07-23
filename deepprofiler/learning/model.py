@@ -39,8 +39,8 @@ class DeepProfilerModel(ABC):
         np.random.seed(seed)
         tf.set_random_seed(seed)
 
-    def train(self, epoch=1, metrics=['accuracy']):
-        if self.model is None:
+    def train(self, epoch=1, metrics=['accuracy']):  # TODO: simplify default train method
+        if 'model' not in vars(self) or self.model is None:
             raise ValueError("Model is not defined!")
         print(self.model.summary())
         self.model.compile(self.optimizer, self.loss, metrics)
@@ -64,15 +64,15 @@ class DeepProfilerModel(ABC):
         configuration.gpu_options.visible_device_list = self.config["training"]["visible_gpus"]
         crop_graph = tf.Graph()
         with crop_graph.as_default():
-            val_session = tf.Session(config=configuration) #TODO
-            keras.backend.set_session(val_session) #TODO
-            self.val_crop_generator.start(val_session) #TODO
+            val_session = tf.Session(config=configuration)
+            keras.backend.set_session(val_session)
+            self.val_crop_generator.start(val_session)
             x_validation, y_validation = deepprofiler.learning.validation.validate(
                 self.config,
                 self.dset,
                 self.val_crop_generator,
-                val_session) #TODO
-        gc.collect() #TODO
+                val_session)
+        gc.collect()
         # Start main session
         main_session = tf.Session(config=configuration)
         keras.backend.set_session(main_session)
@@ -93,8 +93,8 @@ class DeepProfilerModel(ABC):
             self.model.load_weights(previous_model)
             print("Weights from previous model loaded:", previous_model)
 
-        epochs = self.config["model"]["params"]["epochs"]
-        steps = self.config["model"]["params"]["steps"]
+        epochs = self.config["training"]["epochs"]
+        steps = self.config["training"]["steps"]
 
         if self.config["model"]["comet_ml"]:
             params = self.config["model"]["params"]
