@@ -6,6 +6,7 @@ import keras
 import numpy as np
 import random
 import pandas as pd
+import skimage.io
 
 import deepprofiler.imaging.cropping
 import deepprofiler.dataset.image_dataset
@@ -33,8 +34,6 @@ def config(out_dir):
             "latent_dim": 128,
             "conv_blocks": 3,
             "params": {
-                "epochs": 3,
-                "steps": 10,
                 "learning_rate": 0.0002,
                 "batch_size": 16
             },
@@ -56,7 +55,7 @@ def config(out_dir):
             "learning_rate": 0.001,
             "output": out_dir,
             "epochs": 2,
-            "steps": 12,
+            "steps": 2,
             "minibatch": 2,
             "visible_gpus": "0"
         },
@@ -108,6 +107,31 @@ def dataset(metadata, out_dir):
 
 
 @pytest.fixture(scope='function')
+def data(metadata, out_dir):
+    images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
+    for i in range(0, 36, 3):
+        skimage.io.imsave(os.path.join(out_dir, metadata.data['R'][i // 3]), images[:, :, i])
+        skimage.io.imsave(os.path.join(out_dir, metadata.data['G'][i // 3]), images[:, :, i + 1])
+        skimage.io.imsave(os.path.join(out_dir, metadata.data['B'][i // 3]), images[:, :, i + 2])
+
+
+@pytest.fixture(scope='function')
+def locations(out_dir, metadata, config):
+    for i in range(len(metadata.data.index)):
+        meta = metadata.data.iloc[i]
+        path = os.path.join(out_dir, meta['Metadata_Plate'], 'locations')
+        os.makedirs(path, exist_ok=True)
+        path = os.path.abspath(os.path.join(path, '{}-{}-{}.csv'.format(meta['Metadata_Well'],
+                                                  meta['Metadata_Site'],
+                                                  config['sampling']['locations_field'])))
+        locs = pd.DataFrame({
+            'R_Location_Center_X': np.random.randint(0, 128, (config['sampling']['locations'])),
+            'R_Location_Center_Y': np.random.randint(0, 128, (config['sampling']['locations']))
+        })
+        locs.to_csv(path, index=False)
+
+
+@pytest.fixture(scope='function')
 def generator():
     return deepprofiler.imaging.cropping.CropGenerator
 
@@ -115,6 +139,11 @@ def generator():
 @pytest.fixture(scope='function')
 def val_generator():
     return deepprofiler.imaging.cropping.SingleImageCropGenerator
+
+
+@pytest.fixture(scope='function')
+def model(config, dataset, generator, val_generator):
+    return plugins.models.gan.ModelClass(config, dataset, generator, val_generator)
 
 
 def test_gan(config, generator, val_generator):
@@ -143,3 +172,18 @@ def test_init(config, dataset, generator, val_generator):
     dpmodel = plugins.models.gan.ModelClass(config, dataset, generator, val_generator)
     gan = plugins.models.gan.GAN(config, generator, val_generator)
     assert dpmodel.gan.__eq__(gan)
+
+
+def test_train(model, out_dir, data, locations):
+    model.train()
+    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_1.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "generator_epoch_1.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_2.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "generator_epoch_2.hdf5"))
+    epoch = 3
+    model.config["training"]["epochs"] = 4
+    model.train(epoch)
+    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_3.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "generator_epoch_3.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_4.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "generator_epoch_4.hdf5"))

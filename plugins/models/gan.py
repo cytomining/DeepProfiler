@@ -35,7 +35,6 @@ class GAN(object):
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
         self.latent_dim = config["model"]["latent_dim"]  # TODO: move to params
 
-        # optimizer = Adam(0.0002, 0.5)
         optimizer = Adam(config["model"]["params"]["learning_rate"], 0.5)
 
         # Build and compile the discriminator
@@ -64,8 +63,6 @@ class GAN(object):
 
     def build_generator(self):
 
-        # model = Sequential(name='generator')
-
         s = self.config["sampling"]["box_size"] // 2 ** self.config["model"]["conv_blocks"]
         if s < 1:
             raise ValueError("Too many convolutional blocks for the specified crop size!")
@@ -79,17 +76,10 @@ class GAN(object):
             x = UpSampling2D((2, 2))(x)
         img = Conv2DTranspose(self.channels, (3, 3), padding='same', activation='sigmoid')(x)
 
-        # return model
-        # model.summary()
-
-        # noise = Input(shape=(self.latent_dim,))
-        # img = model(noise)
-
         return Model(noise, img, name='generator')
 
     def build_discriminator(self):
 
-        # model = Sequential(name='discriminator')
         img = Input(shape=self.img_shape)
         x = img
         for i in range(self.config['model']['conv_blocks']):
@@ -100,12 +90,7 @@ class GAN(object):
         x = Dense(self.config['model']['feature_dim'], name="features")(x)
         x = LeakyReLU(alpha=0.2)(x)
         validity = Dense(1, activation='sigmoid')(x)
-        # model.summary()
 
-        # img = Input(shape=self.img_shape)
-        # validity = model(img)
-
-        # return model
         return Model(img, validity, name='discriminator')
 
     def train(self, epochs, steps_per_epoch, init_epoch):
@@ -144,8 +129,9 @@ class GAN(object):
 
                 # Plot the progress
                 print("Epoch %d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch, d_loss[0], 100*d_loss[1], g_loss))
-            filename_d = os.path.join(self.config['training']['output'], '{}_epoch_{}'.format('discriminator', epoch))
-            filename_g = os.path.join(self.config['training']['output'], '{}_epoch_{}'.format('generator', epoch))
+
+            filename_d = os.path.join(self.config['training']['output'], '{}_epoch_{}.hdf5'.format('discriminator', epoch))
+            filename_g = os.path.join(self.config['training']['output'], '{}_epoch_{}.hdf5'.format('generator', epoch))
             self.discriminator.save_weights(filename_d)
             self.generator.save_weights(filename_g)
 
@@ -191,6 +177,7 @@ class ModelClass(DeepProfilerModel):
         #         self.val_crop_generator,
         #         val_session)
         # gc.collect()
+
         # Start main session
         main_session = tf.Session(config=configuration)
         keras.backend.set_session(main_session)
@@ -203,11 +190,10 @@ class ModelClass(DeepProfilerModel):
         # )
         # csv_output = self.config["training"]["output"] + "/log.csv"
         # callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
-
         # callbacks = [callback_model_checkpoint, callback_csv]  # TODO
 
-        discriminator_file = os.path.join(self.config["training"]["output"], "discriminator_epoch_{}".format(epoch - 1))
-        generator_file = os.path.join(self.config["training"]["output"], "generator_epoch_{}".format(epoch - 1))
+        discriminator_file = os.path.join(self.config["training"]["output"], "discriminator_epoch_{}.hdf5".format(epoch - 1))
+        generator_file = os.path.join(self.config["training"]["output"], "generator_epoch_{}.hdf5".format(epoch - 1))
         if epoch >= 1 and os.path.isfile(discriminator_file) and os.path.isfile(generator_file):
             self.gan.discriminator.load_weights(discriminator_file)
             self.gan.generator.load_weights(generator_file)
