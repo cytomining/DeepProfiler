@@ -47,8 +47,9 @@ class Profile(object):
 
     def configure(self):
         checkpoint = self.config["profiling"]["checkpoint"]
-        self.dpmodel.model.load_weights(checkpoint)
-        self.feat_extractor = keras.Model(self.dpmodel.model.input, self.dpmodel.model.get_layer(self.config["profiling"]["feature_layer"]).output)
+        self.dpmodel.feature_model.load_weights(checkpoint)
+        self.feat_extractor = keras.Model(self.dpmodel.feature_model.inputs, self.dpmodel.feature_model.get_layer(
+            self.config["profiling"]["feature_layer"]).output)
         # Session configuration
         configuration = tf.ConfigProto()
         configuration.gpu_options.allow_growth = True

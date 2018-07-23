@@ -22,7 +22,7 @@ import deepprofiler.learning.validation
 class DeepProfilerModel(ABC):
 
     def __init__(self, config, dset, crop_generator, val_crop_generator):
-        self.model = None
+        self.feature_model = None
         self.loss = None
         self.optimizer = None
         self.config = config

@@ -64,44 +64,48 @@ class GAN(object):
 
     def build_generator(self):
 
-        model = Sequential()
+        # model = Sequential(name='generator')
 
         s = self.config["sampling"]["box_size"] // 2 ** self.config["model"]["conv_blocks"]
         if s < 1:
             raise ValueError("Too many convolutional blocks for the specified crop size!")
-        model.add(Dense(s * s, input_dim=self.latent_dim))
-        model.add(Reshape((s, s, 1)))
+        noise = Input(shape=(self.latent_dim,))
+        x = Dense(s * s, input_dim=self.latent_dim)(noise)
+        x = Reshape((s, s, 1))(x)
         for i in reversed(range(self.config['model']['conv_blocks'])):
-            model.add(Conv2DTranspose(8 * 2 ** i, (3, 3), padding='same'))
-            model.add(LeakyReLU(alpha=0.2))
-            model.add(BatchNormalization(momentum=0.8))
-            model.add(UpSampling2D((2, 2)))
-        model.add(Conv2DTranspose(self.channels, (3, 3), padding='same', activation='sigmoid'))
+            x = Conv2DTranspose(8 * 2 ** i, (3, 3), padding='same')(x)
+            x = LeakyReLU(alpha=0.2)(x)
+            x = BatchNormalization(momentum=0.8)(x)
+            x = UpSampling2D((2, 2))(x)
+        img = Conv2DTranspose(self.channels, (3, 3), padding='same', activation='sigmoid')(x)
 
+        # return model
         # model.summary()
 
-        noise = Input(shape=(self.latent_dim,))
-        img = model(noise)
+        # noise = Input(shape=(self.latent_dim,))
+        # img = model(noise)
 
         return Model(noise, img, name='generator')
 
     def build_discriminator(self):
 
-        model = Sequential()
-
+        # model = Sequential(name='discriminator')
+        img = Input(shape=self.img_shape)
+        x = img
         for i in range(self.config['model']['conv_blocks']):
-            model.add(Conv2D(8 * 2 ** i, (3, 3), padding='same'))
-            model.add(LeakyReLU(alpha=0.2))
-            model.add(MaxPooling2D((2, 2)))
-        model.add(Flatten())
-        model.add(Dense(self.config['model']['feature_dim'], name="features"))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(Dense(1, activation='sigmoid'))
+            x = Conv2D(8 * 2 ** i, (3, 3), padding='same')(x)
+            x = LeakyReLU(alpha=0.2)(x)
+            x = MaxPooling2D((2, 2))(x)
+        x = Flatten()(x)
+        x = Dense(self.config['model']['feature_dim'], name="features")(x)
+        x = LeakyReLU(alpha=0.2)(x)
+        validity = Dense(1, activation='sigmoid')(x)
         # model.summary()
 
-        img = Input(shape=self.img_shape)
-        validity = model(img)
+        # img = Input(shape=self.img_shape)
+        # validity = model(img)
 
+        # return model
         return Model(img, validity, name='discriminator')
 
     def train(self, epochs, steps_per_epoch, init_epoch):
@@ -140,13 +144,17 @@ class GAN(object):
 
                 # Plot the progress
                 print("Epoch %d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (init_epoch + epoch, d_loss[0], 100*d_loss[1], g_loss))
-            self.combined.save_weights(os.path.join(self.config['training']['output'], 'checkpoints/epoch_{}'.format(epoch + 1)))
+            filename_d = os.path.join(self.config['training']['output'], 'checkpoints/{}_epoch_{}'.format('discriminator', epoch + 1))
+            filename_g = os.path.join(self.config['training']['output'], 'checkpoints/{}_epoch_{}'.format('generator', epoch + 1))
+            self.discriminator.save_weights(filename_d)
+            self.generator.save_weights(filename_g)
 
 
 class ModelClass(DeepProfilerModel):
     def __init__(self, config, dset, generator, val_generator):
         super(ModelClass, self).__init__(config, dset, generator, val_generator)
         self.gan = GAN(config, self.train_crop_generator, self.val_crop_generator)
+        self.feature_model = self.gan.discriminator
 
     def train(self, epoch=1, metrics=['accuracy']):
         print(self.gan.combined.summary())
