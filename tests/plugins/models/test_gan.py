@@ -176,14 +176,14 @@ def test_init(config, dataset, generator, val_generator):
 
 def test_train(model, out_dir, data, locations):
     model.train()
-    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_1.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "generator_epoch_1.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_2.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "generator_epoch_2.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_0001.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "generator_epoch_0001.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_0002.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "generator_epoch_0002.hdf5"))
     epoch = 3
     model.config["training"]["epochs"] = 4
     model.train(epoch)
-    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_3.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "generator_epoch_3.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_4.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "generator_epoch_4.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_0003.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "generator_epoch_0003.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_0004.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "generator_epoch_0004.hdf5"))

@@ -130,8 +130,8 @@ class GAN(object):
                 # Plot the progress
                 print("Epoch %d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch, d_loss[0], 100*d_loss[1], g_loss))
 
-            filename_d = os.path.join(self.config['training']['output'], '{}_epoch_{}.hdf5'.format('discriminator', epoch))
-            filename_g = os.path.join(self.config['training']['output'], '{}_epoch_{}.hdf5'.format('generator', epoch))
+            filename_d = os.path.join(self.config['training']['output'], '{}_epoch_{:04d}.hdf5'.format('discriminator', epoch))
+            filename_g = os.path.join(self.config['training']['output'], '{}_epoch_{:04d}.hdf5'.format('generator', epoch))
             self.discriminator.save_weights(filename_d)
             self.generator.save_weights(filename_g)
 
@@ -146,8 +146,6 @@ class ModelClass(DeepProfilerModel):
         print(self.gan.combined.summary())
         if not os.path.isdir(self.config["training"]["output"]):
             os.mkdir(self.config["training"]["output"])
-        if not os.path.isdir(os.path.join(self.config["training"]["output"], "checkpoints")):
-            os.mkdir(os.path.join(self.config["training"]["output"], "checkpoints"))
         if self.config["model"]["comet_ml"]:
             experiment = Experiment(
                 api_key=self.config["validation"]["api_key"],
@@ -192,8 +190,8 @@ class ModelClass(DeepProfilerModel):
         # callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
         # callbacks = [callback_model_checkpoint, callback_csv]  # TODO
 
-        discriminator_file = os.path.join(self.config["training"]["output"], "discriminator_epoch_{}.hdf5".format(epoch - 1))
-        generator_file = os.path.join(self.config["training"]["output"], "generator_epoch_{}.hdf5".format(epoch - 1))
+        discriminator_file = os.path.join(self.config["training"]["output"], '{}_epoch_{:04d}.hdf5'.format('discriminator', epoch - 1))
+        generator_file = os.path.join(self.config["training"]["output"], '{}_epoch_{:04d}.hdf5'.format('generator', epoch - 1))
         if epoch >= 1 and os.path.isfile(discriminator_file) and os.path.isfile(generator_file):
             self.gan.discriminator.load_weights(discriminator_file)
             self.gan.generator.load_weights(generator_file)
