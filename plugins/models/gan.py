@@ -111,7 +111,7 @@ class GAN(object):
     def train(self, epochs, steps_per_epoch, init_epoch):
         sess = tf.Session()
         crop_generator = self.crop_generator.generate(sess)
-        for epoch in range(epochs - (init_epoch - 1)):
+        for epoch in range(init_epoch, epochs + 1):
             for step in range(steps_per_epoch):
                 crops = next(crop_generator)[0]
                 batch_size = crops.shape[0]
@@ -143,9 +143,9 @@ class GAN(object):
                 g_loss = self.combined.train_on_batch(noise, valid)
 
                 # Plot the progress
-                print("Epoch %d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (init_epoch + epoch, d_loss[0], 100*d_loss[1], g_loss))
-            filename_d = os.path.join(self.config['training']['output'], 'checkpoints/{}_epoch_{}'.format('discriminator', epoch + 1))
-            filename_g = os.path.join(self.config['training']['output'], 'checkpoints/{}_epoch_{}'.format('generator', epoch + 1))
+                print("Epoch %d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch, d_loss[0], 100*d_loss[1], g_loss))
+            filename_d = os.path.join(self.config['training']['output'], '{}_epoch_{}'.format('discriminator', epoch))
+            filename_g = os.path.join(self.config['training']['output'], '{}_epoch_{}'.format('generator', epoch))
             self.discriminator.save_weights(filename_d)
             self.generator.save_weights(filename_g)
 
@@ -175,49 +175,52 @@ class ModelClass(DeepProfilerModel):
             crop_session = tf.Session(config=cpu_config)
             self.train_crop_generator.start(crop_session)
         gc.collect()
-        # Start validation session
+
         configuration = tf.ConfigProto()
         configuration.gpu_options.visible_device_list = self.config["training"]["visible_gpus"]
-        crop_graph = tf.Graph()
-        with crop_graph.as_default():
-            val_session = tf.Session(config=configuration)
-            keras.backend.set_session(val_session)
-            self.val_crop_generator.start(val_session)
-            x_validation, y_validation = deepprofiler.learning.validation.validate(  # TODO
-                self.config,
-                self.dset,
-                self.val_crop_generator,
-                val_session)
-        gc.collect()
+
+        # # Start validation session
+        # crop_graph = tf.Graph()
+        # with crop_graph.as_default():
+        #     val_session = tf.Session(config=configuration)
+        #     keras.backend.set_session(val_session)
+        #     self.val_crop_generator.start(val_session)
+        #     x_validation, y_validation = deepprofiler.learning.validation.validate(  # TODO
+        #         self.config,
+        #         self.dset,
+        #         self.val_crop_generator,
+        #         val_session)
+        # gc.collect()
         # Start main session
         main_session = tf.Session(config=configuration)
         keras.backend.set_session(main_session)
 
-        output_file = self.config["training"]["output"] + "/checkpoint_{epoch:04d}.hdf5"
-        callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
-            filepath=output_file,
-            save_weights_only=True,
-            save_best_only=False
-        )
-        csv_output = self.config["training"]["output"] + "/log.csv"
-        callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
+        # output_file = self.config["training"]["output"] + "/checkpoint_{epoch:04d}.hdf5"
+        # callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
+        #     filepath=output_file,
+        #     save_weights_only=True,
+        #     save_best_only=False
+        # )
+        # csv_output = self.config["training"]["output"] + "/log.csv"
+        # callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
 
-        callbacks = [callback_model_checkpoint, callback_csv]  # TODO
+        # callbacks = [callback_model_checkpoint, callback_csv]  # TODO
 
-        previous_model = output_file.format(epoch=epoch - 1)
-        if epoch >= 1 and os.path.isfile(previous_model):
-            self.model.load_weights(previous_model)
-            print("Weights from previous model loaded:", previous_model)
+        discriminator_file = os.path.join(self.config["training"]["output"], "discriminator_epoch_{}".format(epoch - 1))
+        generator_file = os.path.join(self.config["training"]["output"], "generator_epoch_{}".format(epoch - 1))
+        if epoch >= 1 and os.path.isfile(discriminator_file) and os.path.isfile(generator_file):
+            self.gan.discriminator.load_weights(discriminator_file)
+            self.gan.generator.load_weights(generator_file)
+            print("Weights from previous models loaded:", discriminator_file, generator_file)
 
-        epochs = self.config["model"]["params"]["epochs"]
-        steps = self.config["model"]["params"]["steps"]
+        epochs = self.config["training"]["epochs"]
+        steps = self.config["training"]["steps"]
 
         if self.config["model"]["comet_ml"]:
             params = self.config["model"]["params"]
             experiment.log_multiple_params(params)
 
         keras.backend.get_session().run(tf.initialize_all_variables())
-
         self.gan.train(epochs, steps, epoch)
 
         # Close session and stop threads
