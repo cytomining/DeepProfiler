@@ -33,7 +33,7 @@ class GAN(object):
         self.img_cols = config["sampling"]["box_size"]
         self.channels = len(config["image_set"]["channels"])
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
-        self.latent_dim = config["model"]["latent_dim"]
+        self.latent_dim = config["model"]["latent_dim"]  # TODO: move to params
 
         # optimizer = Adam(0.0002, 0.5)
         optimizer = Adam(config["model"]["params"]["learning_rate"], 0.5)
