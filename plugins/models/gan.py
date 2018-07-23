@@ -51,10 +51,10 @@ class GAN(object):
         img = self.generator(z)
 
         # For the combined model we will only train the generator
-        self.discriminator.trainable = False
-
+        self.discriminator_fixed = Model(inputs=self.discriminator.inputs, outputs=self.discriminator.outputs, name='discriminator')
+        self.discriminator_fixed.trainable = False
         # The discriminator takes generated images as input and determines validity
-        validity = self.discriminator(img)
+        validity = self.discriminator_fixed(img)
 
         # The combined model  (stacked generator and discriminator)
         # Trains the generator to fool the discriminator

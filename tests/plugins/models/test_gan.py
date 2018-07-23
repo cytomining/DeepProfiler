@@ -162,10 +162,14 @@ def test_gan(config, generator, val_generator):
     assert gan.latent_dim == config["model"]["latent_dim"]
     assert isinstance(gan.generator, keras.Model)
     assert isinstance(gan.discriminator, keras.Model)
+    assert isinstance(gan.discriminator_fixed, keras.Model)
     assert isinstance(gan.combined, keras.Model)
     assert gan.generator in gan.combined.layers
-    assert gan.discriminator in gan.combined.layers
-    assert not gan.discriminator.trainable
+    assert gan.discriminator not in gan.combined.layers
+    assert gan.discriminator_fixed in gan.combined.layers
+    assert gan.generator.trainable
+    assert gan.discriminator.trainable
+    assert not gan.discriminator_fixed.trainable
 
 
 def test_init(config, dataset, generator, val_generator):
