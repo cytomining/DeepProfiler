@@ -67,10 +67,8 @@
         },
         "comet_ml": {
             "track": false,
-            "hyperparamater_optimization": false,
             "api_key": "rDrWV4m8ITk0PGyDDKWjEgS2q",
             "project_name": "test1",
-            "optimizable_metric": ["accuracy"]
           },
           "validation": {
             "top_k": 1,

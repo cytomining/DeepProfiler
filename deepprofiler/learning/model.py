@@ -107,6 +107,7 @@ class DeepProfilerModel(ABC):
             params = self.config["train"]["model"]["params"]
             experiment.log_multiple_params(params)
 
+
         keras.backend.get_session().run(tf.initialize_all_variables())
         self.model.fit_generator(
             generator=self.train_crop_generator.generate(crop_session),
