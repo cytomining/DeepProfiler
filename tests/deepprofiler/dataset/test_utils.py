@@ -12,11 +12,11 @@ def test_printProgress():
     test_iterations = [-1,0,1,2,3,4,5]
     test_outputs = []
     expected_outputs = ['\rError: printProgress() function received a negative "iteration" value.',
-                        '\rProgress |' + '-' * 100 +'| 0.0% Complete',
-                        '\rProgress |' + '#' * 25 + '-' * 75 +'| 25.0% Complete',
-                        '\rProgress |' + '#' * 50 + '-' * 50 +'| 50.0% Complete',
-                        '\rProgress |' + '#' * 75 + '-' * 25 +'| 75.0% Complete',
-                        '\rProgress |' + '#' * 100 +'| 100.0% Complete\n',
+                        '\rProgress |' + '-' * 50 +'| 0.0% Complete',
+                        '\rProgress |' + '#' * 12 + '-' * 38 +'| 25.0% Complete',
+                        '\rProgress |' + '#' * 25 + '-' * 25 +'| 50.0% Complete',
+                        '\rProgress |' + '#' * 38 + '-' * 12 +'| 75.0% Complete',
+                        '\rProgress |' + '#' * 50 +'| 100.0% Complete\n',
                         '\rError: printProgress() function received an "iteration" value greater than the "total" value.']
     test_total = 4
     for iteration in test_iterations:

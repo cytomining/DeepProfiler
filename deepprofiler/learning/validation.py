@@ -32,5 +32,4 @@ def validate(config, dset, crop_generator, session):
 
     validation = Validation(config, dset, crop_generator, session)
     dset.scan(validation.process_batches, frame=config["train"]["validation"]["frame"])
-
     return np.concatenate(validation.batch_inputs), np.concatenate(validation.batch_outputs)

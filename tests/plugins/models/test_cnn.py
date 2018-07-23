@@ -6,6 +6,7 @@ import keras
 import numpy as np
 import random
 import pandas as pd
+import json
 
 import deepprofiler.imaging.cropping
 import deepprofiler.dataset.image_dataset
@@ -25,59 +26,24 @@ def out_dir(tmpdir):
 
 @pytest.fixture(scope='function')
 def config(out_dir):
-    return {
-        "model": {
-            "name": "cnn",
-            "crop_generator": "crop_generator",
-            "feature_dim": 128,
-            "conv_blocks": 3,
-            "params": {
-                "epochs": 3,
-                "steps": 10,
-                "learning_rate": 0.0001,
-                "batch_size": 16
-            },
-        },
-        "sampling": {
-            "images": 12,
-            "box_size": 16,
-            "locations": 10,
-            "locations_field": 'R'
-        },
-        "image_set": {
-            "channels": ['R', 'G', 'B'],
-            "mask_objects": False,
-            "width": 128,
-            "height": 128,
-            "path": out_dir
-        },
-        "training": {
-            "learning_rate": 0.001,
-            "output": out_dir,
-            "epochs": 2,
-            "steps": 12,
-            "minibatch": 2,
-            "visible_gpus": "0"
-        },
-        "queueing": {
-            "loading_workers": 2,
-            "queue_size": 2
-        },
-        "validation": {
-            "minibatch": 2,
-            "output": out_dir,
-            "api_key":'[REDACTED]',
-            "project_name":'pytests',
-            "frame":"train",
-            "sample_first_crops": True,
-            "top_k": 2
-        }
-    }
+    with open("tests/files/config/test.json", 'r') as f:
+        config = json.load(f)
+    for path in config["paths"]:
+        config["paths"][path] = out_dir + config["paths"].get(path)
+    config["paths"]["root_dir"] = out_dir
+    return config
+
+@pytest.fixture(scope='function')
+def make_struct(config):
+    for key, path in config["paths"].items():
+        if key not in ["index", "config_file", "root_dir"]:
+            os.makedirs(path+"/")
+    return
 
 
 @pytest.fixture(scope='function')
-def metadata(out_dir):
-    filename = os.path.join(out_dir, 'metadata.csv')
+def metadata(out_dir, make_struct):
+    filename = os.path.join(out_dir, 'index.csv')
     df = pd.DataFrame({
         'Metadata_Plate': __rand_array(),
         'Metadata_Well': __rand_array(),
@@ -98,9 +64,9 @@ def metadata(out_dir):
 
 
 @pytest.fixture(scope='function')
-def dataset(metadata, out_dir):
+def dataset(metadata, out_dir, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, 'Sampling', ['R', 'G', 'B'], out_dir, keygen)
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, 'Sampling', ['R', 'G', 'B'], config["paths"]["root_dir"], keygen)
     target = deepprofiler.dataset.target.MetadataColumnTarget('Class', metadata.data['Class'].unique())
     dset.add_target(target)
     return dset

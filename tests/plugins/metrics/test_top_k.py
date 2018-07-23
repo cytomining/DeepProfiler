@@ -6,80 +6,40 @@ import inspect
 import os
 import numpy as np
 import tensorflow as tf
+import json
 
 def is_method(obj, name):
     return hasattr(obj, name) and inspect.ismethod(getattr(obj, name))
 
 @pytest.fixture(scope='function')
 def out_dir(tmpdir):
-    return os.path.abspath(tmpdir.mkdir("test_profiling"))
+    return os.path.abspath(tmpdir.mkdir("test"))
 
 @pytest.fixture(scope='function')
 def config(out_dir):
-    return {
-        "model": {
-            "name": "cnn",
-            "crop_generator": "crop_generator",
-            "feature_dim": 128,
-            "conv_blocks": 3,
-            "params": {
-                "epochs": 3,
-                "steps": 10,
-                "learning_rate": 0.0001,
-                "batch_size": 16
-            }
-        },
-        "sampling": {
-            "images": 12,
-            "box_size": 16,
-            "locations": 10,
-            "locations_field": 'R'
-        },
-        "image_set": {
-            "channels": ['R', 'G', 'B'],
-            "mask_objects": False,
-            "width": 128,
-            "height": 128,
-            "path": out_dir
-        },
-        "training": {
-            "learning_rate": 0.001,
-            "output": out_dir,
-            "epochs": 2,
-            "steps": 12,
-            "minibatch": 2,
-            "visible_gpus": "0"
-        },
-        "queueing": {
-            "loading_workers": 2,
-            "queue_size": 2
-        },
-        "validation": {
-            "minibatch": 2,
-            "output": out_dir,
-            "api_key":'[REDACTED]',
-            "project_name":'pytests',
-            "frame":"train",
-            "sample_first_crops": True,
-            "top_k": 1
-        },
-        "profiling": {
-            "feature_layer": "features",
-            "output_dir": out_dir,
-            "checkpoint": None,
-            "gpu": "0"
-        }
-    }
+    with open("tests/files/config/test.json", 'r') as f:
+        config = json.load(f)
+    for path in config["paths"]:
+        config["paths"][path] = out_dir + config["paths"].get(path)
+    config["paths"]["root_dir"] = out_dir
+    return config
 
-def test_create_metric(config):
+@pytest.fixture(scope='function')
+def make_struct(config):
+    for key, path in config["paths"].items():
+        if key not in ["index", "config_file", "root_dir"]:
+            os.makedirs(path+"/")
+    return
+
+def test_create_metric(config, make_struct):
     name = "Dog"
     metric = plugins.metrics.top_k.MetricClass(config, name)
-    expected_name = "top_" + str(config['validation']['top_k'])
+    expected_name = "top_" + str(config['train']['validation']['top_k'])
     assert is_method(metric, "create_metric")
     assert metric.f.__name__ == expected_name
 
 
-def test_metric(config):
+def test_metric(config, make_struct):
     sess = tf.InteractiveSession()
     name = "Dog"
     metric = plugins.metrics.top_k.MetricClass(config, name)

@@ -100,8 +100,8 @@ class DeepProfilerModel(ABC):
             self.model.load_weights(previous_model)
             print("Weights from previous model loaded:", previous_model)
 
-        epochs = self.config["train"]["model"]["params"]["epochs"]
-        steps = self.config["train"]['model']["params"]["steps"]
+        epochs = self.config["train"]["model"]["epochs"]
+        steps = self.config["train"]['model']["steps"]
 
         if self.config["train"]["comet_ml"]["track"]:
             params = self.config["train"]["model"]["params"]
