@@ -68,7 +68,7 @@
         "comet_ml": {
             "track": false,
             "api_key": "rDrWV4m8ITk0PGyDDKWjEgS2q",
-            "project_name": "test1",
+            "project_name": "test1"
           },
           "validation": {
             "top_k": 1,
