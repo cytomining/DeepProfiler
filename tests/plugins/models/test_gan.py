@@ -176,6 +176,7 @@ def test_init(config, dataset, generator, val_generator):
     dpmodel = plugins.models.gan.ModelClass(config, dataset, generator, val_generator)
     gan = plugins.models.gan.GAN(config, generator, val_generator)
     assert dpmodel.gan.__eq__(gan)
+    assert isinstance(dpmodel.feature_model, keras.Model)
 
 
 def test_train(model, out_dir, data, locations):
