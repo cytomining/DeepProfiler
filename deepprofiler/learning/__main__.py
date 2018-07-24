@@ -6,6 +6,7 @@ import click
 import deepprofiler.dataset.image_dataset
 import deepprofiler.learning.training
 import deepprofiler.learning.validation
+import deepprofiler.learning.optimization
 
 # Main interaction point
 @click.group()
@@ -27,6 +28,16 @@ def cli(context, config):
 def training(context, epoch, seed):
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     deepprofiler.learning.training.learn_model(context.obj["config"], metadata, epoch, seed)
+
+# Optional learning tool: Optimize the hyperparameters of a model
+@cli.command()
+@click.option("--epoch", default=1)
+@click.option("--seed", default=None)
+@click.pass_context
+def optimization(context, epoch, seed):
+    metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
+    optim = deepprofiler.learning.optimization.Optimize(context.obj["config"], metadata, epoch, seed)
+    optim.optimize()
 
 # Second learning tool: Training a recurrent network
 @cli.command()
