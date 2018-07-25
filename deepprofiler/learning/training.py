@@ -35,10 +35,10 @@ def learn_model(config, dset, epoch=1, seed=None, verbose=1):
 
     crop_generator = crop_module.GeneratorClass
     val_crop_generator = crop_module.SingleImageGeneratorClass
-    model = model_module.ModelClass(config, dset, crop_generator, val_crop_generator, verbose=verbose)
+    model = model_module.ModelClass(config, dset, crop_generator, val_crop_generator)
 
     if seed is not None:
         model.seed(seed)
-    trained_model, x_validation, y_validation = model.train(epoch, metrics)
+    trained_model, x_validation, y_validation = model.train(epoch, metrics, verbose=verbose)
     evaluation = trained_model.evaluate(x_validation, y_validation, batch_size=config["validation"]["minibatch"], verbose=0)
     return evaluation

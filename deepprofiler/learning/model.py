@@ -21,13 +21,12 @@ import deepprofiler.learning.validation
 
 class DeepProfilerModel(ABC):
 
-    def __init__(self, config, dset, crop_generator, val_crop_generator, verbose=1):
+    def __init__(self, config, dset, crop_generator, val_crop_generator):
         self.model = None
         self.loss = None
         self.optimizer = None
         self.config = config
         self.dset = dset
-        self.verbose = verbose
         self.train_crop_generator = crop_generator(config, dset)
         self.val_crop_generator = val_crop_generator(config, dset)
         self.random_seed = None
@@ -40,7 +39,7 @@ class DeepProfilerModel(ABC):
         np.random.seed(seed)
         tf.set_random_seed(seed)
 
-    def train(self, epoch=1, metrics=['accuracy']):
+    def train(self, epoch=1, metrics=['accuracy'], verbose=1):
         if self.model is None:
             raise ValueError("Model is not defined!")
         print(self.model.summary())
@@ -78,7 +77,7 @@ class DeepProfilerModel(ABC):
         main_session = tf.Session(config=configuration)
         keras.backend.set_session(main_session)
 
-        if self.verbose:
+        if verbose:
             output_file = self.config["training"]["output"] + "/checkpoint_{epoch:04d}.hdf5"
             callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
                 filepath=output_file,
@@ -110,7 +109,7 @@ class DeepProfilerModel(ABC):
             steps_per_epoch=steps,
             epochs=epochs,
             callbacks=callbacks,
-            verbose=self.verbose,
+            verbose=verbose,
             initial_epoch=epoch - 1,
             validation_data=(x_validation, y_validation)
         )
