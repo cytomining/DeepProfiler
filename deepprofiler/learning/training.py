@@ -1,13 +1,13 @@
 from comet_ml import Experiment
 import importlib
-import keras.metrics
+import keras
 
 #################################################
 ## MAIN TRAINING ROUTINE
 #################################################
 
 
-def learn_model(config, dset, epoch=1, seed=None):
+def learn_model(config, dset, epoch=1, seed=None, verbose=1):
     model_module = importlib.import_module("plugins.models.{}".format(config['model']['name']))
     crop_module = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))
     if 'metrics' in config['model'].keys():
@@ -39,4 +39,10 @@ def learn_model(config, dset, epoch=1, seed=None):
 
     if seed is not None:
         model.seed(seed)
-    model.train(epoch, metrics)
+    if verbose == 0:
+        trained_model, x_validation, y_validation = model.train(epoch, metrics, verbose=verbose)
+        evaluation = trained_model.evaluate(x_validation, y_validation, batch_size=config["validation"]["minibatch"], verbose=verbose)
+        return evaluation
+    else:
+        model.train(epoch, metrics, verbose=verbose)
+        return None

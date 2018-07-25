@@ -39,7 +39,7 @@ class DeepProfilerModel(ABC):
         np.random.seed(seed)
         tf.set_random_seed(seed)
 
-    def train(self, epoch=1, metrics=['accuracy']):  # TODO: simplify default train method
+    def train(self, epoch=1, metrics=['accuracy'], verbose=1):  # TODO: simplify default train method
         if 'feature_model' not in vars(self) or self.feature_model is None:
             raise ValueError("Feature model is not defined.")
         print(self.feature_model.summary())
@@ -77,21 +77,24 @@ class DeepProfilerModel(ABC):
         main_session = tf.Session(config=configuration)
         keras.backend.set_session(main_session)
 
-        output_file = self.config["training"]["output"] + "/checkpoint_{epoch:04d}.hdf5"
-        callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
-            filepath=output_file,
-            save_weights_only=True,
-            save_best_only=False
-        )
-        csv_output = self.config["training"]["output"] + "/log.csv"
-        callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
+        if verbose != 0:
+            output_file = self.config["training"]["output"] + "/checkpoint_{epoch:04d}.hdf5"
+            callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
+                filepath=output_file,
+                save_weights_only=True,
+                save_best_only=False
+            )
+            csv_output = self.config["training"]["output"] + "/log.csv"
+            callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
 
-        callbacks = [callback_model_checkpoint, callback_csv]
+            callbacks = [callback_model_checkpoint, callback_csv]
 
-        previous_model = output_file.format(epoch=epoch - 1)
-        if epoch >= 1 and os.path.isfile(previous_model):
-            self.feature_model.load_weights(previous_model)
-            print("Weights from previous model loaded:", previous_model)
+            previous_model = output_file.format(epoch=epoch - 1)
+            if epoch >= 1 and os.path.isfile(previous_model):
+                self.feature_model.load_weights(previous_model)
+                print("Weights from previous model loaded:", previous_model)
+        else:
+            callbacks = None
 
         epochs = self.config["training"]["epochs"]
         steps = self.config["training"]["steps"]
@@ -106,7 +109,7 @@ class DeepProfilerModel(ABC):
             steps_per_epoch=steps,
             epochs=epochs,
             callbacks=callbacks,
-            verbose=1,
+            verbose=verbose,
             initial_epoch=epoch - 1,
             validation_data=(x_validation, y_validation)
         )
@@ -117,3 +120,5 @@ class DeepProfilerModel(ABC):
         crop_session.close()
         print("All set.")
         gc.collect()
+
+        return self.feature_model, x_validation, y_validation

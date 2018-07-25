@@ -134,13 +134,14 @@ def data(metadata, out_dir):
 
 def test_learn_model(config, dataset, data, locations, out_dir):
     epoch = 1
-    deepprofiler.learning.training.learn_model(config, dataset, epoch)
+    verbose = 1
+    deepprofiler.learning.training.learn_model(config, dataset, epoch, verbose=verbose)
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0001.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0002.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "log.csv"))
     epoch = 3
-    config["training"]["epochs"] = 4
-    deepprofiler.learning.training.learn_model(config, dataset, epoch)
+    config["training"]['epochs'] = 4
+    deepprofiler.learning.training.learn_model(config, dataset, epoch, verbose=verbose)
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0003.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0004.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "log.csv"))
