@@ -91,7 +91,7 @@ def prepare_data(context):
 @click.option("--seed", default=None)
 @click.pass_context
 def optimization(context, epoch, seed):
-     if "setup" not in context.obj.keys():
+    if "setup" not in context.obj.keys():
         cmd_setup(context)
         if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
             context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"

@@ -50,8 +50,7 @@
                 "feature_dim": 100,
                 "latent_dim": 100,
                 "epsilon_std": 1.0
-            },
-            "save_all": false
+            }
         },
         "sampling": {
             "images": 12,
