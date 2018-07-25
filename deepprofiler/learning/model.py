@@ -78,7 +78,7 @@ class DeepProfilerModel(ABC):
         main_session = tf.Session(config=configuration)
         keras.backend.set_session(main_session)
 
-        if verbose:
+        if self.verbose:
             output_file = self.config["training"]["output"] + "/checkpoint_{epoch:04d}.hdf5"
             callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
                 filepath=output_file,
