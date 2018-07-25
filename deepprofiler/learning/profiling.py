@@ -116,9 +116,5 @@ class Profile(object):
 def profile(config, dset):
     profile = Profile(config, dset)
     profile.configure()
-    # if config["model"]["type"] == "inception_resnet":
-    #     profile.configure_inception_resnet()
-    # if config["model"]["type"] in ["convnet", "mixup"]:
-    #     profile.configure_resnet()
     dset.scan(profile.extract_features, frame="all", check=profile.check)
     print("Profiling: done")

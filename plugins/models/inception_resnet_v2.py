@@ -9,7 +9,7 @@ from deepprofiler.learning.model import DeepProfilerModel
 
 def define_model(config, dset):
     # Load InceptionResnetV2 base architecture
-    if config['training']["model"]["pretrained"]:
+    if config['train']["pretrained"]:
         weights = "imagenet"
         input_tensor = Input((
             config['train']["sampling"]["box_size"],  # height
@@ -50,7 +50,7 @@ def define_model(config, dset):
         model = Model(input_tensor, class_outputs)
 
     # Define optimizer and loss
-    optimizer = Adam(lr=config['training']['model']['params']['learning_rate'])
+    optimizer = Adam(lr=config['train']['model']['params']['learning_rate'])
     loss = 'categorical_crossentropy'
 
     return model, optimizer, loss
@@ -59,4 +59,4 @@ def define_model(config, dset):
 class ModelClass(DeepProfilerModel):
     def __init__(self, config, dset, generator, val_generator):
         super(ModelClass, self).__init__(config, dset, generator, val_generator)
-        self.model, self.optimizer, self.loss = define_model(config, dset)
+        self.feature_model, self.optimizer, self.loss = define_model(config, dset)

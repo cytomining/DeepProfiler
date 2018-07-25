@@ -33,9 +33,9 @@ class Optimize(object):
     def f(self, x):
         for i in range(len(self.config["optim"]["names"])):
             if self.config["optim"]["types"][i] == "continuous":
-                self.config["model"]["params"][self.config["optim"]["names"][i]] = float(x[:,i])
+                self.config['train']["model"]["params"][self.config["optim"]["names"][i]] = float(10**x[:,i])
             elif self.config["optim"]["types"][i] == "discrete":
-                self.config["model"]["params"][self.config["optim"]["names"][i]] = int(x[:,i])
+                self.config['train']["model"]["params"][self.config["optim"]["names"][i]] = int(x[:,i])
         evaluation = self.model()
         return evaluation[0]
 

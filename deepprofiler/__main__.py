@@ -12,6 +12,7 @@ import deepprofiler.dataset.utils
 import deepprofiler.dataset.image_dataset
 import deepprofiler.learning.training
 import deepprofiler.learning.profiling
+import deepprofiler.learning.optimization
 
 
 def cmd_setup(context):
@@ -43,8 +44,8 @@ def cli(context, root, cores):
         "config_folder": root+"/inputs/config",
         "images": root+"/inputs/images",
         "metadata": root+"/inputs/metadata",
-        "pre-processed": root+"/inputs/pre-processed",
-        "pre-trained": root+"/inputs/pre-trained",
+        "pre-processed": root+"/inputs/preprocessed",
+        "pre-trained": root+"/inputs/pretrained",
         "intensities": root+"/outputs/intensities",
         "compressed_images": root+"/outputs/compressed/images",
         "compressed_metadata": root+"/outputs/compressed/metadata",
@@ -90,7 +91,7 @@ def prepare_data(context):
 @click.option("--epoch", default=1)
 @click.option("--seed", default=None)
 @click.pass_context
-def optimization(context, epoch, seed):
+def optimize(context, epoch, seed):
     if "setup" not in context.obj.keys():
         cmd_setup(context)
         if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
