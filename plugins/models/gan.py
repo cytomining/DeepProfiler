@@ -163,32 +163,9 @@ class ModelClass(DeepProfilerModel):
         configuration = tf.ConfigProto()
         configuration.gpu_options.visible_device_list = self.config["training"]["visible_gpus"]
 
-        # # Start validation session
-        # crop_graph = tf.Graph()
-        # with crop_graph.as_default():
-        #     val_session = tf.Session(config=configuration)
-        #     keras.backend.set_session(val_session)
-        #     self.val_crop_generator.start(val_session)
-        #     x_validation, y_validation = deepprofiler.learning.validation.validate(  # TODO
-        #         self.config,
-        #         self.dset,
-        #         self.val_crop_generator,
-        #         val_session)
-        # gc.collect()
-
         # Start main session
         main_session = tf.Session(config=configuration)
         keras.backend.set_session(main_session)
-
-        # output_file = self.config["training"]["output"] + "/checkpoint_{epoch:04d}.hdf5"
-        # callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
-        #     filepath=output_file,
-        #     save_weights_only=True,
-        #     save_best_only=False
-        # )
-        # csv_output = self.config["training"]["output"] + "/log.csv"
-        # callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
-        # callbacks = [callback_model_checkpoint, callback_csv]  # TODO
 
         discriminator_file = os.path.join(self.config["training"]["output"], '{}_epoch_{:04d}.hdf5'.format('discriminator', epoch - 1))
         generator_file = os.path.join(self.config["training"]["output"], '{}_epoch_{:04d}.hdf5'.format('generator', epoch - 1))
