@@ -86,8 +86,9 @@ class Profile(object):
                                    self.config["train"]["validation"]["sample_first_crops"]
                             )
         num_features = self.config["train"]["model"]["params"]["feature_dim"]
+        repeats = "channel_repeats" in self.config["prepare"]["images"].keys()
         # Initialize data buffer
-        if self.config["profiling"]["repeated_channels"]:
+        if repeats:
             data = np.zeros(shape=(self.num_channels, total_crops, num_features))
         else:
             data = np.zeros(shape=(total_crops, num_features))
@@ -99,7 +100,7 @@ class Profile(object):
         for batch in self.profile_crop_generator.generate(self.sess):
             crops = batch[0]
             feats = self.feat_extractor.predict(crops)
-            if self.config["profiling"]["repeated_channels"]:
+            if repeats:
                 feats = np.reshape(feats, (self.num_channels, batch_size, num_features))
                 data[:, b * batch_size:(b + 1) * batch_size, :] = feats
             else:

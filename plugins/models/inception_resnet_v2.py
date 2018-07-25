@@ -9,36 +9,36 @@ from deepprofiler.learning.model import DeepProfilerModel
 
 def define_model(config, dset):
     # Load InceptionResnetV2 base architecture
-    if config["model"]["pretrained"]:
+    if config['training']["model"]["pretrained"]:
         weights = "imagenet"
         input_tensor = Input((
-            config["sampling"]["box_size"],  # height
-            config["sampling"]["box_size"],  # width
-            config["image_set"]["channel_repeats"]  # channels
+            config['train']["sampling"]["box_size"],  # height
+            config['train']["sampling"]["box_size"],  # width
+            config['prepare']['images']["channel_repeats"]  # channels
         ), name='input')
         base = inception_resnet_v2.InceptionResNetV2(
             include_top=True,
             weights=weights,
             input_tensor=input_tensor
         )
-        base.get_layer(index=-2).name = "global_{}_pool".format(config["model"]["pooling"])
+        base.get_layer(index=-2).name = "global_{}_pool".format(config["train"]["model"]["params"]["pooling"])
         # Define model
         model = base
     else:
         weights = None
         input_tensor = Input((
-            config["sampling"]["box_size"],  # height
-            config["sampling"]["box_size"],  # width
-            len(config["image_set"]["channels"])  # channels
+            config["train"]["sampling"]["box_size"],  # height
+            config["train"]["sampling"]["box_size"],  # width
+            len(config['prepare']['images']["channels"])  # channels
         ), name='input')
         base = inception_resnet_v2.InceptionResNetV2(
             include_top=False,
             weights=weights,
             input_tensor=input_tensor,
-            pooling=config["model"]["pooling"],
+            pooling=config["train"]["model"]["params"]["pooling"],
             classes=dset.targets[0].shape[1]
         )
-        base.get_layer(index=-1).name = "global_{}_pool".format(config["model"]["pooling"])
+        base.get_layer(index=-1).name = "global_{}_pool".format(config["train"]["model"]["params"]["pooling"])
         # Create output embedding for each target
         class_outputs = []
         i = 0
@@ -50,7 +50,7 @@ def define_model(config, dset):
         model = Model(input_tensor, class_outputs)
 
     # Define optimizer and loss
-    optimizer = Adam(lr=config['model']['params']['learning_rate'])
+    optimizer = Adam(lr=config['training']['model']['params']['learning_rate'])
     loss = 'categorical_crossentropy'
 
     return model, optimizer, loss

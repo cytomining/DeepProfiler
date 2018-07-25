@@ -59,7 +59,7 @@
             "locations_field": "R",
             "box_size": 16,
             "field": "Sampling",
-            "alpha": 0.2    
+            "alpha": 0.2
         },
           "queueing": {
             "queue_size": 6,
@@ -81,15 +81,15 @@
       "feature_layer": "z_mean",
       "checkpoint": "checkpoint_0003.hdf5",
       "gpu": "0",
-      "pre-trained": false
+      "pretrained": false
     },
     "paths": {
         "locations": "/inputs/locations",
         "config_folder": "/inputs/config",
         "images": "/inputs/images",
         "metadata": "/inputs/metadata",
-        "pre-processed": "/inputs/pre-processed",
-        "pre-trained": "/inputs/pre-trained",
+        "preprocessed": "/inputs/preprocessed",
+        "pretrained": "/inputs/pretrained",
         "intensities": "/outputs/intensities",
         "compressed_images": "/outputs/compressed/images",
         "compressed_metadata": "/outputs/compressed/metadata",

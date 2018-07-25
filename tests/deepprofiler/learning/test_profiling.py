@@ -152,7 +152,7 @@ def test_extract_features(profile, metadata, locations, checkpoint):
     image = np.random.randint(0, 256, (128, 128, 3), dtype=np.uint8)
     profile.configure()
     profile.extract_features(None, image, meta)
-    output_file = profile.config["profiling"]["output_dir"] + "/{}_{}_{}.npz"\
+    output_file = profile.config["paths"]["features"] + "/{}_{}_{}.npz"\
         .format(meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
     assert os.path.isfile(output_file)
 
@@ -160,6 +160,6 @@ def test_extract_features(profile, metadata, locations, checkpoint):
 def test_profile(config, dataset, data, locations, checkpoint):
     deepprofiler.learning.profiling.profile(config, dataset)
     for index, row in dataset.meta.data.iterrows():
-        output_file = config["profiling"]["output_dir"] + "/{}_{}_{}.npz" \
+        output_file = config["paths"]["features"] + "/{}_{}_{}.npz" \
             .format(row["Metadata_Plate"], row["Metadata_Well"], row["Metadata_Site"])
         assert os.path.isfile(output_file)
