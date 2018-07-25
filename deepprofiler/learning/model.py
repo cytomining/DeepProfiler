@@ -89,13 +89,13 @@ class DeepProfilerModel(ABC):
             callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
 
             callbacks = [callback_model_checkpoint, callback_csv]
+
+            previous_model = output_file.format(epoch=epoch - 1)
+            if epoch >= 1 and os.path.isfile(previous_model):
+                self.model.load_weights(previous_model)
+                print("Weights from previous model loaded:", previous_model)
         else:
             callbacks = None
-
-        previous_model = output_file.format(epoch=epoch - 1)
-        if epoch >= 1 and os.path.isfile(previous_model):
-            self.model.load_weights(previous_model)
-            print("Weights from previous model loaded:", previous_model)
 
         epochs = self.config["model"]["params"]["epochs"]
         steps = self.config["model"]["params"]["steps"]
