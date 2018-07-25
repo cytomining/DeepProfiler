@@ -241,6 +241,7 @@ class CropGenerator(object):
     def stop(self, session):
         self.coord.request_stop()
         self.coord.join(self.queue_threads)
+        session.close()
         gc.collect()
 
 

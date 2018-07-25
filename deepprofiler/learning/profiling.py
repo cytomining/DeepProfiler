@@ -47,9 +47,11 @@ class Profile(object):
 
     def configure(self):
         checkpoint = self.config["profiling"]["checkpoint"]
-        self.dpmodel.feature_model.load_weights(checkpoint)
+        if checkpoint is not None:
+            self.dpmodel.feature_model.load_weights(checkpoint)
         self.feat_extractor = keras.Model(self.dpmodel.feature_model.inputs, self.dpmodel.feature_model.get_layer(
             self.config["profiling"]["feature_layer"]).output)
+        
         # Session configuration
         configuration = tf.ConfigProto()
         configuration.gpu_options.allow_growth = True
@@ -88,7 +90,10 @@ class Profile(object):
                             )
         num_features = self.config["model"]["feature_dim"]
         # Initialize data buffer
-        data = np.zeros(shape=(total_crops, num_features))
+        if self.config["profiling"]["repeated_channels"]:
+            data = np.zeros(shape=(self.num_channels, total_crops, num_features))
+        else:
+            data = np.zeros(shape=(total_crops, num_features))
         b = 0
         start = tic()
 
@@ -97,8 +102,11 @@ class Profile(object):
         for batch in self.profile_crop_generator.generate(self.sess):
             crops = batch[0]
             feats = self.feat_extractor.predict(crops)
-            # feats = np.reshape(feats, (self.num_channels, batch_size, num_features))
-            data[b * batch_size:(b + 1) * batch_size, :] = feats
+            if self.config["profiling"]["repeated_channels"]:
+                feats = np.reshape(feats, (self.num_channels, batch_size, num_features))
+                data[:, b * batch_size:(b + 1) * batch_size, :] = feats
+            else:
+                data[b * batch_size:(b + 1) * batch_size, :] = feats
             b += 1
             batches.append(batch)
 
