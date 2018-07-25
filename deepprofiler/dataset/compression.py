@@ -11,7 +11,7 @@ import deepprofiler.dataset.illumination_statistics
 import deepprofiler.dataset.image_dataset
 
 def png_dir(output_dir, plate_name):
-    return output_dir + "/" + plate_name + "/"
+    return os.path.join(output_dir, plate_name)
 
 #################################################
 ## COMPRESSION OF TIFF IMAGES INTO PNGs
@@ -71,7 +71,7 @@ class Compress():
     # Main method. Downscales, stretches histogram, and saves as PNG
     def process_image(self, index, img, meta):
         self.count += 1
-        deepprofiler.dataset.utils.printProgress(self.count, self.expected)
+        deepprofiler.dataset.utils.print_progress(self.count, self.expected)
         for c in range(len(self.channels)):
             # Illumination correction
             # TODO: Can this operation be applied at once in all channels?

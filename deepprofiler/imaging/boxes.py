@@ -7,7 +7,7 @@ import random
 ## BOUNDING BOX HANDLING
 #################################################
 
-def getLocations(image_key, config, randomize=True, seed=None):
+def get_locations(image_key, config, randomize=True, seed=None):
     keys = image_key.split("/")
     locations_file = "{}/{}-{}.csv".format(
         keys[0],
@@ -27,12 +27,12 @@ def getLocations(image_key, config, randomize=True, seed=None):
         x_key = config["train"]["sampling"]["locations_field"] + "_Location_Center_X"
         return pd.DataFrame(columns=[x_key, y_key])
 
-def loadBatch(dataset, config):
+def load_batch(dataset, config):
     batch = dataset.getTrainBatch(config["train"]["sampling"]["images"])
-    batch["locations"] = [ getLocations(x, config) for x in batch["keys"] ]
+    batch["locations"] = [ get_locations(x, config) for x in batch["keys"] ]
     return batch
 
-def prepareBoxes(batch, config):
+def prepare_boxes(batch, config):
     locationsBatch = batch["locations"]
     image_targets = batch["targets"]
     images = batch["images"]

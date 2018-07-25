@@ -49,7 +49,7 @@
                 "conv_blocks": 1,
                 "feature_dim": 100,
                 "latent_dim": 100,
-                "epsilon_std": 1
+                "epsilon_std": 1.0
             },
             "save_all": false
         },
@@ -101,5 +101,4 @@
         "index": "/inputs/metadata/index.csv",
         "config_file": "/inputs/config/config.json"
     }
-  }
-  
+}

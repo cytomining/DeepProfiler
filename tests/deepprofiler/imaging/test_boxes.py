@@ -73,12 +73,12 @@ def loadbatch(dataset, metadata, out_dir, config, make_struct):
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data['R'][i // 3]), images[:, :, i])
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data['G'][i // 3]), images[:, :, i + 1])
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data['B'][i // 3]), images[:, :, i + 2])
-    result = deepprofiler.imaging.boxes.loadBatch(dataset, config)
+    result = deepprofiler.imaging.boxes.load_batch(dataset, config)
     return result
 
-def test_getLocations(config, make_struct):
+def test_get_locations(config, make_struct):
     test_image_key = "dog/cat"
-    test_output = deepprofiler.imaging.boxes.getLocations(test_image_key, config)
+    test_output = deepprofiler.imaging.boxes.get_locations(test_image_key, config)
     expected_output = pd.DataFrame(columns=["R_Location_Center_X", "R_Location_Center_Y"])
     assert test_output.equals(expected_output)
     
@@ -90,20 +90,20 @@ def test_getLocations(config, make_struct):
     expected_output.to_csv(test_locations_path)
     expected_output=pd.read_csv(test_locations_path)
     assert os.path.exists(test_locations_path) == True
-    test_output = deepprofiler.imaging.boxes.getLocations(test_image_key, config)
+    test_output = deepprofiler.imaging.boxes.get_locations(test_image_key, config)
     assert test_output.equals(expected_output)
     
     expected_output = pd.DataFrame(index=range(10),columns=["R_Location_Center_X", "R_Location_Center_Y"])
     expected_output.to_csv(test_locations_path,mode='w')
     expected_output=pd.read_csv(test_locations_path)
-    test_output = deepprofiler.imaging.boxes.getLocations(test_image_key, config)
+    test_output = deepprofiler.imaging.boxes.get_locations(test_image_key, config)
     assert test_output.equals(expected_output)
     
     expected_output = pd.DataFrame(index=range(60),columns=["R_Location_Center_X", "R_Location_Center_Y"])
     expected_output.to_csv(test_locations_path,mode='w')
     expected_output = pd.read_csv(test_locations_path)
     expected_output = expected_output.sample(n=10,random_state=1414)
-    test_output = deepprofiler.imaging.boxes.getLocations(test_image_key, config,randomize=True,seed=1414)
+    test_output = deepprofiler.imaging.boxes.get_locations(test_image_key, config,randomize=True,seed=1414)
     assert test_output.equals(expected_output)
     
 def test_load_batch(loadbatch):
@@ -114,7 +114,7 @@ def test_load_batch(loadbatch):
     
 def test_prepare_boxes(config):
     test_batch = {"images": [np.random.randint(256, size=(64, 64), dtype=np.uint16)], "targets": [[1]], "locations": [pd.DataFrame(data=[[32,32]],columns=["R_Location_Center_X", "R_Location_Center_Y"])]}
-    test_result = deepprofiler.imaging.boxes.prepareBoxes(test_batch,config)
+    test_result = deepprofiler.imaging.boxes.prepare_boxes(test_batch,config)
     assert np.array(test_result[0]).shape == (1,4)
     assert np.array(test_result[1]).shape == (1,)
     assert np.array(test_result[2]).shape == (1,1)

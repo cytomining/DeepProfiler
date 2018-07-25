@@ -8,7 +8,7 @@ def relative_paths(df, target, path, filename, root):
     df[target] = df[path].str.replace(root, "") + df[filename]
     return df.drop([path, filename], axis=1)
 
-def printProgress (iteration, total, prefix='Progress', suffix='Complete', decimals=1, barLength=50):
+def print_progress (iteration, total, prefix='Progress', suffix='Complete', decimals=1, barLength=50):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -30,19 +30,19 @@ def printProgress (iteration, total, prefix='Progress', suffix='Complete', decim
             sys.stdout.write('\n')
             sys.stdout.flush()
     elif sum([iteration<0,total<0,barLength<0]) > 1:
-        sys.stdout.write('\rError: printProgress() function received multiple negative values.')
+        sys.stdout.write('\rError: print_progress() function received multiple negative values.')
         sys.stdout.flush()
     elif iteration < 0:
-        sys.stdout.write('\rError: printProgress() function received a negative "iteration" value.')
+        sys.stdout.write('\rError: print_progress() function received a negative "iteration" value.')
         sys.stdout.flush()
     elif total < 0:
-        sys.stdout.write('\rError: printProgress() function received a negative "total" value.')
+        sys.stdout.write('\rError: print_progress() function received a negative "total" value.')
         sys.stdout.flush()
     elif barLength < 0:
-        sys.stdout.write('\rError: printProgress() function received a negative "barLength" value.')
+        sys.stdout.write('\rError: print_progress() function received a negative "barLength" value.')
         sys.stdout.flush()
     elif iteration > total:
-        sys.stdout.write('\rError: printProgress() function received an "iteration" value greater than the "total" value.')
+        sys.stdout.write('\rError: print_progress() function received an "iteration" value greater than the "total" value.')
         sys.stdout.flush()
 
 def parse_delimiter(delimiter):
@@ -108,7 +108,7 @@ label_values = maps[label_field].unique()
 print("Unique {}: {}".format(label_field, len(label_values)))
 for i in range(len(label_values)):
     maps.loc[lambda df: df[label_field] == label_values[i], label_field] = i
-    printProgress(i + 1, len(label_values), prefix=label_field)
+    print_progress(i + 1, len(label_values), prefix=label_field)
 
 # Load barcodes and csv files
 barcodes = Metadata(config["original_images"]["barcode_file"], "single")
@@ -160,7 +160,7 @@ replicate_distribution = {}
 for i in range(len(label_values)):
     mask1 = metadata[label_field] == i
     wells = metadata[mask1]["plate_well"].unique()
-    printProgress(i + 1, len(label_values), "Replicates")
+    print_progress(i + 1, len(label_values), "Replicates")
     replicate = 1
     for j in range(len(wells)):
         mask2 = metadata["plate_well"] == wells[j]

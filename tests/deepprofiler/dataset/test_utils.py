@@ -6,24 +6,24 @@ from io import StringIO
 import multiprocessing
 import shutil
 
-def test_printProgress():
+def test_print_progress():
     # setup the environment
     backup = sys.stdout
     test_iterations = [-1,0,1,2,3,4,5]
     test_outputs = []
-    expected_outputs = ['\rError: printProgress() function received a negative "iteration" value.',
+    expected_outputs = ['\rError: print_progress() function received a negative "iteration" value.',
                         '\rProgress |' + '-' * 50 +'| 0.0% Complete',
                         '\rProgress |' + '#' * 12 + '-' * 38 +'| 25.0% Complete',
                         '\rProgress |' + '#' * 25 + '-' * 25 +'| 50.0% Complete',
                         '\rProgress |' + '#' * 38 + '-' * 12 +'| 75.0% Complete',
                         '\rProgress |' + '#' * 50 +'| 100.0% Complete\n',
-                        '\rError: printProgress() function received an "iteration" value greater than the "total" value.']
+                        '\rError: print_progress() function received an "iteration" value greater than the "total" value.']
     test_total = 4
     for iteration in test_iterations:
 
         # ####
         sys.stdout = StringIO()     # capture output
-        deepprofiler.dataset.utils.printProgress(iteration,test_total)
+        deepprofiler.dataset.utils.print_progress(iteration,test_total)
         out = sys.stdout.getvalue() # release output
         #####
         
@@ -33,12 +33,12 @@ def test_printProgress():
     
     test_iteration = 1
     test_total = -1
-    expected_output = '\rError: printProgress() function received a negative "total" value.'
+    expected_output = '\rError: print_progress() function received a negative "total" value.'
     
 
     # ####
     sys.stdout = StringIO()     # capture output
-    deepprofiler.dataset.utils.printProgress(test_iteration,test_total)
+    deepprofiler.dataset.utils.print_progress(test_iteration,test_total)
     out = sys.stdout.getvalue() # release output
     #####
                 
@@ -46,12 +46,12 @@ def test_printProgress():
     
     test_total = 2
     test_barLength = -100
-    expected_output = '\rError: printProgress() function received a negative "barLength" value.'
+    expected_output = '\rError: print_progress() function received a negative "barLength" value.'
     
 
     # ####
     sys.stdout = StringIO()     # capture output
-    deepprofiler.dataset.utils.printProgress(test_iteration,test_total,barLength=test_barLength)
+    deepprofiler.dataset.utils.print_progress(test_iteration,test_total,barLength=test_barLength)
     out = sys.stdout.getvalue() # release output
     #####
                 
@@ -60,12 +60,12 @@ def test_printProgress():
     test_total = -2
     test_iteration = -1
     test_barLength = -100
-    expected_output = '\rError: printProgress() function received multiple negative values.'
+    expected_output = '\rError: print_progress() function received multiple negative values.'
     
 
     # ####
     sys.stdout = StringIO()     # capture output
-    deepprofiler.dataset.utils.printProgress(test_iteration,test_total,barLength=test_barLength)
+    deepprofiler.dataset.utils.print_progress(test_iteration,test_total,barLength=test_barLength)
     out = sys.stdout.getvalue() # release output
     #####
                 
@@ -82,7 +82,7 @@ def test_printProgress():
 
     # ####
     sys.stdout = StringIO()     # capture output
-    deepprofiler.dataset.utils.printProgress(test_iteration,test_total,prefix=test_prefix,suffix=test_suffix,decimals=test_decimals,barLength=test_barLength)
+    deepprofiler.dataset.utils.print_progress(test_iteration,test_total,prefix=test_prefix,suffix=test_suffix,decimals=test_decimals,barLength=test_barLength)
     out = sys.stdout.getvalue() # release output
     #####
                 

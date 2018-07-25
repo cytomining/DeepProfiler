@@ -66,7 +66,6 @@ def test_write_compression_index(config, metadata, dataset, make_struct):
     deepprofiler.dataset.indexing.write_compression_index(config)
     test_output = pd.read_csv(config["paths"]["compressed_metadata"]+"/compressed.csv", index_col=0)
     assert test_output.shape == (12,8)
-    #assert test_output.values[31][5] == 'Week1_22123/pngs/Week1_150607_B03_s2_w25CEC2D43-E105-42BB-BC00-6962B3ADEBED.png'      
 
 def test_split_index(config, metadata, dataset):
     test_parts = 3
@@ -87,7 +86,4 @@ def test_split_index(config, metadata, dataset):
     assert test_outputs[0].shape == (4,8)
     assert test_outputs[1].shape == (4,8)
     assert test_outputs[2].shape == (4,8)
-    #assert test_outputs[0].values[5][5] == 'Week1_22123/pngs/Week1_150607_B03_s2_w25CEC2D43-E105-42BB-BC00-6962B3ADEBED.png'
-    #assert test_outputs[1].values[11][6] == 'Week1_22123/pngs/Week1_150607_B04_s2_w4342F300D-60F8-4256-A637-F1367E14BE5E.png'
-    #assert test_outputs[2].values[0][4] == 'Week1_22141/pngs/Week1_150607_B03_s2_w1A7BCCCBB-5B8B-45B2-858A-A57A37EE0D58.png'
-    #shutil.rmtree(temp)   
+ 

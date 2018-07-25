@@ -133,9 +133,9 @@ class CropGenerator(object):
             while not coord.should_stop():
                 try:
                     # Load images and cell boxes
-                    batch = deepprofiler.imaging.boxes.loadBatch(self.dset, self.config) #TODO
+                    batch = deepprofiler.imaging.boxes.load_batch(self.dset, self.config) #TODO
                     images = np.reshape(batch["images"], self.input_variables["shapes"]["batch"])
-                    boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepareBoxes(batch, self.config)
+                    boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
                     feed_dict = {
                             self.input_variables["image_ph"]:images,
                             self.input_variables["boxes_ph"]:boxes,
@@ -279,7 +279,7 @@ class SingleImageCropGenerator(CropGenerator):
 
         batch = {"images": [], "locations": [], "targets": [[]]}
         batch["images"].append(image_array)
-        batch["locations"].append(deepprofiler.imaging.boxes.getLocations(image_key, self.config, randomize=False))
+        batch["locations"].append(deepprofiler.imaging.boxes.get_locations(image_key, self.config, randomize=False))
         for i in range(num_targets):
             tgt = self.dset.targets[i]
             batch["targets"][0].append(tgt.get_values(meta))
@@ -288,7 +288,7 @@ class SingleImageCropGenerator(CropGenerator):
             batch["locations"][0] = batch["locations"][0].head(self.batch_size)
 
         has_orientation = len(batch["locations"][0].columns) > 2
-        boxes, box_ind, targets, mask_ind = deepprofiler.imaging.boxes.prepareBoxes(batch, self.config)
+        boxes, box_ind, targets, mask_ind = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
         batch["images"] = np.reshape(image_array, self.input_variables["shapes"]["batch"])
         feed_dict = {
             self.input_variables["image_ph"]: batch["images"],

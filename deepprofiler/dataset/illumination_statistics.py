@@ -8,7 +8,7 @@ from .illumination_correction import IlluminationCorrection
 
 
 def illum_stats_filename(output_dir, plate_name):
-    return output_dir + "/" + plate_name + "/" + plate_name + ".pkl"
+    return "{}/{}/{}.pkl".format(output_dir, plate_name, plate_name)
 
 
 def percentile(prob, p):

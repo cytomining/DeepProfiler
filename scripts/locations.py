@@ -85,7 +85,7 @@ def read_plates(metaFile):
         yield plate
     return
 
-def printProgress (iteration, total, prefix='Progress', suffix='Complete', decimals=1, barLength=100):
+def print_progress (iteration, total, prefix='Progress', suffix='Complete', decimals=1, barLength=100):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -107,19 +107,19 @@ def printProgress (iteration, total, prefix='Progress', suffix='Complete', decim
             sys.stdout.write('\n')
             sys.stdout.flush()
     elif sum([iteration<0,total<0,barLength<0]) > 1:
-        sys.stdout.write('\rError: printProgress() function received multiple negative values.')
+        sys.stdout.write('\rError: print_progress() function received multiple negative values.')
         sys.stdout.flush()
     elif iteration < 0:
-        sys.stdout.write('\rError: printProgress() function received a negative "iteration" value.')
+        sys.stdout.write('\rError: print_progress() function received a negative "iteration" value.')
         sys.stdout.flush()
     elif total < 0:
-        sys.stdout.write('\rError: printProgress() function received a negative "total" value.')
+        sys.stdout.write('\rError: print_progress() function received a negative "total" value.')
         sys.stdout.flush()
     elif barLength < 0:
-        sys.stdout.write('\rError: printProgress() function received a negative "barLength" value.')
+        sys.stdout.write('\rError: print_progress() function received a negative "barLength" value.')
         sys.stdout.flush()
     elif iteration > total:
-        sys.stdout.write('\rError: printProgress() function received an "iteration" value greater than the "total" value.')
+        sys.stdout.write('\rError: print_progress() function received an "iteration" value greater than the "total" value.')
         sys.stdout.flush()
 
 def write_locations(field, query_template, plate_name, row, conn, config):
@@ -174,7 +174,7 @@ def create_cell_indices(args):
     for index, row in plate.data.iterrows():
         write_locations("Cells", query_template, plate_name, row, conn, config)
         write_locations("Nuclei", query_template, plate_name, row, conn, config)
-        printProgress(iteration, len(plate.data), prefix='Locations in plate ' + str(plate_name))
+        print_progress(iteration, len(plate.data), prefix='Locations in plate ' + str(plate_name))
         iteration += 1
     print("")
 
