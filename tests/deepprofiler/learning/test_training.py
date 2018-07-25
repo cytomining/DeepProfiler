@@ -39,7 +39,6 @@ def make_struct(config):
             os.makedirs(path+"/")
     return
 
-
 @pytest.fixture(scope='function')
 def metadata(out_dir, make_struct):
     filename = os.path.join(out_dir, 'index.csv')

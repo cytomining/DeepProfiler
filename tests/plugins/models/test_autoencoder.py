@@ -94,7 +94,7 @@ def test_define_model(config, dataset):
 def test_init(config, dataset, generator, val_generator):
     dpmodel = plugins.models.autoencoder.ModelClass(config, dataset, generator, val_generator)
     autoencoder, encoder, decoder, optimizer, loss = plugins.models.autoencoder.define_model(config, dataset)
-    assert dpmodel.model.__eq__(autoencoder)
+    assert dpmodel.feature_model.__eq__(autoencoder)
     assert dpmodel.encoder.__eq__(encoder)
     assert dpmodel.decoder.__eq__(decoder)
     assert dpmodel.optimizer.__eq__(optimizer)

@@ -40,7 +40,6 @@ def make_struct(config):
             os.makedirs(path+"/")
     return
 
-
 @pytest.fixture(scope='function')
 def metadata(out_dir, make_struct):
     filename = os.path.join(out_dir, 'index.csv')
@@ -123,7 +122,7 @@ def model(config, dataset, crop_generator, val_crop_generator):
 
 def test_init(config, dataset, crop_generator, val_crop_generator):
     dpmodel = DeepProfilerModel(config, dataset, crop_generator, val_crop_generator)
-    assert dpmodel.model is None
+    assert dpmodel.feature_model is None
     assert dpmodel.config == config
     assert dpmodel.dset == dataset
     assert isinstance(dpmodel.train_crop_generator, crop_generator)

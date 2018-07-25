@@ -46,9 +46,12 @@ class Profile(object):
 
 
     def configure(self):
-        checkpoint = self.config["paths"]["checkpoints"]+"/"+self.config["profile"]["checkpoint"]
-        self.dpmodel.model.load_weights(checkpoint)
-        self.feat_extractor = keras.Model(self.dpmodel.model.input, self.dpmodel.model.get_layer(self.config["profile"]["feature_layer"]).output)
+        if self.config["profile"]["checkpoint"] is not None:
+            checkpoint = self.config["paths"]["checkpoints"]+"/"+self.config["profile"]["checkpoint"]
+            self.dpmodel.feature_model.load_weights(checkpoint)
+        self.feat_extractor = keras.Model(self.dpmodel.feature_model.inputs, self.dpmodel.feature_model.get_layer(
+            self.config["profile"]["feature_layer"]).output)
+        
         # Session configuration
         configuration = tf.ConfigProto()
         configuration.gpu_options.allow_growth = True
@@ -70,7 +73,7 @@ class Profile(object):
             return True
     
     # Function to process a single image
-    def extract_features(self, key, image_array, meta):
+    def extract_features(self, key, image_array, meta):  # key is a placeholder
         output_file = self.config["paths"]["features"] + "/{}_{}_{}.npz"
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
 
@@ -84,7 +87,10 @@ class Profile(object):
                             )
         num_features = self.config["train"]["model"]["params"]["feature_dim"]
         # Initialize data buffer
-        data = np.zeros(shape=(total_crops, num_features))
+        if self.config["profiling"]["repeated_channels"]:
+            data = np.zeros(shape=(self.num_channels, total_crops, num_features))
+        else:
+            data = np.zeros(shape=(total_crops, num_features))
         b = 0
         start = tic()
 
@@ -93,8 +99,11 @@ class Profile(object):
         for batch in self.profile_crop_generator.generate(self.sess):
             crops = batch[0]
             feats = self.feat_extractor.predict(crops)
-            # feats = np.reshape(feats, (self.num_channels, batch_size, num_features))
-            data[b * batch_size:(b + 1) * batch_size, :] = feats
+            if self.config["profiling"]["repeated_channels"]:
+                feats = np.reshape(feats, (self.num_channels, batch_size, num_features))
+                data[:, b * batch_size:(b + 1) * batch_size, :] = feats
+            else:
+                data[b * batch_size:(b + 1) * batch_size, :] = feats
             b += 1
             batches.append(batch)
 

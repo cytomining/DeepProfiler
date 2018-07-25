@@ -94,7 +94,7 @@ def test_define_model(config, dataset):
 def test_init(config, dataset, generator, val_generator):
     dpmodel = plugins.models.vae.ModelClass(config, dataset, generator, val_generator)
     vae, encoder, decoder, optimizer, loss = plugins.models.vae.define_model(config, dataset)
-    assert dpmodel.model.__eq__(vae)
+    assert dpmodel.feature_model.__eq__(vae)
     assert dpmodel.encoder.__eq__(encoder)
     assert dpmodel.generator.__eq__(decoder)
     assert dpmodel.optimizer.__eq__(optimizer)

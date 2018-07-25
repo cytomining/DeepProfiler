@@ -23,7 +23,7 @@ import deepprofiler.dataset.utils
 class DeepProfilerModel(ABC):
 
     def __init__(self, config, dset, crop_generator, val_crop_generator):
-        self.model = None
+        self.feature_model = None
         self.loss = None
         self.optimizer = None
         self.config = config
@@ -40,11 +40,11 @@ class DeepProfilerModel(ABC):
         np.random.seed(seed)
         tf.set_random_seed(seed)
 
-    def train(self, epoch=1, metrics=['accuracy']):
-        if self.model is None:
-            raise ValueError("Model is not defined!")
-        print(self.model.summary())
-        self.model.compile(self.optimizer, self.loss, metrics)
+    def train(self, epoch=1, metrics=['accuracy']):  # TODO: simplify default train method
+        if 'feature_model' not in vars(self) or self.feature_model is None:
+            raise ValueError("Feature model is not defined.")
+        print(self.feature_model.summary())
+        self.feature_model.compile(self.optimizer, self.loss, metrics)
         timestamp = deepprofiler.dataset.utils.tic()
         if self.config["train"]["comet_ml"]["track"]:
             experiment = Experiment(
@@ -64,15 +64,15 @@ class DeepProfilerModel(ABC):
         configuration.gpu_options.visible_device_list = self.config["train"]["gpus"]
         crop_graph = tf.Graph()
         with crop_graph.as_default():
-            val_session = tf.Session(config=configuration) #TODO
-            keras.backend.set_session(val_session) #TODO
-            self.val_crop_generator.start(val_session) #TODO
+            val_session = tf.Session(config=configuration)
+            keras.backend.set_session(val_session)
+            self.val_crop_generator.start(val_session)
             x_validation, y_validation = deepprofiler.learning.validation.validate(
                 self.config,
                 self.dset,
                 self.val_crop_generator,
-                val_session) #TODO
-        gc.collect() #TODO
+                val_session)
+        gc.collect()
         # Start main session
         main_session = tf.Session(config=configuration)
         keras.backend.set_session(main_session)
@@ -97,7 +97,7 @@ class DeepProfilerModel(ABC):
 
         previous_model = output_file.format(epoch=epoch - 1)
         if epoch >= 1 and os.path.isfile(previous_model):
-            self.model.load_weights(previous_model)
+            self.feature_model.load_weights(previous_model)
             print("Weights from previous model loaded:", previous_model)
 
         epochs = self.config["train"]["model"]["epochs"]
@@ -109,7 +109,7 @@ class DeepProfilerModel(ABC):
 
 
         keras.backend.get_session().run(tf.initialize_all_variables())
-        self.model.fit_generator(
+        self.feature_model.fit_generator(
             generator=self.train_crop_generator.generate(crop_session),
             steps_per_epoch=steps,
             epochs=epochs,

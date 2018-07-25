@@ -92,6 +92,6 @@ def test_define_model(config, dataset):
 def test_init(config, dataset, generator, val_generator):
     dpmodel = plugins.models.cnn.ModelClass(config, dataset, generator, val_generator)
     model, optimizer, loss = plugins.models.cnn.define_model(config, dataset)
-    assert dpmodel.model.__eq__(model)
+    assert dpmodel.feature_model.__eq__(model)
     assert dpmodel.optimizer.__eq__(optimizer)
     assert dpmodel.loss.__eq__(loss)
