@@ -156,8 +156,8 @@ def checkpoint(config, dataset):
         .SingleImageGeneratorClass
     dpmodel = importlib.import_module("plugins.models.{}".format(config['model']['name'])) \
         .ModelClass(config, dataset, crop_generator, profile_crop_generator)
-    dpmodel.model.compile(dpmodel.optimizer, dpmodel.loss)
-    dpmodel.model.save_weights(config["profiling"]["checkpoint"])
+    dpmodel.feature_model.compile(dpmodel.optimizer, dpmodel.loss)
+    dpmodel.feature_model.save_weights(config["profiling"]["checkpoint"])
 
 
 @pytest.fixture(scope='function')
@@ -183,8 +183,6 @@ def test_init(config, dataset):
     assert isinstance(prof.profile_crop_generator, importlib.import_module(
             "plugins.crop_generators.{}".format(config['model']['crop_generator'])).SingleImageGeneratorClass)
     assert isinstance(prof.dpmodel, importlib.import_module("plugins.models.{}".format(config['model']['name'])).ModelClass)
-
-    # tf.assert_equal(profile.raw_crops, tf.placeholder(tf.float32, shape=(None, 92, 92, 3)))
 
 
 def test_configure(profile, checkpoint):
