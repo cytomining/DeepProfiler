@@ -1,17 +1,18 @@
+from comet_ml import Experiment
 import importlib
 import os
-import random
-
-import numpy as np
-import pandas as pd
 import pytest
+import keras
+import numpy as np
+import random
+import pandas as pd
 import skimage.io
 
-import deepprofiler.dataset.target
-import deepprofiler.dataset.metadata
-import deepprofiler.dataset.image_dataset
 import deepprofiler.imaging.cropping
-from deepprofiler.learning.model import DeepProfilerModel
+import deepprofiler.dataset.image_dataset
+import deepprofiler.dataset.metadata
+import deepprofiler.dataset.target
+import plugins.models.gan
 
 
 def __rand_array():
@@ -27,12 +28,13 @@ def out_dir(tmpdir):
 def config(out_dir):
     return {
         "model": {
-            "name": "cnn",
-            "crop_generator": "crop_generator",
+            "name": "gan",
+            "crop_generator": "autoencoder_crop_generator",
             "feature_dim": 128,
+            "latent_dim": 128,
             "conv_blocks": 3,
             "params": {
-                "learning_rate": 0.0001,
+                "learning_rate": 0.0002,
                 "batch_size": 16
             },
         },
@@ -53,7 +55,7 @@ def config(out_dir):
             "learning_rate": 0.001,
             "output": out_dir,
             "epochs": 2,
-            "steps": 10,
+            "steps": 2,
             "minibatch": 2,
             "visible_gpus": "0"
         },
@@ -130,53 +132,63 @@ def locations(out_dir, metadata, config):
 
 
 @pytest.fixture(scope='function')
-def crop_generator(config):
-    module = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))
-    importlib.invalidate_caches()
-    generator = module.GeneratorClass
-    return generator
+def generator():
+    return deepprofiler.imaging.cropping.CropGenerator
 
 
 @pytest.fixture(scope='function')
-def val_crop_generator(config):
-    module = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))
-    importlib.invalidate_caches()
-    generator = module.SingleImageGeneratorClass
-    return generator
+def val_generator():
+    return deepprofiler.imaging.cropping.SingleImageCropGenerator
 
 
 @pytest.fixture(scope='function')
-def model(config, dataset, crop_generator, val_crop_generator):
-    module = importlib.import_module("plugins.models.{}".format(config['model']['name']))
-    importlib.invalidate_caches()
-    dpmodel = module.ModelClass(config, dataset, crop_generator, val_crop_generator)
-    return dpmodel
+def model(config, dataset, generator, val_generator):
+    return plugins.models.gan.ModelClass(config, dataset, generator, val_generator)
 
 
-def test_init(config, dataset, crop_generator, val_crop_generator):
-    dpmodel = DeepProfilerModel(config, dataset, crop_generator, val_crop_generator)
-    assert dpmodel.feature_model is None
-    assert dpmodel.config == config
-    assert dpmodel.dset == dataset
-    assert isinstance(dpmodel.train_crop_generator, crop_generator)
-    assert isinstance(dpmodel.val_crop_generator, val_crop_generator)
-    assert dpmodel.random_seed is None
+def test_gan(config, generator, val_generator):
+    gan = plugins.models.gan.GAN(config, generator, val_generator)
+    assert gan.config == config
+    assert gan.crop_generator == generator
+    assert gan.val_crop_generator == val_generator
+    assert gan.img_cols == config["sampling"]["box_size"]
+    assert gan.img_rows == config["sampling"]["box_size"]
+    assert gan.channels == len(config["image_set"]["channels"])
+    assert gan.img_shape == (
+        config["sampling"]["box_size"],
+        config["sampling"]["box_size"],
+        len(config["image_set"]["channels"])
+    )
+    assert gan.latent_dim == config["model"]["latent_dim"]
+    assert isinstance(gan.generator, keras.Model)
+    assert isinstance(gan.discriminator, keras.Model)
+    assert isinstance(gan.discriminator_fixed, keras.Model)
+    assert isinstance(gan.combined, keras.Model)
+    assert gan.generator in gan.combined.layers
+    assert gan.discriminator not in gan.combined.layers
+    assert gan.discriminator_fixed in gan.combined.layers
+    assert gan.generator.trainable
+    assert gan.discriminator.trainable
+    assert not gan.discriminator_fixed.trainable
 
 
-def test_seed(model):
-    seed = random.randint(0, 256)
-    model.seed(seed)
-    assert model.random_seed == seed
+def test_init(config, dataset, generator, val_generator):
+    dpmodel = plugins.models.gan.ModelClass(config, dataset, generator, val_generator)
+    gan = plugins.models.gan.GAN(config, generator, val_generator)
+    assert dpmodel.gan.__eq__(gan)
+    assert isinstance(dpmodel.feature_model, keras.Model)
 
 
 def test_train(model, out_dir, data, locations):
     model.train()
-    assert os.path.exists(os.path.join(out_dir, "checkpoint_0001.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "checkpoint_0002.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "log.csv"))
+    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_0001.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "generator_epoch_0001.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_0002.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "generator_epoch_0002.hdf5"))
     epoch = 3
     model.config["training"]["epochs"] = 4
     model.train(epoch)
-    assert os.path.exists(os.path.join(out_dir, "checkpoint_0003.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "checkpoint_0004.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "log.csv"))
+    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_0003.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "generator_epoch_0003.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_0004.hdf5"))
+    assert os.path.exists(os.path.join(out_dir, "generator_epoch_0004.hdf5"))

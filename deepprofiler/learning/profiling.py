@@ -48,8 +48,10 @@ class Profile(object):
     def configure(self):
         checkpoint = self.config["profiling"]["checkpoint"]
         if checkpoint is not None:
-            self.dpmodel.model.load_weights(checkpoint)
-        self.feat_extractor = keras.Model(self.dpmodel.model.input, self.dpmodel.model.get_layer(self.config["profiling"]["feature_layer"]).output)
+            self.dpmodel.feature_model.load_weights(checkpoint)
+        self.feat_extractor = keras.Model(self.dpmodel.feature_model.inputs, self.dpmodel.feature_model.get_layer(
+            self.config["profiling"]["feature_layer"]).output)
+        
         # Session configuration
         configuration = tf.ConfigProto()
         configuration.gpu_options.allow_growth = True
@@ -74,7 +76,7 @@ class Profile(object):
             return True
     
     # Function to process a single image
-    def extract_features(self, key, image_array, meta):
+    def extract_features(self, key, image_array, meta):  # key is a placeholder
         output_file = self.config["profiling"]["output_dir"] + "/{}_{}_{}.npz"
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
 

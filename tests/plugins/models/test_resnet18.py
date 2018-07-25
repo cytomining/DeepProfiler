@@ -124,6 +124,6 @@ def test_define_model(config, dataset):
 def test_init(config, dataset, generator, val_generator):
     dpmodel = plugins.models.resnet18.ModelClass(config, dataset, generator, val_generator)
     model, optimizer, loss = plugins.models.resnet18.define_model(config, dataset)
-    assert dpmodel.model.__eq__(model)
+    assert dpmodel.feature_model.__eq__(model)
     assert dpmodel.optimizer.__eq__(optimizer)
     assert dpmodel.loss.__eq__(loss)

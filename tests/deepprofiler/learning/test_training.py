@@ -31,8 +31,6 @@ def config(out_dir):
             "feature_dim": 128,
             "conv_blocks": 3,
             "params": {
-                "epochs": 3,
-                "steps": 10,
                 "learning_rate": 0.0001,
                 "batch_size": 16
             }
@@ -54,7 +52,7 @@ def config(out_dir):
             "learning_rate": 0.001,
             "output": out_dir,
             "epochs": 2,
-            "steps": 12,
+            "steps": 10,
             "minibatch": 2,
             "visible_gpus": "0"
         },
@@ -141,7 +139,7 @@ def test_learn_model(config, dataset, data, locations, out_dir):
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0002.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "log.csv"))
     epoch = 3
-    config["model"]["params"]['epochs'] = 4
+    config["training"]["epochs"] = 4
     deepprofiler.learning.training.learn_model(config, dataset, epoch)
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0003.hdf5"))
     assert os.path.exists(os.path.join(out_dir, "checkpoint_0004.hdf5"))
