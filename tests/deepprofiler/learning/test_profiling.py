@@ -77,6 +77,7 @@ def config(out_dir):
             "top_k": 2
         },
         "profiling": {
+            "repeated_channels": False,
             "feature_layer": "features",
             "output_dir": out_dir,
             "checkpoint": os.path.join(out_dir, "checkpoint.hdf5"),
