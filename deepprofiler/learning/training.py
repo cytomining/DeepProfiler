@@ -39,6 +39,10 @@ def learn_model(config, dset, epoch=1, seed=None, verbose=1):
 
     if seed is not None:
         model.seed(seed)
-    trained_model, x_validation, y_validation = model.train(epoch, metrics, verbose=verbose)
-    evaluation = trained_model.evaluate(x_validation, y_validation, batch_size=config["validation"]["minibatch"], verbose=0)
-    return evaluation
+    if verbose == 0:
+        trained_model, x_validation, y_validation = model.train(epoch, metrics, verbose=verbose)
+        evaluation = trained_model.evaluate(x_validation, y_validation, batch_size=config["validation"]["minibatch"], verbose=verbose)
+        return evaluation
+    else:
+        model.train(epoch, metrics, verbose=verbose)
+        return None
