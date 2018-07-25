@@ -101,15 +101,17 @@ def locations(out_dir, metadata, config, make_struct):
 @pytest.fixture(scope='function')
 def checkpoint(config, dataset):
     crop_generator = importlib.import_module(
-        "plugins.crop_generators.{}".format(config['model']['crop_generator'])) \
+        "plugins.crop_generators.{}".format(config['train']['model']['crop_generator'])) \
         .GeneratorClass
     profile_crop_generator = importlib.import_module(
-        "plugins.crop_generators.{}".format(config['model']['crop_generator'])) \
+        "plugins.crop_generators.{}".format(config['train']['model']['crop_generator'])) \
         .SingleImageGeneratorClass
-    dpmodel = importlib.import_module("plugins.models.{}".format(config['model']['name'])) \
+    dpmodel = importlib.import_module("plugins.models.{}".format(config['train']['model']['name'])) \
         .ModelClass(config, dataset, crop_generator, profile_crop_generator)
     dpmodel.feature_model.compile(dpmodel.optimizer, dpmodel.loss)
-    dpmodel.feature_model.save_weights(config["profiling"]["checkpoint"])
+    filename = os.path.join(config['paths']['checkpoints'], config["profile"]["checkpoint"])
+    dpmodel.feature_model.save_weights(filename)
+    return filename
 
 
 @pytest.fixture(scope='function')
