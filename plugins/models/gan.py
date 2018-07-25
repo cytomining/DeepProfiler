@@ -68,6 +68,7 @@ class GAN(object):
             raise ValueError("Too many convolutional blocks for the specified crop size!")
         noise = Input(shape=(self.latent_dim,))
         x = Dense(s * s, input_dim=self.latent_dim)(noise)
+        x = LeakyReLU(alpha=0.2)(x)
         x = Reshape((s, s, 1))(x)
         for i in reversed(range(self.config['model']['conv_blocks'])):
             x = Conv2DTranspose(8 * 2 ** i, (3, 3), padding='same')(x)
