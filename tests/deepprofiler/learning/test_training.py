@@ -31,8 +31,6 @@ def config(out_dir):
             "feature_dim": 128,
             "conv_blocks": 3,
             "params": {
-                "epochs": 3,
-                "steps": 10,
                 "learning_rate": 0.0001,
                 "batch_size": 16
             }
@@ -54,7 +52,7 @@ def config(out_dir):
             "learning_rate": 0.001,
             "output": out_dir,
             "epochs": 2,
-            "steps": 12,
+            "steps": 10,
             "minibatch": 2,
             "visible_gpus": "0"
         },
