@@ -125,7 +125,7 @@ def test_gan(config, generator, val_generator):
         config["train"]["sampling"]["box_size"],
         len(config["prepare"]["images"]["channels"])
     )
-    assert gan.latent_dim == config["train"]["model"]["latent_dim"]
+    assert gan.latent_dim == config["train"]["model"]["params"]["latent_dim"]
     assert isinstance(gan.generator, keras.Model)
     assert isinstance(gan.discriminator, keras.Model)
     assert isinstance(gan.discriminator_fixed, keras.Model)
@@ -145,16 +145,16 @@ def test_init(config, dataset, generator, val_generator):
     assert isinstance(dpmodel.feature_model, keras.Model)
 
 
-def test_train(model, out_dir, data, locations):
+def test_train(model, out_dir, data, locations, config, make_struct):
     model.train()
-    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_0001.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "generator_epoch_0001.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_0002.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "generator_epoch_0002.hdf5"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "discriminator_epoch_0001.hdf5"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "generator_epoch_0001.hdf5"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "discriminator_epoch_0002.hdf5"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "generator_epoch_0002.hdf5"))
     epoch = 3
     model.config["train"]["model"]["epochs"] = 4
     model.train(epoch)
-    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_0003.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "generator_epoch_0003.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "discriminator_epoch_0004.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "generator_epoch_0004.hdf5"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "discriminator_epoch_0003.hdf5"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "generator_epoch_0003.hdf5"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "discriminator_epoch_0004.hdf5"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "generator_epoch_0004.hdf5"))

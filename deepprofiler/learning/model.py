@@ -45,7 +45,6 @@ class DeepProfilerModel(ABC):
             raise ValueError("Feature model is not defined.")
         print(self.feature_model.summary())
         self.feature_model.compile(self.optimizer, self.loss, metrics)
-        timestamp = deepprofiler.dataset.utils.tic()
         if self.config["train"]["comet_ml"]["track"]:
             experiment = Experiment(
                 api_key=self.config["train"]["comet_ml"]["api_key"],
@@ -77,21 +76,13 @@ class DeepProfilerModel(ABC):
         main_session = tf.Session(config=configuration)
         keras.backend.set_session(main_session)
         if verbose != 0:
-            if self.config["train"]["model"]["save_all"]:
-                os.makedirs(self.config["paths"]["checkpoints"] + "/" + str(timestamp))
-                output_file = self.config["paths"]["checkpoints"] + "/" + str(timestamp) + "/checkpoint_{epoch:04d}.hdf5"
-            else:
-                output_file = self.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
+            output_file = self.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
             callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
                 filepath=output_file,
                 save_weights_only=True,
                 save_best_only=False
             )
-            if self.config["train"]["model"]["save_all"]:
-                os.makedirs(self.config["paths"]["logs"] + "/" + str(timestamp))
-                csv_output = self.config["paths"]["logs"] + "/" + str(timestamp) + "/log.csv"
-            else:
-                csv_output = self.config["paths"]["logs"] + "/log.csv"
+            csv_output = self.config["paths"]["logs"] + "/log.csv"
             callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
 
             callbacks = [callback_model_checkpoint, callback_csv]
