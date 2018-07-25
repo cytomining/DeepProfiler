@@ -40,7 +40,7 @@ class Optimize(object):
         return evaluation[0]
 
     def optimize(self):
-        opt = GPyOpt.methods.BayesianOptimization(f=self.f, domain=self.bounds)
+        opt = GPyOpt.methods.BayesianOptimization(f=self.f, domain=self.bounds, maximize=False)
         opt.run_optimization(max_iter=self.config["optim"]["max_iter"])
         print("Optimized Parameters:")
         for i in range(len(self.config["optim"]["names"])):
