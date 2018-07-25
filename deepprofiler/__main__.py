@@ -85,6 +85,21 @@ def prepare_data(context):
     context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
     print("Compression complete!")
 
+# Optional learning tool: Optimize the hyperparameters of a model
+@cli.command()
+@click.option("--epoch", default=1)
+@click.option("--seed", default=None)
+@click.pass_context
+def optimization(context, epoch, seed):
+     if "setup" not in context.obj.keys():
+        cmd_setup(context)
+        if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
+            context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
+            context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]['compressed_images']
+    metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
+    optim = deepprofiler.learning.optimization.Optimize(context.obj["config"], metadata, epoch, seed)
+    optim.optimize()
+
 # Second tool: Train a network
 @cli.command()
 @click.option("--epoch", default=1)
@@ -96,7 +111,6 @@ def train(context, epoch, seed):
         if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
             context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
             context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]['compressed_images']
-    print(context.parent.obj["config"]["paths"]["index"])
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     deepprofiler.learning.training.learn_model(context.obj["config"], metadata, epoch, seed)
 
