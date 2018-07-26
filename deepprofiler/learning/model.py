@@ -12,6 +12,7 @@ import sklearn.metrics
 import deepprofiler.imaging.cropping
 import deepprofiler.learning.validation
 import deepprofiler.dataset.utils
+from deepprofiler.learning import model_utils
 
 
 ##################################################
@@ -40,68 +41,30 @@ class DeepProfilerModel(ABC):
         np.random.seed(seed)
         tf.set_random_seed(seed)
 
-    def train(self, epoch=1, metrics=['accuracy'], verbose=1):  # TODO: simplify default train method
-        if 'feature_model' not in vars(self) or self.feature_model is None:
-            raise ValueError("Feature model is not defined.")
-        print(self.feature_model.summary())
+    def train(self, epoch=1, metrics=['accuracy'], verbose=1):
+        # Raise ValueError if feature model isn't properly defined
+        model_utils.check_feature_model(self)
+        # Print model summary
+        self.feature_model.summary()
+        # Compile model
         self.feature_model.compile(self.optimizer, self.loss, metrics)
-        if self.config["train"]["comet_ml"]["track"]:
-            experiment = Experiment(
-                api_key=self.config["train"]["comet_ml"]["api_key"],
-                project_name=self.config["train"]["comet_ml"]["project_name"]
-            )
-        # Create cropping graph
-        crop_graph = tf.Graph()
-        with crop_graph.as_default():
-            cpu_config = tf.ConfigProto(device_count={'CPU': 1, 'GPU': 0})
-            cpu_config.gpu_options.visible_device_list = ""
-            crop_session = tf.Session(config=cpu_config)
-            self.train_crop_generator.start(crop_session)
-        gc.collect()
-        # Start validation session
-        configuration = tf.ConfigProto()
-        configuration.gpu_options.visible_device_list = self.config["train"]["gpus"]
-        crop_graph = tf.Graph()
-        with crop_graph.as_default():
-            val_session = tf.Session(config=configuration)
-            keras.backend.set_session(val_session)
-            self.val_crop_generator.start(val_session)
-            x_validation, y_validation = deepprofiler.learning.validation.validate(
-                self.config,
-                self.dset,
-                self.val_crop_generator,
-                val_session)
-        gc.collect()
-        # Start main session
-        main_session = tf.Session(config=configuration)
-        keras.backend.set_session(main_session)
-        if verbose != 0:
-            output_file = self.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
-            callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
-                filepath=output_file,
-                save_weights_only=True,
-                save_best_only=False
-            )
-            csv_output = self.config["paths"]["logs"] + "/log.csv"
-            callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
-
-            callbacks = [callback_model_checkpoint, callback_csv]
-
-            previous_model = output_file.format(epoch=epoch - 1)
-            if epoch >= 1 and os.path.isfile(previous_model):
-                self.feature_model.load_weights(previous_model)
-                print("Weights from previous model loaded:", previous_model)
-        else:
-            callbacks = None
-
-        epochs = self.config["train"]["model"]["epochs"]
-        steps = self.config["train"]['model']["steps"]
-
-        if self.config["train"]["comet_ml"]["track"]:
-            params = self.config["train"]["model"]["params"]
-            experiment.log_multiple_params(params)
-
-        keras.backend.get_session().run(tf.initialize_all_variables())
+        # Create comet ml experiment
+        experiment = model_utils.setup_comet_ml(self)
+        # Start train crop generator
+        crop_session = model_utils.start_crop_generator(self)
+        # Create tf configuration
+        configuration = model_utils.tf_configure(self)
+        # Start val crop generator
+        val_session, x_validation, y_validation = model_utils.start_val_session(self, configuration)
+        # Create main session
+        main_session = model_utils.start_main_session(configuration)
+        # Create callbacks and load weights
+        callbacks = model_utils.setup_callbacks(self, epoch, verbose)
+        # Create params (epochs, steps, log model params to comet ml)
+        epochs, steps = model_utils.setup_params(self, experiment)
+        # Initialize all tf variables to avoid tf bug
+        model_utils.init_tf_vars()
+        # Train model
         self.feature_model.fit_generator(
             generator=self.train_crop_generator.generate(crop_session),
             steps_per_epoch=steps,
@@ -111,12 +74,7 @@ class DeepProfilerModel(ABC):
             initial_epoch=epoch - 1,
             validation_data=(x_validation, y_validation)
         )
-
-        # Close session and stop threads
-        print("Complete! Closing session.", end=" ", flush=True)
-        self.train_crop_generator.stop(crop_session)
-        crop_session.close()
-        print("All set.")
-        gc.collect()
-
+        # Stop threads and close sessions
+        model_utils.close(self, crop_session, val_session)
+        # Return the feature model and validation data
         return self.feature_model, x_validation, y_validation
