@@ -8,10 +8,10 @@ import keras
 
 
 def learn_model(config, dset, epoch=1, seed=None, verbose=1):
-    model_module = importlib.import_module("plugins.models.{}".format(config['model']['name']))
-    crop_module = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))
-    if 'metrics' in config['model'].keys():
-        if type(config['model']['metrics']) not in [list, dict]:
+    model_module = importlib.import_module("plugins.models.{}".format(config["train"]['model']['name']))
+    crop_module = importlib.import_module("plugins.crop_generators.{}".format(config["train"]['model']['crop_generator']))
+    if 'metrics' in config["train"]['model'].keys():
+        if type(config["train"]['model']['metrics']) not in [list, dict]:
             raise ValueError("Metrics should be a list or dictionary.")
         keras_metrics = [
             'accuracy',
@@ -21,14 +21,14 @@ def learn_model(config, dset, epoch=1, seed=None, verbose=1):
             'top_k_categorical_accuracy',
             'sparse_top_k_categorical_accuracy'
         ]
-        if type(config['model']['metrics'] is list):
+        if type(config["train"]['model']['metrics'] is list):
             metrics = list(map(lambda metric: importlib.import_module(
                 "plugins.metrics.{}".format(metric)).MetricClass(config, metric).f if metric not in keras_metrics else metric,
-                          config['model']['metrics']))
-        elif type(config['model']['metrics'] is dict):
+                          config["train"]['model']['metrics']))
+        elif type(config["train"]['model']['metrics'] is dict):
             metrics = {k: lambda metric: importlib.import_module(
                 "plugins.metrics.{}".format(metric)).MetricClass(config, metric).f if metric not in keras_metrics else metric
-                       for k, v in config['model']['metrics'].items()}
+                       for k, v in config["train"]['model']['metrics'].items()}
     else:
         metrics = ["accuracy"]
     importlib.invalidate_caches()
@@ -41,7 +41,7 @@ def learn_model(config, dset, epoch=1, seed=None, verbose=1):
         model.seed(seed)
     if verbose == 0:
         trained_model, x_validation, y_validation = model.train(epoch, metrics, verbose=verbose)
-        evaluation = trained_model.evaluate(x_validation, y_validation, batch_size=config["validation"]["minibatch"], verbose=verbose)
+        evaluation = trained_model.evaluate(x_validation, y_validation, batch_size=config["train"]["validation"]["batch_size"], verbose=verbose)
         return evaluation
     else:
         model.train(epoch, metrics, verbose=verbose)

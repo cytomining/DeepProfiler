@@ -111,11 +111,3 @@ def test_merge_outlines(metadata, dataframe, out_dir):
     metadata.mergeOutlines(outlines)
     merged = pd.merge(metadata.data, outlines, on=["Metadata_Plate", "Metadata_Well", "Metadata_Site"])
     pd.testing.assert_frame_equal(metadata.data, merged)
-
-
-def test_write_locations():
-    pass  # TODO not supported
-
-
-def test_create_cell_indices():
-    pass  # TODO not supported

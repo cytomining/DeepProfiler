@@ -13,30 +13,39 @@ def parse_tuple(string):
 class Optimize(object):
 
     def __init__(self, config, dset, epoch=1, seed=None):
-        config["model"]["comet_ml"] = False
+        config["train"]["comet_ml"]["track"] = False
         self.config = config
         self.dset = dset
         self.epoch = epoch
         self.seed = seed
         self.bounds = []
         for i in range(len(self.config["optim"]["names"])):
-            self.bounds.append({
-                'name': self.config["optim"]["names"][i],
-                'type': self.config["optim"]["types"][i],
-                'domain': parse_tuple(self.config["optim"]["domains"][i])
-            })
-    
-    def model(self):
+            if self.config["optim"]["types"][i] == "logarithmic":
+                self.bounds.append({
+                    'name': self.config["optim"]["names"][i],
+                    'type': "continuous",
+                    'domain': parse_tuple(self.config["optim"]["domains"][i])
+                })
+            else:
+                self.bounds.append({
+                    'name': self.config["optim"]["names"][i],
+                    'type': self.config["optim"]["types"][i],
+                    'domain': parse_tuple(self.config["optim"]["domains"][i])
+                })
+
+    def evaluate(self):
         evaluation = deepprofiler.learning.training.learn_model(self.config, self.dset, self.epoch, self.seed, verbose=0)
         return evaluation
 
     def f(self, x):
         for i in range(len(self.config["optim"]["names"])):
             if self.config["optim"]["types"][i] == "continuous":
-                self.config["model"]["params"][self.config["optim"]["names"][i]] = float(x[:,i])
+                self.config['train']["model"]["params"][self.config["optim"]["names"][i]] = float(x[:,i])
             elif self.config["optim"]["types"][i] == "discrete":
-                self.config["model"]["params"][self.config["optim"]["names"][i]] = int(x[:,i])
-        evaluation = self.model()
+                self.config['train']["model"]["params"][self.config["optim"]["names"][i]] = int(x[:,i])
+            elif self.config["optim"]["types"][i] == "logarithmic":
+                self.config['train']["model"]["params"][self.config["optim"]["names"][i]] = float(10**x[:,i])
+        evaluation = self.evaluate()
         return evaluation[0]
 
     def optimize(self):

@@ -1,56 +1,89 @@
 import deepprofiler.dataset.indexing
+import deepprofiler.dataset.metadata
+import deepprofiler.dataset.image_dataset
 import pytest
 import pandas as pd
 import json
 import os
-import shutil
+import numpy as np
+import random
+#import shutil
 
 
-def test_relative_paths():
-    test_input = pd.DataFrame(data={'path': ['/Users/pytest/Documents/Plate1/', '/Users/pytest/Documents/Plate2/', '/Users/pytest/Documents/Plate2/'],
-                                    'filename': ['test1.tiff', 'test2.tiff', 'test3.tiff']})
-    test_output = deepprofiler.dataset.indexing.relative_paths(test_input, 'target', 'path', 'filename', '/Users/pytest/Documents')
-    expected_output = pd.DataFrame(data={'target': ['/Plate1/test1.tiff', '/Plate2/test2.tiff', '/Plate2/test3.tiff']})
-    assert test_output.shape == (3,1)
-    assert test_output.equals(expected_output)
-    
-#def test_create_metadata_index():
-    #missing examples to properly test/too large
-    
-def test_write_compression_index():
-    temp = os.path.dirname("tests/files/metadata/tmp/")
-    if os.path.exists(temp) == False:
-        os.makedirs(temp)
-    open_file = open("tests/files/config/test_config.json")
-    config = json.load(open_file)
+def __rand_array():
+    return np.array(random.sample(range(100), 12))
+
+
+@pytest.fixture(scope='function')
+def out_dir(tmpdir):
+    return os.path.abspath(tmpdir.mkdir("test"))
+
+@pytest.fixture(scope='function')
+def config(out_dir):
+    with open("tests/files/config/test.json", 'r') as f:
+        config = json.load(f)
+    for path in config["paths"]:
+        config["paths"][path] = out_dir + config["paths"].get(path)
+    config["paths"]["root_dir"] = out_dir
+    return config
+
+@pytest.fixture(scope='function')
+def make_struct(config):
+    for key, path in config["paths"].items():
+        if key not in ["index", "config_file", "root_dir"]:
+            os.makedirs(path+"/")
+    return
+
+
+@pytest.fixture(scope='function')
+def metadata(config, make_struct):
+    filename = os.path.join(config["paths"]["metadata"], 'index.csv')
+    df = pd.DataFrame({
+        'Metadata_Plate': __rand_array(),
+        'Metadata_Well': __rand_array(),
+        'Metadata_Site': __rand_array(),
+        'R': [str(x) + '.png' for x in __rand_array()],
+        'G': [str(x) + '.png' for x in __rand_array()],
+        'B': [str(x) + '.png' for x in __rand_array()],
+        'Sampling': [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+        'Split': [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
+    }, dtype=int)
+    df.to_csv(filename, index=False)
+    meta = deepprofiler.dataset.metadata.Metadata(filename)
+    train_rule = lambda data: data['Split'].astype(int) == 0
+    val_rule = lambda data: data['Split'].astype(int) == 1
+    meta.splitMetadata(train_rule, val_rule)
+    return meta
+
+
+@pytest.fixture(scope='function')
+def dataset(metadata, config, make_struct):
+    keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
+    return deepprofiler.dataset.image_dataset.ImageDataset(metadata, 'Sampling', ['R', 'G', 'B'], config["paths"]["images"], keygen)
+
+
+def test_write_compression_index(config, metadata, dataset, make_struct):
     deepprofiler.dataset.indexing.write_compression_index(config)
-    test_output = pd.read_csv("tests/files/metadata/tmp/index.csv", index_col=0)
-    assert test_output.shape == (36,9)
-    assert test_output.values[31][5] == 'Week1_22123/pngs/Week1_150607_B03_s2_w25CEC2D43-E105-42BB-BC00-6962B3ADEBED.png'   
-    shutil.rmtree(temp)    
+    test_output = pd.read_csv(config["paths"]["compressed_metadata"]+"/compressed.csv", index_col=0)
+    assert test_output.shape == (12,8)
 
-def test_split_index():
-    temp = os.path.dirname("tests/files/metadata/tmp/")
-    if os.path.exists(temp) == False:
-        os.makedirs(temp)
-    open_file = open("tests/files/config/test_config.json")
-    config = json.load(open_file)
+def test_split_index(config, metadata, dataset):
     test_parts = 3
-    test_paths = ["tests/files/metadata/tmp/index-000.csv",
-                  "tests/files/metadata/tmp/index-001.csv",
-                  "tests/files/metadata/tmp/index-002.csv"]
+    test_paths = [config["paths"]["metadata"]+"/index-000.csv",
+                  config["paths"]["metadata"]+"/index-001.csv",
+                  config["paths"]["metadata"]+"/index-002.csv"]
     deepprofiler.dataset.indexing.write_compression_index(config)
     deepprofiler.dataset.indexing.split_index(config, test_parts)   
     assert os.path.exists(test_paths[0]) == True
     assert os.path.exists(test_paths[1]) == True
     assert os.path.exists(test_paths[2]) == True
-    test_outputs = [pd.read_csv("tests/files/metadata/tmp/index-000.csv", index_col=0),
-                    pd.read_csv("tests/files/metadata/tmp/index-001.csv", index_col=0),
-                    pd.read_csv("tests/files/metadata/tmp/index-002.csv", index_col=0)]
-    assert test_outputs[0].shape == (12,9)
-    assert test_outputs[1].shape == (12,9)
-    assert test_outputs[2].shape == (12,9)
-    assert test_outputs[0].values[5][5] == 'Week1_22123/pngs/Week1_150607_B03_s2_w25CEC2D43-E105-42BB-BC00-6962B3ADEBED.png'
-    assert test_outputs[1].values[11][6] == 'Week1_22123/pngs/Week1_150607_B04_s2_w4342F300D-60F8-4256-A637-F1367E14BE5E.png'
-    assert test_outputs[2].values[0][4] == 'Week1_22141/pngs/Week1_150607_B03_s2_w1A7BCCCBB-5B8B-45B2-858A-A57A37EE0D58.png'
-    shutil.rmtree(temp)   
+    test_outputs = [pd.read_csv(config["paths"]["metadata"]+"/index-000.csv"),
+                    pd.read_csv(config["paths"]["metadata"]+"/index-001.csv"),
+                    pd.read_csv(config["paths"]["metadata"]+"/index-002.csv")]
+    print(test_outputs[0])
+    print(test_outputs[1])
+    print(test_outputs[2])
+    assert test_outputs[0].shape == (4,8)
+    assert test_outputs[1].shape == (4,8)
+    assert test_outputs[2].shape == (4,8)
+ 

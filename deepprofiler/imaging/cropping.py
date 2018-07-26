@@ -41,17 +41,17 @@ class CropGenerator(object):
 
     def build_input_graph(self):
         # Identify number of channels
-        mask_objects = self.config["image_set"]["mask_objects"]
+        mask_objects = self.config["train"]["dset"]["mask_objects"]
         if mask_objects:
-            img_channels = len(self.config["image_set"]["channels"]) + 1
+            img_channels = len(self.config["prepare"]["images"]["channels"]) + 1
         else:
-            img_channels = len(self.config["image_set"]["channels"])
-        crop_channels = len(self.config["image_set"]["channels"])
+            img_channels = len(self.config["prepare"]["images"]["channels"])
+        crop_channels = len(self.config["prepare"]["images"]["channels"])
 
         # Identify image and box sizes
-        box_size = self.config["sampling"]["box_size"]
-        img_width = self.config["image_set"]["width"]
-        img_height = self.config["image_set"]["height"]
+        box_size = self.config["train"]["sampling"]["box_size"]
+        img_width = self.config["train"]["dset"]["width"]
+        img_height = self.config["train"]["dset"]["height"]
 
         # Data shapes
         num_targets = len(self.dset.targets)
@@ -105,7 +105,7 @@ class CropGenerator(object):
         # Outputs and queue of the data augmentation graph
         augmented_op = deepprofiler.imaging.augmentations.augment_multiple(
             tf.cast(self.input_variables["labeled_crops"][0], tf.float32),
-            self.config["model"]["params"]["batch_size"]
+            self.config["train"]["model"]["params"]["batch_size"]
         )
         train_inputs = tf.tuple([augmented_op] + self.input_variables["labeled_crops"][1:]) 
 
@@ -133,9 +133,9 @@ class CropGenerator(object):
             while not coord.should_stop():
                 try:
                     # Load images and cell boxes
-                    batch = deepprofiler.imaging.boxes.loadBatch(self.dset, self.config) #TODO
+                    batch = deepprofiler.imaging.boxes.load_batch(self.dset, self.config) #TODO
                     images = np.reshape(batch["images"], self.input_variables["shapes"]["batch"])
-                    boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepareBoxes(batch, self.config)
+                    boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
                     feed_dict = {
                             self.input_variables["image_ph"]:images,
                             self.input_variables["boxes_ph"]:boxes,
@@ -184,7 +184,7 @@ class CropGenerator(object):
                     return
 
         load_threads = []
-        for i in range(self.config["queueing"]["loading_workers"]):
+        for i in range(self.config["train"]["queueing"]["loading_workers"]):
             lt = threading.Thread(target=data_loading_thread)
             load_threads.append(lt)
             lt.isDaemon()
@@ -199,14 +199,14 @@ class CropGenerator(object):
             self.build_augmentation_graph()
             targets = [self.train_variables[t] for t in self.train_variables.keys() if t.startswith("target_")]
 
-            self.image_pool = np.zeros([self.config["queueing"]["queue_size"]] + list(self.input_variables["shapes"]["crops"][0]))
-            self.label_pool = [np.zeros([self.config["queueing"]["queue_size"], t.shape[1]]) for t in targets]
+            self.image_pool = np.zeros([self.config["train"]["queueing"]["queue_size"]] + list(self.input_variables["shapes"]["crops"][0]))
+            self.label_pool = [np.zeros([self.config["train"]["queueing"]["queue_size"], t.shape[1]]) for t in targets]
             self.pool_pointer = 0
             self.ready_to_sample = False
             print("Waiting for data", self.image_pool.shape, [l.shape for l in self.label_pool])
 
         self.merged_summary = tf.summary.merge_all()
-        self.summary_writer = tf.summary.FileWriter(self.config["training"]["output"], session.graph)
+        self.summary_writer = tf.summary.FileWriter(self.config["paths"]["summaries"], session.graph)
 
         # Start data threads
         self.coord, self.queue_threads = self.training_queues(session)
@@ -217,7 +217,7 @@ class CropGenerator(object):
         while not self.ready_to_sample:
             time.sleep(2)
         np.random.shuffle(pool_index) #TODO
-        idx = pool_index[0:self.config["model"]["params"]["batch_size"]]
+        idx = pool_index[0:self.config["train"]["model"]["params"]["batch_size"]]
         # TODO: make outputs for all targets
         data = [self.image_pool[idx,...], self.label_pool[0][idx,:], 0]
         return data
@@ -265,7 +265,7 @@ class SingleImageCropGenerator(CropGenerator):
     def start(self, session):
         # Define input data batches
         with tf.variable_scope("train_inputs"):
-            self.config["model"]["params"]["batch_size"] = self.config["validation"]["minibatch"]
+            self.config["train"]["model"]["params"]["batch_size"] = self.config["train"]["validation"]["batch_size"]
             self.build_input_graph()
             # Align cells by rotating nuclei
             self.angles = tf.placeholder(tf.float32, shape=[None], name="nuclei_angles")
@@ -275,12 +275,12 @@ class SingleImageCropGenerator(CropGenerator):
     def prepare_image(self, session, image_array, meta, sample_first_crops=False):
 
         num_targets = len(self.dset.targets)
-        self.batch_size = self.config["validation"]["minibatch"]
+        self.batch_size = self.config["train"]["validation"]["batch_size"]
         image_key, image_names, outlines = self.dset.getImagePaths(meta)
 
         batch = {"images": [], "locations": [], "targets": [[]]}
         batch["images"].append(image_array)
-        batch["locations"].append(deepprofiler.imaging.boxes.getLocations(image_key, self.config, randomize=False))
+        batch["locations"].append(deepprofiler.imaging.boxes.get_locations(image_key, self.config, randomize=False))
         for i in range(num_targets):
             tgt = self.dset.targets[i]
             batch["targets"][0].append(tgt.get_values(meta))
@@ -289,7 +289,7 @@ class SingleImageCropGenerator(CropGenerator):
             batch["locations"][0] = batch["locations"][0].head(self.batch_size)
 
         has_orientation = len(batch["locations"][0].columns) > 2
-        boxes, box_ind, targets, mask_ind = deepprofiler.imaging.boxes.prepareBoxes(batch, self.config)
+        boxes, box_ind, targets, mask_ind = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
         batch["images"] = np.reshape(image_array, self.input_variables["shapes"]["batch"])
         feed_dict = {
             self.input_variables["image_ph"]: batch["images"],

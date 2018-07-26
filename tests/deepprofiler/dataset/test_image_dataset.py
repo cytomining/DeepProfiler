@@ -19,10 +19,26 @@ def __rand_array():
 def out_dir(tmpdir):
     return os.path.abspath(tmpdir.mkdir("test"))
 
+@pytest.fixture(scope='function')
+def config(out_dir):
+    with open("tests/files/config/test.json", 'r') as f:
+        config = json.load(f)
+    for path in config["paths"]:
+        config["paths"][path] = out_dir + config["paths"].get(path)
+    config["paths"]["root_dir"] = out_dir
+    return config
 
 @pytest.fixture(scope='function')
-def metadata(out_dir):
-    filename = os.path.join(out_dir, 'metadata.csv')
+def make_struct(config):
+    for key, path in config["paths"].items():
+        if key not in ["index", "config_file", "root_dir"]:
+            os.makedirs(path+"/")
+    return
+
+
+@pytest.fixture(scope='function')
+def metadata(out_dir, make_struct, config):
+    filename = os.path.join(config["paths"]["metadata"], 'index.csv')
     df = pd.DataFrame({
         'Metadata_Plate': __rand_array(),
         'Metadata_Well': __rand_array(),
@@ -30,6 +46,7 @@ def metadata(out_dir):
         'R': [str(x) + '.png' for x in __rand_array()],
         'G': [str(x) + '.png' for x in __rand_array()],
         'B': [str(x) + '.png' for x in __rand_array()],
+        'Class': ['0', '1', '2', '3', '0', '1', '2', '3', '0', '1', '2', '3'],
         'Sampling': [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
         'Split': [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
     }, dtype=int)
@@ -42,25 +59,25 @@ def metadata(out_dir):
 
 
 @pytest.fixture(scope='function')
-def dataset(metadata, out_dir):
+def dataset(metadata, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    return deepprofiler.dataset.image_dataset.ImageDataset(metadata, 'Sampling', ['R', 'G', 'B'], out_dir, keygen)
+    return deepprofiler.dataset.image_dataset.ImageDataset(metadata, 'Sampling', ['R', 'G', 'B'], config["paths"]["root_dir"], keygen)
 
 
-def test_init(metadata, out_dir):
-    sampling_field = 'Sampling'
-    channels = ['R', 'G', 'B']
+def test_init(metadata, out_dir, dataset, config, make_struct):
+    sampling_field = config["train"]["sampling"]["field"]
+    channels = config["prepare"]["images"]["channels"]
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, sampling_field, channels, out_dir, keygen)
     assert dset.meta == metadata
     assert dset.sampling_field == sampling_field
-    np.testing.assert_array_equal(dset.sampling_values, metadata.data[sampling_field].unique())
+    np.testing.assert_array_equal(dset.sampling_values, metadata.data["Sampling"].unique())
     assert dset.channels == channels
     assert dset.root == out_dir
     assert dset.keyGen == keygen
 
 
-def test_get_image_paths(dataset):
+def test_get_image_paths(metadata, out_dir, dataset, config, make_struct):
     for idx, row in dataset.meta.data.iterrows():
         key, image, outlines = dataset.getImagePaths(row)
         testKey = dataset.keyGen(row)
@@ -71,7 +88,7 @@ def test_get_image_paths(dataset):
         assert outlines == testOutlines
 
 
-def test_sample_images(dataset):
+def test_sample_images(metadata, out_dir, dataset, config, make_struct):
     n = 3
     keys, images, targets, outlines = dataset.sampleImages(dataset.sampling_values, n)
     print(keys, images, targets, outlines)
@@ -81,7 +98,7 @@ def test_sample_images(dataset):
     assert len(outlines) == 2 * n
 
 
-def test_get_train_batch(dataset, out_dir):
+def test_get_train_batch(metadata, out_dir, dataset, config, make_struct):
     images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
     for i in range(0, 36, 3):
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data['R'][i // 3]), images[:, :, i])
@@ -96,7 +113,7 @@ def test_get_train_batch(dataset, out_dir):
             assert image[:, :, i] in np.rollaxis(images, -1)
 
 
-def test_scan(dataset, out_dir):
+def test_scan(metadata, out_dir, dataset, config, make_struct):
     images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
     for i in range(0, 36, 3):
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data['R'][i // 3]), images[:, :, i])
@@ -120,25 +137,23 @@ def test_scan(dataset, out_dir):
         assert (dataset.meta.data == meta).all(1).any()
 
 
-def test_number_of_records(dataset):
+def test_number_of_records(metadata, out_dir, dataset, config, make_struct):
     assert dataset.number_of_records('all') == len(dataset.meta.data)
     assert dataset.number_of_records('val') == len(dataset.meta.val)
     assert dataset.number_of_records('train') == len(dataset.meta.train)
     assert dataset.number_of_records('other') == 0
 
 
-def test_add_target(dataset):
+def test_add_target(metadata, out_dir, dataset, config, make_struct):
     target = deepprofiler.dataset.target.MetadataColumnTarget('Target', random.sample(range(100), 12))
     dataset.add_target(target)
     assert target in dataset.targets
 
 
-def test_read_dataset():
-    with open('deepprofiler/examples/config/learning.json', 'r') as f:
-        config = json.load(f)
+def test_read_dataset(metadata, out_dir, dataset, config, make_struct):
     dset = deepprofiler.dataset.image_dataset.read_dataset(config)
-    pd.testing.assert_frame_equal(dset.meta.data, deepprofiler.dataset.metadata.Metadata(config["image_set"]["index"], dtype=None).data)
-    assert dset.channels == config["image_set"]["channels"]
-    assert dset.root == config["image_set"]["path"]
-    assert dset.sampling_field == config["sampling"]["field"]
+    pd.testing.assert_frame_equal(dset.meta.data, deepprofiler.dataset.metadata.Metadata(config["paths"]["index"], dtype=None).data)
+    assert dset.channels == config["prepare"]["images"]["channels"]
+    assert dset.root == config["paths"]["images"]
+    assert dset.sampling_field == config["train"]["sampling"]["field"]
     np.testing.assert_array_equal(dset.sampling_values, dset.meta.data[dset.sampling_field].unique())

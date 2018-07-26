@@ -1,5 +1,6 @@
 import os
 import random
+import json
 
 import numpy as np
 import pandas as pd
@@ -21,62 +22,29 @@ def __rand_array():
 
 @pytest.fixture(scope='function')
 def out_dir(tmpdir):
-    return os.path.abspath(tmpdir.mkdir("test_validation"))
+    return os.path.abspath(tmpdir.mkdir('test'))
 
 
 @pytest.fixture(scope='function')
 def config(out_dir):
-    return {
-        "model": {
-            "name": "cnn",
-            "params": {
-                "epochs": 3,
-                "steps": 10,
-                "learning_rate": 0.0001,
-                "batch_size": 16
-            }
-        },
-        "sampling": {
-            "images": 12,
-            "box_size": 16,
-            "locations": 10,
-            "locations_field": 'R'
-        },
-        "image_set": {
-            "channels": ['R', 'G', 'B'],
-            "mask_objects": False,
-            "width": 128,
-            "height": 128,
-            "path": out_dir
-        },
-        "training": {
-            "learning_rate": 0.001,
-            "output": out_dir,
-            "epochs": 0,
-            "steps": 12,
-            "minibatch": 2
-        },
-        "validation": {
-            "minibatch": 2,
-            "save_features": True,
-            "sample_first_crops": False,
-            "frame": "val",
-            "top_k": 2
-        },
-        "queueing": {
-            "loading_workers": 2,
-            "queue_size": 2,
-            "min_size": 0
-        },
-        "profiling": {
-            "feature_layer": "pool5"  # TODO: make this work with any model
-        }
-    }
+    with open("tests/files/config/test.json", 'r') as f:
+        config = json.load(f)
+    for path in config["paths"]:
+        config["paths"][path] = out_dir + config["paths"].get(path)
+    config["paths"]["root_dir"] = out_dir
+    return config
+
+@pytest.fixture(scope='function')
+def make_struct(config):
+    for key, path in config["paths"].items():
+        if key not in ["index", "config_file", "root_dir"]:
+            os.makedirs(path+"/")
+    return
 
 
 @pytest.fixture(scope='function')
-def metadata(out_dir):
-    filename = os.path.join(out_dir, 'metadata.csv')
+def metadata(out_dir, make_struct):
+    filename = os.path.join(out_dir, 'index.csv')
     df = pd.DataFrame({
         'Metadata_Plate': __rand_array(),
         'Metadata_Well': __rand_array(),
@@ -97,41 +65,37 @@ def metadata(out_dir):
 
 
 @pytest.fixture(scope='function')
-def target():
-    return deepprofiler.dataset.target.MetadataColumnTarget("Class", ["0", "1", "2", "3"])
-
-
-@pytest.fixture(scope='function')
-def dataset(metadata, target, out_dir):
+def dataset(metadata, out_dir, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, 'Sampling', ['R', 'G', 'B'], out_dir, keygen)
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, 'Sampling', ['R', 'G', 'B'], config["paths"]["root_dir"], keygen)
+    target = deepprofiler.dataset.target.MetadataColumnTarget('Class', metadata.data['Class'].unique())
     dset.add_target(target)
     return dset
 
 
 @pytest.fixture(scope='function')
-def locations(out_dir, metadata, config):
-    for i in range(len(metadata.data.index)):
-        meta = metadata.data.iloc[i]
-        path = os.path.join(out_dir, meta['Metadata_Plate'], 'locations')
-        os.makedirs(path, exist_ok=True)
-        path = os.path.abspath(os.path.join(path, '{}-{}-{}.csv'.format(meta['Metadata_Well'],
-                                                  meta['Metadata_Site'],
-                                                  config['sampling']['locations_field'])))
-        locs = pd.DataFrame({
-            'R_Location_Center_X': np.random.randint(0, 128, (config['sampling']['locations'])),
-            'R_Location_Center_Y': np.random.randint(0, 128, (config['sampling']['locations']))
-        })
-        locs.to_csv(path, index=False)
+def data(metadata, out_dir, config, make_struct):
+    images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
+    for i in range(0, 36, 3):
+        skimage.io.imsave(os.path.join(config["paths"]["root_dir"], metadata.data['R'][i // 3]), images[:, :, i])
+        skimage.io.imsave(os.path.join(config["paths"]["root_dir"], metadata.data['G'][i // 3]), images[:, :, i + 1])
+        skimage.io.imsave(os.path.join(config["paths"]["root_dir"], metadata.data['B'][i // 3]), images[:, :, i + 2])
 
 
 @pytest.fixture(scope='function')
-def data(metadata, out_dir):
-    images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
-    for i in range(0, 36, 3):
-        skimage.io.imsave(os.path.join(out_dir, metadata.data['R'][i // 3]), images[:, :, i])
-        skimage.io.imsave(os.path.join(out_dir, metadata.data['G'][i // 3]), images[:, :, i + 1])
-        skimage.io.imsave(os.path.join(out_dir, metadata.data['B'][i // 3]), images[:, :, i + 2])
+def locations(out_dir, metadata, config, make_struct):
+    for i in range(len(metadata.data.index)):
+        meta = metadata.data.iloc[i]
+        path = os.path.abspath(os.path.join(config["paths"]["locations"], meta['Metadata_Plate']))
+        os.makedirs(path, exist_ok=True)
+        path = os.path.abspath(os.path.join(path, '{}-{}-{}.csv'.format(meta['Metadata_Well'],
+                                                  meta['Metadata_Site'],
+                                                  config['train']['sampling']['locations_field'])))
+        locs = pd.DataFrame({
+            'R_Location_Center_X': np.random.randint(0, 128, (config['train']['sampling']['locations'])),
+            'R_Location_Center_Y': np.random.randint(0, 128, (config['train']['sampling']['locations']))
+        })
+        locs.to_csv(path, index=False)
 
 
 @pytest.fixture(scope='function')
@@ -156,7 +120,6 @@ def validation(config, dataset, crop_generator, session):
 
 def test_init(config, dataset, crop_generator, session, validation):
     validation = validation
-    config["queueing"]["min_size"] = 0
     assert validation.config == config
     assert validation.dset == dataset
     assert validation.crop_generator == crop_generator
@@ -169,12 +132,12 @@ def test_process_batches():  # tested in test_validate
     pass
 
 
-def test_validate(config, dataset, crop_generator, session, out_dir, data, locations, target):
+def test_validate(config, dataset, crop_generator, session, out_dir, data, locations):
     test_images, test_labels = deepprofiler.learning.validation.validate(config, dataset, crop_generator, session)
-    assert test_labels.shape == (60,4)
-    assert test_images.shape == (60,16,16,3)
+    assert test_labels.shape == (12,4)
+    assert test_images.shape == (12,16,16,3)
     test_labels_amax = np.amax(test_labels, axis=1)
     test_labels_amax_sum = 0
     for term in test_labels_amax:
         test_labels_amax_sum += term
-    assert test_labels_amax_sum == 60
+    assert test_labels_amax_sum == 12

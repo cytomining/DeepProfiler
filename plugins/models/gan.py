@@ -23,19 +23,19 @@ import deepprofiler.learning.validation
 class GAN(object):
     def __init__(self, config, crop_generator, val_crop_generator):
 
-        if config['model']['conv_blocks'] < 1:
+        if config['train']['model']['params']['conv_blocks'] < 1:
             raise ValueError("At least 1 convolutional block is required.")
 
         self.config = config
         self.crop_generator = crop_generator
         self.val_crop_generator = val_crop_generator
-        self.img_rows = config["sampling"]["box_size"]
-        self.img_cols = config["sampling"]["box_size"]
-        self.channels = len(config["image_set"]["channels"])
+        self.img_rows = config['train']["sampling"]["box_size"]
+        self.img_cols = config['train']["sampling"]["box_size"]
+        self.channels = len(config['prepare']["images"]["channels"])
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
-        self.latent_dim = config["model"]["latent_dim"]  # TODO: move to params
+        self.latent_dim = config['train']["model"]['params']["latent_dim"]  # TODO: move to params
 
-        optimizer = Adam(config["model"]["params"]["learning_rate"], 0.5)
+        optimizer = Adam(config['train']["model"]["params"]["learning_rate"], 0.5)
 
         # Build and compile the discriminator
         self.discriminator = self.build_discriminator()
@@ -63,14 +63,14 @@ class GAN(object):
 
     def build_generator(self):
 
-        s = self.config["sampling"]["box_size"] // 2 ** self.config["model"]["conv_blocks"]
+        s = self.config['train']["sampling"]["box_size"] // 2 ** self.config['train']["model"]['params']["conv_blocks"]
         if s < 1:
             raise ValueError("Too many convolutional blocks for the specified crop size!")
         noise = Input(shape=(self.latent_dim,))
         x = Dense(s * s, input_dim=self.latent_dim)(noise)
         x = LeakyReLU(alpha=0.2)(x)
         x = Reshape((s, s, 1))(x)
-        for i in reversed(range(self.config['model']['conv_blocks'])):
+        for i in reversed(range(self.config['train']['model']['params']['conv_blocks'])):
             x = Conv2DTranspose(8 * 2 ** i, (3, 3), padding='same')(x)
             x = LeakyReLU(alpha=0.2)(x)
             x = BatchNormalization(momentum=0.8)(x)
@@ -83,12 +83,12 @@ class GAN(object):
 
         img = Input(shape=self.img_shape)
         x = img
-        for i in range(self.config['model']['conv_blocks']):
+        for i in range(self.config['train']['model']['params']['conv_blocks']):
             x = Conv2D(8 * 2 ** i, (3, 3), padding='same')(x)
             x = LeakyReLU(alpha=0.2)(x)
             x = MaxPooling2D((2, 2))(x)
         x = Flatten()(x)
-        x = Dense(self.config['model']['feature_dim'], name="features")(x)
+        x = Dense(self.config['train']['model']['params']['feature_dim'], name="features")(x)
         x = LeakyReLU(alpha=0.2)(x)
         validity = Dense(1, activation='sigmoid')(x)
 
@@ -130,9 +130,8 @@ class GAN(object):
 
                 # Plot the progress
                 print("Epoch %d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch, d_loss[0], 100*d_loss[1], g_loss))
-
-            filename_d = os.path.join(self.config['training']['output'], '{}_epoch_{:04d}.hdf5'.format('discriminator', epoch))
-            filename_g = os.path.join(self.config['training']['output'], '{}_epoch_{:04d}.hdf5'.format('generator', epoch))
+            filename_d = os.path.join(self.config["paths"]["checkpoints"], '{}_epoch_{:04d}.hdf5'.format('discriminator', epoch))
+            filename_g = os.path.join(self.config["paths"]["checkpoints"], '{}_epoch_{:04d}.hdf5'.format('generator', epoch))
             self.discriminator.save_weights(filename_d)
             self.generator.save_weights(filename_g)
 
@@ -143,14 +142,12 @@ class ModelClass(DeepProfilerModel):
         self.gan = GAN(config, self.train_crop_generator, self.val_crop_generator)
         self.feature_model = self.gan.discriminator
 
-    def train(self, epoch=1, metrics=['accuracy']):
+    def train(self, epoch=1, metrics=['accuracy'], verbose=1):
         print(self.gan.combined.summary())
-        if not os.path.isdir(self.config["training"]["output"]):
-            os.mkdir(self.config["training"]["output"])
-        if self.config["model"]["comet_ml"]:
+        if self.config["train"]["comet_ml"]["track"]:
             experiment = Experiment(
-                api_key=self.config["validation"]["api_key"],
-                project_name=self.config["validation"]["project_name"]
+                api_key=self.config["train"]["comet_ml"]["api_key"],
+                project_name=self.config["train"]["comet_ml"]["project_name"]
             )
         # Create cropping graph
         crop_graph = tf.Graph()
@@ -162,31 +159,31 @@ class ModelClass(DeepProfilerModel):
         gc.collect()
 
         configuration = tf.ConfigProto()
-        configuration.gpu_options.visible_device_list = self.config["training"]["visible_gpus"]
+        configuration.gpu_options.visible_device_list = self.config["train"]["gpus"]
 
         # Start main session
         main_session = tf.Session(config=configuration)
         keras.backend.set_session(main_session)
 
-        discriminator_file = os.path.join(self.config["training"]["output"], '{}_epoch_{:04d}.hdf5'.format('discriminator', epoch - 1))
-        generator_file = os.path.join(self.config["training"]["output"], '{}_epoch_{:04d}.hdf5'.format('generator', epoch - 1))
+        discriminator_file = os.path.join(self.config["paths"]["checkpoints"], '{}_epoch_{:04d}.hdf5'.format('discriminator', epoch - 1))
+        generator_file = os.path.join(self.config["paths"]["checkpoints"], '{}_epoch_{:04d}.hdf5'.format('generator', epoch - 1))
         if epoch >= 1 and os.path.isfile(discriminator_file) and os.path.isfile(generator_file):
             self.gan.discriminator.load_weights(discriminator_file)
             self.gan.generator.load_weights(generator_file)
             print("Weights from previous models loaded:", discriminator_file, generator_file)
 
-        epochs = self.config["training"]["epochs"]
-        steps = self.config["training"]["steps"]
+        epochs = self.config["train"]["model"]["epochs"]
+        steps = self.config["train"]["model"]["steps"]
 
-        if self.config["model"]["comet_ml"]:
-            params = self.config["model"]["params"]
+        if self.config["train"]["comet_ml"]["track"]:
+            params = self.config["train"]["model"]["params"]
             experiment.log_multiple_params(params)
 
         keras.backend.get_session().run(tf.initialize_all_variables())
         self.gan.train(epochs, steps, epoch)
 
         # Close session and stop threads
-        print("Complete! Closing session.", end="", flush=True)
+        print("Complete! Closing session.", end=" ", flush=True)
         self.train_crop_generator.stop(crop_session)
         crop_session.close()
         print("All set.")

@@ -11,6 +11,7 @@ import sklearn.metrics
 
 import deepprofiler.imaging.cropping
 import deepprofiler.learning.validation
+import deepprofiler.dataset.utils
 
 
 ##################################################
@@ -30,8 +31,8 @@ class DeepProfilerModel(ABC):
         self.train_crop_generator = crop_generator(config, dset)
         self.val_crop_generator = val_crop_generator(config, dset)
         self.random_seed = None
-        if "comet_ml" not in config["model"].keys():
-            self.config["model"]["comet_ml"] = False
+        if "comet_ml" not in config["train"].keys():
+            self.config["train"]["comet_ml"]["track"] = False
 
     def seed(self, seed):
         self.random_seed = seed
@@ -44,12 +45,10 @@ class DeepProfilerModel(ABC):
             raise ValueError("Feature model is not defined.")
         print(self.feature_model.summary())
         self.feature_model.compile(self.optimizer, self.loss, metrics)
-        if not os.path.isdir(self.config["training"]["output"]):
-            os.mkdir(self.config["training"]["output"])
-        if self.config["model"]["comet_ml"]:
+        if self.config["train"]["comet_ml"]["track"]:
             experiment = Experiment(
-                api_key=self.config["validation"]["api_key"],
-                project_name=self.config["validation"]["project_name"]
+                api_key=self.config["train"]["comet_ml"]["api_key"],
+                project_name=self.config["train"]["comet_ml"]["project_name"]
             )
         # Create cropping graph
         crop_graph = tf.Graph()
@@ -61,7 +60,7 @@ class DeepProfilerModel(ABC):
         gc.collect()
         # Start validation session
         configuration = tf.ConfigProto()
-        configuration.gpu_options.visible_device_list = self.config["training"]["visible_gpus"]
+        configuration.gpu_options.visible_device_list = self.config["train"]["gpus"]
         crop_graph = tf.Graph()
         with crop_graph.as_default():
             val_session = tf.Session(config=configuration)
@@ -76,15 +75,14 @@ class DeepProfilerModel(ABC):
         # Start main session
         main_session = tf.Session(config=configuration)
         keras.backend.set_session(main_session)
-
         if verbose != 0:
-            output_file = self.config["training"]["output"] + "/checkpoint_{epoch:04d}.hdf5"
+            output_file = self.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
             callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
                 filepath=output_file,
                 save_weights_only=True,
                 save_best_only=False
             )
-            csv_output = self.config["training"]["output"] + "/log.csv"
+            csv_output = self.config["paths"]["logs"] + "/log.csv"
             callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
 
             callbacks = [callback_model_checkpoint, callback_csv]
@@ -96,11 +94,11 @@ class DeepProfilerModel(ABC):
         else:
             callbacks = None
 
-        epochs = self.config["training"]["epochs"]
-        steps = self.config["training"]["steps"]
+        epochs = self.config["train"]["model"]["epochs"]
+        steps = self.config["train"]['model']["steps"]
 
-        if self.config["model"]["comet_ml"]:
-            params = self.config["model"]["params"]
+        if self.config["train"]["comet_ml"]["track"]:
+            params = self.config["train"]["model"]["params"]
             experiment.log_multiple_params(params)
 
         keras.backend.get_session().run(tf.initialize_all_variables())
@@ -115,7 +113,7 @@ class DeepProfilerModel(ABC):
         )
 
         # Close session and stop threads
-        print("Complete! Closing session.", end="", flush=True)
+        print("Complete! Closing session.", end=" ", flush=True)
         self.train_crop_generator.stop(crop_session)
         crop_session.close()
         print("All set.")

@@ -1,6 +1,7 @@
 import importlib
 import os
 import random
+import json
 
 import numpy as np
 import pandas as pd
@@ -25,57 +26,23 @@ def out_dir(tmpdir):
 
 @pytest.fixture(scope='function')
 def config(out_dir):
-    return {
-        "model": {
-            "name": "cnn",
-            "crop_generator": "crop_generator",
-            "feature_dim": 128,
-            "conv_blocks": 3,
-            "params": {
-                "learning_rate": 0.0001,
-                "batch_size": 16
-            },
-        },
-        "sampling": {
-            "images": 12,
-            "box_size": 16,
-            "locations": 10,
-            "locations_field": 'R'
-        },
-        "image_set": {
-            "channels": ['R', 'G', 'B'],
-            "mask_objects": False,
-            "width": 128,
-            "height": 128,
-            "path": out_dir
-        },
-        "training": {
-            "learning_rate": 0.001,
-            "output": out_dir,
-            "epochs": 2,
-            "steps": 10,
-            "minibatch": 2,
-            "visible_gpus": "0"
-        },
-        "queueing": {
-            "loading_workers": 2,
-            "queue_size": 2
-        },
-        "validation": {
-            "minibatch": 2,
-            "output": out_dir,
-            "api_key":'[REDACTED]',
-            "project_name":'pytests',
-            "frame":"train",
-            "sample_first_crops": True,
-            "top_k": 2
-        }
-    }
-
+    with open("tests/files/config/test.json", 'r') as f:
+        config = json.load(f)
+    for path in config["paths"]:
+        config["paths"][path] = out_dir + config["paths"].get(path)
+    config["paths"]["root_dir"] = out_dir
+    return config
 
 @pytest.fixture(scope='function')
-def metadata(out_dir):
-    filename = os.path.join(out_dir, 'metadata.csv')
+def make_struct(config):
+    for key, path in config["paths"].items():
+        if key not in ["index", "config_file", "root_dir"]:
+            os.makedirs(path+"/")
+    return
+
+@pytest.fixture(scope='function')
+def metadata(out_dir, make_struct):
+    filename = os.path.join(out_dir, 'index.csv')
     df = pd.DataFrame({
         'Metadata_Plate': __rand_array(),
         'Metadata_Well': __rand_array(),
@@ -96,42 +63,42 @@ def metadata(out_dir):
 
 
 @pytest.fixture(scope='function')
-def dataset(metadata, out_dir):
+def dataset(metadata, out_dir, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, 'Sampling', ['R', 'G', 'B'], out_dir, keygen)
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, 'Sampling', ['R', 'G', 'B'], config["paths"]["root_dir"], keygen)
     target = deepprofiler.dataset.target.MetadataColumnTarget('Class', metadata.data['Class'].unique())
     dset.add_target(target)
     return dset
 
 
 @pytest.fixture(scope='function')
-def data(metadata, out_dir):
+def data(metadata, out_dir, config, make_struct):
     images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
     for i in range(0, 36, 3):
-        skimage.io.imsave(os.path.join(out_dir, metadata.data['R'][i // 3]), images[:, :, i])
-        skimage.io.imsave(os.path.join(out_dir, metadata.data['G'][i // 3]), images[:, :, i + 1])
-        skimage.io.imsave(os.path.join(out_dir, metadata.data['B'][i // 3]), images[:, :, i + 2])
+        skimage.io.imsave(os.path.join(config["paths"]["root_dir"], metadata.data['R'][i // 3]), images[:, :, i])
+        skimage.io.imsave(os.path.join(config["paths"]["root_dir"], metadata.data['G'][i // 3]), images[:, :, i + 1])
+        skimage.io.imsave(os.path.join(config["paths"]["root_dir"], metadata.data['B'][i // 3]), images[:, :, i + 2])
 
 
 @pytest.fixture(scope='function')
-def locations(out_dir, metadata, config):
+def locations(out_dir, metadata, config, make_struct):
     for i in range(len(metadata.data.index)):
         meta = metadata.data.iloc[i]
-        path = os.path.join(out_dir, meta['Metadata_Plate'], 'locations')
+        path = os.path.abspath(os.path.join(config["paths"]["locations"], meta['Metadata_Plate']))
         os.makedirs(path, exist_ok=True)
         path = os.path.abspath(os.path.join(path, '{}-{}-{}.csv'.format(meta['Metadata_Well'],
                                                   meta['Metadata_Site'],
-                                                  config['sampling']['locations_field'])))
+                                                  config['train']['sampling']['locations_field'])))
         locs = pd.DataFrame({
-            'R_Location_Center_X': np.random.randint(0, 128, (config['sampling']['locations'])),
-            'R_Location_Center_Y': np.random.randint(0, 128, (config['sampling']['locations']))
+            'R_Location_Center_X': np.random.randint(0, 128, (config['train']['sampling']['locations'])),
+            'R_Location_Center_Y': np.random.randint(0, 128, (config['train']['sampling']['locations']))
         })
         locs.to_csv(path, index=False)
 
 
 @pytest.fixture(scope='function')
 def crop_generator(config):
-    module = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))
+    module = importlib.import_module("plugins.crop_generators.{}".format(config['train']['model']['crop_generator']))
     importlib.invalidate_caches()
     generator = module.GeneratorClass
     return generator
@@ -139,7 +106,7 @@ def crop_generator(config):
 
 @pytest.fixture(scope='function')
 def val_crop_generator(config):
-    module = importlib.import_module("plugins.crop_generators.{}".format(config['model']['crop_generator']))
+    module = importlib.import_module("plugins.crop_generators.{}".format(config['train']['model']['crop_generator']))
     importlib.invalidate_caches()
     generator = module.SingleImageGeneratorClass
     return generator
@@ -147,7 +114,7 @@ def val_crop_generator(config):
 
 @pytest.fixture(scope='function')
 def model(config, dataset, crop_generator, val_crop_generator):
-    module = importlib.import_module("plugins.models.{}".format(config['model']['name']))
+    module = importlib.import_module("plugins.models.{}".format(config['train']['model']['name']))
     importlib.invalidate_caches()
     dpmodel = module.ModelClass(config, dataset, crop_generator, val_crop_generator)
     return dpmodel
@@ -169,14 +136,14 @@ def test_seed(model):
     assert model.random_seed == seed
 
 
-def test_train(model, out_dir, data, locations):
+def test_train(model, out_dir, data, locations, make_struct, config):
     model.train()
-    assert os.path.exists(os.path.join(out_dir, "checkpoint_0001.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "checkpoint_0002.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "log.csv"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0001.hdf5"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0002.hdf5"))
+    assert os.path.exists(os.path.join(config["paths"]["logs"], "log.csv"))
     epoch = 3
-    model.config["training"]["epochs"] = 4
+    model.config["train"]["model"]['epochs'] = 4
     model.train(epoch)
-    assert os.path.exists(os.path.join(out_dir, "checkpoint_0003.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "checkpoint_0004.hdf5"))
-    assert os.path.exists(os.path.join(out_dir, "log.csv"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0003.hdf5"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0004.hdf5"))
+    assert os.path.exists(os.path.join(config["paths"]["logs"], "log.csv"))
