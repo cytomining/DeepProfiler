@@ -23,7 +23,7 @@ def setup_comet_ml(dpmodel):
     return experiment
 
 
-def start_crop_generator(dpmodel):
+def start_crop_session(dpmodel):
     crop_graph = tf.Graph()
     with crop_graph.as_default():
         cpu_config = tf.ConfigProto(device_count={'CPU': 1, 'GPU': 0})
@@ -94,10 +94,9 @@ def init_tf_vars():
     keras.backend.get_session().run(tf.initialize_all_variables())
 
 
-def close(dpmodel, crop_session, val_session):
+def close(dpmodel, crop_session):
     print("Complete! Closing session.", end=" ", flush=True)
     dpmodel.train_crop_generator.stop(crop_session)
     crop_session.close()
-    val_session.close()
     print("All set.")
     gc.collect()

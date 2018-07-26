@@ -51,7 +51,7 @@ class DeepProfilerModel(ABC):
         # Create comet ml experiment
         experiment = model_utils.setup_comet_ml(self)
         # Start train crop generator
-        crop_session = model_utils.start_crop_generator(self)
+        crop_session = model_utils.start_crop_session(self)
         # Create tf configuration
         configuration = model_utils.tf_configure(self)
         # Start val crop generator
@@ -59,7 +59,7 @@ class DeepProfilerModel(ABC):
         # Create main session
         main_session = model_utils.start_main_session(configuration)
         # Create callbacks and load weights
-        callbacks = model_utils.setup_callbacks(self, epoch, verbose)
+        callbacks = model_utils.setup_callbacks(self, epoch, verbose)  # TODO: separate callbacks and loading weights
         # Create params (epochs, steps, log model params to comet ml)
         epochs, steps = model_utils.setup_params(self, experiment)
         # Initialize all tf variables to avoid tf bug
@@ -75,6 +75,6 @@ class DeepProfilerModel(ABC):
             validation_data=(x_validation, y_validation)
         )
         # Stop threads and close sessions
-        model_utils.close(self, crop_session, val_session)
+        model_utils.close(self, crop_session)
         # Return the feature model and validation data
         return self.feature_model, x_validation, y_validation
