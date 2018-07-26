@@ -37,7 +37,8 @@ setuptools.setup(
         "comet_ml>=1.0.0",
         "keras>=2.2.0",
         "keras_resnet>=0.1.0",
-        "scikit-learn>=0.19.1"
+        "scikit-learn>=0.19.1",
+        "gpyopt>=1.2.5"
     ],
     setup_requires=["pytest-runner"],
     tests_requires=["pytest"]
