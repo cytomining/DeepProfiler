@@ -20,7 +20,7 @@ class Optimize(object):
         self.seed = seed
         self.bounds = []
         for i in range(len(self.config["optim"]["names"])):
-            if self.config["optim"]["names"][i] == "logarithmic":
+            if self.config["optim"]["types"][i] == "logarithmic":
                 self.bounds.append({
                     'name': self.config["optim"]["names"][i],
                     'type': "continuous",
@@ -32,9 +32,8 @@ class Optimize(object):
                     'type': self.config["optim"]["types"][i],
                     'domain': parse_tuple(self.config["optim"]["domains"][i])
                 })
-    
-    
-    def model(self):
+
+    def evaluate(self):
         evaluation = deepprofiler.learning.training.learn_model(self.config, self.dset, self.epoch, self.seed, verbose=0)
         return evaluation
 
@@ -46,7 +45,7 @@ class Optimize(object):
                 self.config['train']["model"]["params"][self.config["optim"]["names"][i]] = int(x[:,i])
             elif self.config["optim"]["types"][i] == "logarithmic":
                 self.config['train']["model"]["params"][self.config["optim"]["names"][i]] = float(10**x[:,i])
-        evaluation = self.model()
+        evaluation = self.evaluate()
         return evaluation[0]
 
     def optimize(self):

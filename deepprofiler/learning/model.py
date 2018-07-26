@@ -101,7 +101,6 @@ class DeepProfilerModel(ABC):
             params = self.config["train"]["model"]["params"]
             experiment.log_multiple_params(params)
 
-
         keras.backend.get_session().run(tf.initialize_all_variables())
         self.feature_model.fit_generator(
             generator=self.train_crop_generator.generate(crop_session),
@@ -114,7 +113,7 @@ class DeepProfilerModel(ABC):
         )
 
         # Close session and stop threads
-        print("Complete! Closing session.", end="", flush=True)
+        print("Complete! Closing session.", end=" ", flush=True)
         self.train_crop_generator.stop(crop_session)
         crop_session.close()
         print("All set.")

@@ -183,7 +183,7 @@ class ModelClass(DeepProfilerModel):
         self.gan.train(epochs, steps, epoch)
 
         # Close session and stop threads
-        print("Complete! Closing session.", end="", flush=True)
+        print("Complete! Closing session.", end=" ", flush=True)
         self.train_crop_generator.stop(crop_session)
         crop_session.close()
         print("All set.")
