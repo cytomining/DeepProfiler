@@ -61,23 +61,24 @@ def start_main_session(configuration):
     return main_session
 
 
-def setup_callbacks(dpmodel, epoch, verbose):
-    if verbose != 0:
-        output_file = dpmodel.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
-        callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
-            filepath=output_file,
-            save_weights_only=True,
-            save_best_only=False
-        )
-        csv_output = dpmodel.config["paths"]["logs"] + "/log.csv"
-        callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
-        callbacks = [callback_model_checkpoint, callback_csv]
-        previous_model = output_file.format(epoch=epoch - 1)
-        if epoch >= 1 and os.path.isfile(previous_model):
-            dpmodel.feature_model.load_weights(previous_model)
-            print("Weights from previous model loaded:", previous_model)
-    else:
-        callbacks = None
+def load_weights(dpmodel, epoch):
+    output_file = dpmodel.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
+    previous_model = output_file.format(epoch=epoch - 1)
+    if epoch >= 1 and os.path.isfile(previous_model):
+        dpmodel.feature_model.load_weights(previous_model)
+        print("Weights from previous model loaded:", previous_model)
+
+
+def setup_callbacks(dpmodel):
+    output_file = dpmodel.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
+    callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
+        filepath=output_file,
+        save_weights_only=True,
+        save_best_only=False
+    )
+    csv_output = dpmodel.config["paths"]["logs"] + "/log.csv"
+    callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
+    callbacks = [callback_model_checkpoint, callback_csv]
     return callbacks
 
 

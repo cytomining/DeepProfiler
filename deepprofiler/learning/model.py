@@ -58,8 +58,13 @@ class DeepProfilerModel(ABC):
         val_session, x_validation, y_validation = model_utils.start_val_session(self, configuration)
         # Create main session
         main_session = model_utils.start_main_session(configuration)
-        # Create callbacks and load weights
-        callbacks = model_utils.setup_callbacks(self, epoch, verbose)  # TODO: separate callbacks and loading weights
+        if verbose != 0:  # verbose is only 0 when optimizing hyperparameters
+            # Load weights
+            model_utils.load_weights(self, epoch)
+            # Create callbacks
+            callbacks = model_utils.setup_callbacks(self)
+        else:
+            callbacks = None
         # Create params (epochs, steps, log model params to comet ml)
         epochs, steps = model_utils.setup_params(self, experiment)
         # Initialize all tf variables to avoid tf bug
