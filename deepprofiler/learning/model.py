@@ -45,7 +45,8 @@ class DeepProfilerModel(ABC):
         # Raise ValueError if feature model isn't properly defined
         model_utils.check_feature_model(self)
         # Print model summary
-        self.feature_model.summary()
+        if verbose != 0:
+            self.feature_model.summary()
         # Compile model
         self.feature_model.compile(self.optimizer, self.loss, metrics)
         # Create comet ml experiment

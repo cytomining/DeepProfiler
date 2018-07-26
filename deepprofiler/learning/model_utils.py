@@ -92,7 +92,7 @@ def setup_params(dpmodel, experiment):
 
 
 def init_tf_vars():
-    keras.backend.get_session().run(tf.initialize_all_variables())
+    keras.backend.get_session().run(tf.global_variables_initializer())
 
 
 def close(dpmodel, crop_session):
