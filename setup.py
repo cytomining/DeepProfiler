@@ -33,6 +33,6 @@ setuptools.setup(
     tests_require=[
         "pytest>=3.6",
         "pytest-cov>=2.0",
-        "codecov>=4.3"
+        "codecov>=2.0"
     ]
 )
