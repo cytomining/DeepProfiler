@@ -19,7 +19,7 @@ comment:
   require_head: yes
 
 ignore:
-  - "tests"  
+  - "tests/"  
   - "setup.py"      
-  - "scripts"
-  - ".eggs"
+  - "scripts/"
+  - ".eggs/"

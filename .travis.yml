@@ -2,7 +2,9 @@ sudo: false
 language: python
 python:
   - "3.6"
+install:
+  pip install .
 script:
-  - python setup.py test
+  - pytest
 after_success:
   - codecov
