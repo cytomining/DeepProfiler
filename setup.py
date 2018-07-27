@@ -23,16 +23,16 @@ setuptools.setup(
         "keras>=2.2",
         "keras_resnet>=0.1.0",
         "numpy>=1.13",
-        "pandas>=0.20.0",
-        "scikit-image>=0.13.0",
+        "pandas>=0.23.0",
+        "scikit-image>=0.14.0",
         "scikit-learn>=0.19.0",
-        "scipy>=0.19.0",
+        "scipy>=1.1",
         "tensorflow>=1.8",
     ],
     setup_requires=["pytest-runner"],
     tests_require=[
-        "pytest",
-        "pytest-cov",
-        "codecov"
+        "pytest>=3.6",
+        "pytest-cov>=2.0",
+        "codecov>=4.3"
     ]
 )
