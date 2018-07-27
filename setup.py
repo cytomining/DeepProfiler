@@ -31,8 +31,8 @@ setuptools.setup(
     ],
     setup_requires=["pytest-runner"],
     tests_requires=[
-        "pytest>=3.6",
-        "pytest-cov>=2.0",
-        "codecov>=4.3"
+        "pytest",
+        "pytest-cov",
+        "codecov"
     ]
 )
