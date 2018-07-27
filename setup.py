@@ -29,10 +29,11 @@ setuptools.setup(
         "scipy>=1.1",
         "tensorflow>=1.8",
     ],
-    setup_requires=["pytest-runner"],
-    tests_require=[
-        "pytest>=3.6",
-        "pytest-cov>=2.0",
-        "codecov>=2.0"
+    extras_require=[
+        "test": [
+            "pytest>=3.6",
+            "pytest-cov>=2.0",
+            "codecov>=2.0"
+        ]
     ]
 )
