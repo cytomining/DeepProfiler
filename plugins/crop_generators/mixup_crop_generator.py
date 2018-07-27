@@ -53,9 +53,6 @@ class Mixup(object):
 
 class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
-    def __init__(self, config, dset):
-        super().__init__(config, dset)
-
     def start(self, session):
         super().start(session)
 
