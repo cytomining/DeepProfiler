@@ -2,11 +2,13 @@ import numpy as np
 import random
 import pandas as pd
 
+import deepprofiler.imaging.cropping
 
-class CropSet(object):
 
-    def __init__(self, set_size, table_size, crop_shape, target_size):
-        self.set_size = set_size
+class Mixup(object):
+
+    def __init__(self, table_size, crop_shape, target_size, alpha):
+        self.alpha = alpha
         self.table_size = table_size
         self.target_size = target_size
         self.crops = np.zeros( (table_size, crop_shape[0][0], crop_shape[0][1], crop_shape[0][2]) )
@@ -34,33 +36,6 @@ class CropSet(object):
 
 
     def batch(self, batch_size, seed=None):
-        targets = self.labels["target"].unique()
-        s, w, h, c = self.crops.shape
-        data = np.zeros( (batch_size, self.set_size, w, h, c) )
-        labels = np.zeros((batch_size, self.target_size))
-
-        for i in range(batch_size):
-            random.shuffle(targets)
-            t = targets[0]
-            sample = self.labels[self.labels["target"] == t]
-            if len(sample) > self.set_size:
-                sample = sample.sample(n=self.set_size, replace=False, random_state=seed)
-            else:
-                sample = sample.sample(n=self.set_size, replace=True, random_state=seed)
-            index = sample.index.tolist()
-            data[i,:,:,:,:] = self.crops[index, ...]
-            labels[i, t] = 1.0
-        return data, labels
-
-
-class Mixup(CropSet):
-
-    def __init__(self, alpha, table_size, crop_shape, target_size):
-        super().__init__(2, table_size, crop_shape, target_size)
-        self.alpha = alpha
-
-
-    def batch(self, batch_size, seed=None):
         np.random.seed(seed)
         targets = self.labels["target"].unique()
         s, w, h, c = self.crops.shape
@@ -75,3 +50,43 @@ class Mixup(CropSet):
             labels[i, sample.loc[idx[0],"target"]] += lam
             labels[i, sample.loc[idx[1],"target"]] += 1. - lam
         return data, labels
+
+class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
+
+    def __init__(self, config, dset):
+        super().__init__(config, dset)
+
+    def start(self, session):
+        super().start(session)
+
+        self.batch_size = self.config["train"]["model"]["params"]["batch_size"]
+        self.target_sizes = []
+        targets = [t for t in self.train_variables.keys() if t.startswith("target_")]
+        targets.sort()
+        for t in targets:
+            self.target_sizes.append(self.train_variables[t].shape[1])
+        self.mixer = Mixup(
+                       self.config["train"]["queueing"]["queue_size"], 
+                       self.input_variables["shapes"]["crops"],
+                       self.target_sizes[0],
+                       self.config["train"]["sampling"]["alpha"]
+            )
+
+    def generate(self, sess, global_step=0):
+        pool_index = np.arange(self.image_pool.shape[0])
+        while True:
+            if self.coord.should_stop():
+                break
+            data = self.sample_batch(pool_index)
+            # Indices of data => [0] images, [1:-1] targets, [-1] summary
+            self.mixer.add_crops(data[0], data[1]) #TODO: support for multiple targets
+            while not self.mixer.ready:
+                data = self.sample_batch(pool_index)
+                self.mixer.add_crops(data[0], data[1])
+
+            global_step += 1
+            batch = self.mixer.batch(self.batch_size)
+
+            yield (batch[0], batch[1]) # TODO: support for multiple targets
+
+SingleImageGeneratorClass = deepprofiler.imaging.cropping.SingleImageCropGenerator

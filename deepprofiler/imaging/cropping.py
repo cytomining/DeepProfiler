@@ -10,8 +10,6 @@ import keras
 
 import deepprofiler.imaging.boxes
 import deepprofiler.imaging.augmentations
-import deepprofiler.imaging.cropset
-
 import deepprofiler.dataset.utils
 
 def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False):
