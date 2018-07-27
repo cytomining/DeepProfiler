@@ -11,7 +11,7 @@ import gc
 import numpy as np
 import tensorflow as tf
 
-from deepprofiler.learning import model_utils
+from deepprofiler.learning import model
 from deepprofiler.learning.model import DeepProfilerModel
 import deepprofiler.learning.validation
 
@@ -145,13 +145,13 @@ class ModelClass(DeepProfilerModel):
         self.feature_model = self.gan.discriminator
 
     def train(self, epoch=1, metrics=['accuracy'], verbose=1):
-        model_utils.check_feature_model(self)
+        model.check_feature_model(self)
         self.gan.combined.summary()
-        experiment = model_utils.setup_comet_ml(self)  # TODO: comet ml doesn't currently work with this model
-        crop_session = model_utils.start_crop_session(self)
-        configuration = model_utils.tf_configure(self)
+        experiment = model.setup_comet_ml(self)  # TODO: comet ml doesn't currently work with this model
+        crop_session = model.start_crop_session(self)
+        configuration = model.tf_configure(self)
         # TODO: no validation
-        main_session = model_utils.start_main_session(configuration)
+        main_session = model.start_main_session(configuration)
         discriminator_file = os.path.join(self.config["paths"]["checkpoints"], '{}_epoch_{:04d}.hdf5'.format('discriminator', epoch - 1))
         generator_file = os.path.join(self.config["paths"]["checkpoints"], '{}_epoch_{:04d}.hdf5'.format('generator', epoch - 1))
         if epoch >= 1 and os.path.isfile(discriminator_file) and os.path.isfile(generator_file):
@@ -159,8 +159,8 @@ class ModelClass(DeepProfilerModel):
             self.gan.generator.load_weights(generator_file)
             print("Weights from previous models loaded:", discriminator_file, generator_file)
         # TODO: no callbacks
-        epochs, steps = model_utils.setup_params(self, experiment)
-        model_utils.init_tf_vars()
+        epochs, steps = model.setup_params(self, experiment)
+        model.init_tf_vars()
         self.gan.train(epochs, steps, epoch)
-        model_utils.close(self, crop_session)
+        model.close(self, crop_session)
         # TODO: no return values
