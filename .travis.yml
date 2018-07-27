@@ -2,8 +2,7 @@ sudo: false
 language: python
 python:
   - "3.6"
-install:
-  - pip install pytest pytest-cov 
+install: 
   - pip install .
 script:
   - pytest
