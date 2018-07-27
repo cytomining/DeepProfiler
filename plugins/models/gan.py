@@ -11,6 +11,7 @@ import gc
 import numpy as np
 import tensorflow as tf
 
+from deepprofiler.learning import model
 from deepprofiler.learning.model import DeepProfilerModel
 import deepprofiler.learning.validation
 
@@ -130,6 +131,7 @@ class GAN(object):
 
                 # Plot the progress
                 print("Epoch %d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch, d_loss[0], 100*d_loss[1], g_loss))
+
             filename_d = os.path.join(self.config["paths"]["checkpoints"], '{}_epoch_{:04d}.hdf5'.format('discriminator', epoch))
             filename_g = os.path.join(self.config["paths"]["checkpoints"], '{}_epoch_{:04d}.hdf5'.format('generator', epoch))
             self.discriminator.save_weights(filename_d)
@@ -143,48 +145,22 @@ class ModelClass(DeepProfilerModel):
         self.feature_model = self.gan.discriminator
 
     def train(self, epoch=1, metrics=['accuracy'], verbose=1):
-        print(self.gan.combined.summary())
-        if self.config["train"]["comet_ml"]["track"]:
-            experiment = Experiment(
-                api_key=self.config["train"]["comet_ml"]["api_key"],
-                project_name=self.config["train"]["comet_ml"]["project_name"]
-            )
-        # Create cropping graph
-        crop_graph = tf.Graph()
-        with crop_graph.as_default():
-            cpu_config = tf.ConfigProto(device_count={'CPU': 1, 'GPU': 0})
-            cpu_config.gpu_options.visible_device_list = ""
-            crop_session = tf.Session(config=cpu_config)
-            self.train_crop_generator.start(crop_session)
-        gc.collect()
-
-        configuration = tf.ConfigProto()
-        configuration.gpu_options.visible_device_list = self.config["train"]["gpus"]
-
-        # Start main session
-        main_session = tf.Session(config=configuration)
-        keras.backend.set_session(main_session)
-
+        model.check_feature_model(self)
+        self.gan.combined.summary()
+        experiment = model.setup_comet_ml(self)  # TODO: comet ml doesn't currently work with this model
+        crop_session = model.start_crop_session(self)
+        configuration = model.tf_configure(self)
+        # TODO: no validation
+        main_session = model.start_main_session(configuration)
         discriminator_file = os.path.join(self.config["paths"]["checkpoints"], '{}_epoch_{:04d}.hdf5'.format('discriminator', epoch - 1))
         generator_file = os.path.join(self.config["paths"]["checkpoints"], '{}_epoch_{:04d}.hdf5'.format('generator', epoch - 1))
         if epoch >= 1 and os.path.isfile(discriminator_file) and os.path.isfile(generator_file):
             self.gan.discriminator.load_weights(discriminator_file)
             self.gan.generator.load_weights(generator_file)
             print("Weights from previous models loaded:", discriminator_file, generator_file)
-
-        epochs = self.config["train"]["model"]["epochs"]
-        steps = self.config["train"]["model"]["steps"]
-
-        if self.config["train"]["comet_ml"]["track"]:
-            params = self.config["train"]["model"]["params"]
-            experiment.log_multiple_params(params)
-
-        keras.backend.get_session().run(tf.initialize_all_variables())
+        # TODO: no callbacks
+        epochs, steps = model.setup_params(self, experiment)
+        model.init_tf_vars()
         self.gan.train(epochs, steps, epoch)
-
-        # Close session and stop threads
-        print("Complete! Closing session.", end=" ", flush=True)
-        self.train_crop_generator.stop(crop_session)
-        crop_session.close()
-        print("All set.")
-        gc.collect()
+        model.close(self, crop_session)
+        # TODO: no return values
