@@ -30,7 +30,7 @@ setuptools.setup(
         "tensorflow>=1.8",
     ],
     setup_requires=["pytest-runner"],
-    tests_requires=[
+    tests_require=[
         "pytest",
         "pytest-cov",
         "codecov"
