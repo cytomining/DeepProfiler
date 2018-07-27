@@ -3,8 +3,8 @@ language: python
 python:
   - "3.6"
 install:
-  pip install pytest pytest-cov  
-  pip install .
+  - pip install pytest pytest-cov 
+  - pip install .
 script:
   - pytest
 after_success:
