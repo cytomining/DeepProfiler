@@ -32,20 +32,29 @@ def cmd_setup(context):
 @click.option("--root", prompt="Root directory for DeepProfiler experiment",
               help="Root directory, written in JSON format",
               type=click.Path('r'))
+@click.option("--locations", default=None,
+              help="Specify existing locations directory",
+              type=click.Path('r'))
+@click.option("--images", default=None,
+              help="Specify existing images directory",
+              type=click.Path('r'))
+@click.option("--metadata", default=None,
+              help="Specify existing metadata directory",
+              type=click.Path('r'))
 @click.option("--cores", default=0,
               help="Number of CPU cores for parallel processing (all=0)",
               type=click.INT)
 @click.pass_context
-def cli(context, root, cores):
+def cli(context, root, locations, images, metadata, cores):
 
     paths = {
         "root_dir": root,
         "locations": root+"/inputs/locations",
-        "config_folder": root+"/inputs/config",
+        "config": root+"/inputs/config",
         "images": root+"/inputs/images",
         "metadata": root+"/inputs/metadata",
-        "pre-processed": root+"/inputs/preprocessed",
-        "pre-trained": root+"/inputs/pretrained",
+        "preprocessed": root+"/inputs/preprocessed",
+        "pretrained": root+"/inputs/pretrained",
         "intensities": root+"/outputs/intensities",
         "compressed_images": root+"/outputs/compressed/images",
         "compressed_metadata": root+"/outputs/compressed/metadata",
@@ -55,6 +64,12 @@ def cli(context, root, cores):
         "summaries": root+"/outputs/training/summaries",
         "features": root+"/outputs/features",
     }
+    if locations is not None:
+        paths["locations"] = locations
+    if images is not None:
+        paths["locations"] = images
+    if metadata is not None:
+        paths["locations"] = metadata
     context.obj["paths"] = paths
     context.obj["cores"] = cores
 
