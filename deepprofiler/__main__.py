@@ -22,15 +22,15 @@ def cmd_setup(context):
     context.parent.obj["process"] = process
     context.parent.obj["config"] = params
     context.parent.obj["config"]["paths"] = context.obj["paths"]
-    context.parent.obj["config"]["paths"]["index"] = context.obj["paths"]["root_dir"]+"/inputs/metadata/index.csv"
-    context.parent.obj["config"]["paths"]["config_file"] = context.obj["paths"]["root_dir"]+"/inputs/config/config.json"
+    context.parent.obj["config"]["paths"]["index"] = context.obj["paths"]["metadata"]+"/index.csv"
+    context.parent.obj["config"]["paths"]["config_file"] = context.obj["paths"]["config_dir"]+"/config.json"
     context.parent.obj["setup"] = True
 
 
 # Main interaction point
 @click.group()
 @click.option("--root", prompt="Root directory for DeepProfiler experiment",
-              help="Root directory, written in JSON format",
+              help="Root directory for DeepProfiler experiment",
               type=click.Path('r'))
 @click.option("--locations", default=None,
               help="Specify existing locations directory",
@@ -50,7 +50,7 @@ def cli(context, root, locations, images, metadata, cores):
     paths = {
         "root_dir": root,
         "locations": root+"/inputs/locations",
-        "config": root+"/inputs/config",
+        "config_dir": root+"/inputs/config",
         "images": root+"/inputs/images",
         "metadata": root+"/inputs/metadata",
         "preprocessed": root+"/inputs/preprocessed",
@@ -67,9 +67,9 @@ def cli(context, root, locations, images, metadata, cores):
     if locations is not None:
         paths["locations"] = locations
     if images is not None:
-        paths["locations"] = images
+        paths["images"] = images
     if metadata is not None:
-        paths["locations"] = metadata
+        paths["metadata"] = metadata
     context.obj["paths"] = paths
     context.obj["cores"] = cores
 
