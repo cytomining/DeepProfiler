@@ -15,16 +15,17 @@ import deepprofiler.learning.profiling
 import deepprofiler.learning.optimization
 
 
-def cmd_setup(context):
-    with open(context.obj["paths"]["root_dir"]+"/inputs/config/config.json", 'r') as f:
-        params = json.load(f)
-    process = deepprofiler.dataset.utils.Parallel(params, numProcs=context.obj["cores"])
-    context.parent.obj["process"] = process
-    context.parent.obj["config"] = params
-    context.parent.obj["config"]["paths"] = context.obj["paths"]
-    context.parent.obj["config"]["paths"]["index"] = context.obj["paths"]["metadata"]+"/index.csv"
-    context.parent.obj["config"]["paths"]["config_file"] = context.obj["paths"]["config_dir"]+"/config.json"
-    context.parent.obj["setup"] = True
+# def cmd_setup(context):
+#     with open(context.obj["config_file"], 'r') as f:
+#         params = json.load(f)
+#     process = deepprofiler.dataset.utils.Parallel(params, numProcs=context.obj["cores"])
+#     context.parent.obj["process"] = process
+#     context.parent.obj["config"] = params
+#     if
+#     context.parent.obj["config"]["paths"] = context.obj["paths"]
+#
+#     # context.parent.obj["config"]["paths"]["index"] = context.obj["paths"]["metadata"]+"/index.csv"
+#     context.parent.obj["setup"] = True
 
 
 # Main interaction point
@@ -32,65 +33,81 @@ def cmd_setup(context):
 @click.option("--root", prompt="Root directory for DeepProfiler experiment",
               help="Root directory for DeepProfiler experiment",
               type=click.Path('r'))
-@click.option("--locations", default=None,
-              help="Specify existing locations directory",
+@click.option("--config", default=None,
+              help="Path to existing config file",
               type=click.Path('r'))
-@click.option("--images", default=None,
-              help="Specify existing images directory",
-              type=click.Path('r'))
-@click.option("--metadata", default=None,
-              help="Specify existing metadata directory",
-              type=click.Path('r'))
+# @click.option("--locations", default=None,
+#               help="Specify existing locations directory",
+#               type=click.Path('r'))
+# @click.option("--images", default=None,
+#               help="Specify existing images directory",
+#               type=click.Path('r'))
+# @click.option("--metadata", default=None,
+#               help="Specify existing metadata directory",
+#               type=click.Path('r'))
 @click.option("--cores", default=0,
               help="Number of CPU cores for parallel processing (all=0)",
               type=click.INT)
 @click.pass_context
-def cli(context, root, locations, images, metadata, cores):
-
-    paths = {
-        "root_dir": root,
-        "locations": root+"/inputs/locations",
-        "config_dir": root+"/inputs/config",
-        "images": root+"/inputs/images",
-        "metadata": root+"/inputs/metadata",
-        "preprocessed": root+"/inputs/preprocessed",
-        "pretrained": root+"/inputs/pretrained",
-        "intensities": root+"/outputs/intensities",
-        "compressed_images": root+"/outputs/compressed/images",
-        "compressed_metadata": root+"/outputs/compressed/metadata",
-        "training": root+"/outputs/training",
-        "checkpoints": root+"/outputs/training/checkpoints",
-        "logs": root+"/outputs/training/logs",
-        "summaries": root+"/outputs/training/summaries",
-        "features": root+"/outputs/features",
+def cli(context, root, config, cores):
+    dirs = {
+        "root": root,
+        "locations": root+"/inputs/locations/",  # TODO: use os.path.join()
+        "config": root+"/inputs/config/",
+        "images": root+"/inputs/images/",
+        "metadata": root+"/inputs/metadata/",
+        "preprocessed": root+"/inputs/preprocessed/",
+        "pretrained": root+"/inputs/pretrained/",
+        "intensities": root+"/outputs/intensities/",
+        "compressed_images": root+"/outputs/compressed/images/",
+        "compressed_metadata": root+"/outputs/compressed/metadata/",
+        "training": root+"/outputs/training/",
+        "checkpoints": root+"/outputs/training/checkpoints/",
+        "logs": root+"/outputs/training/logs/",
+        "summaries": root+"/outputs/training/summaries/",
+        "features": root+"/outputs/features/",
     }
-    if locations is not None:
-        paths["locations"] = locations
-    if images is not None:
-        paths["images"] = images
-    if metadata is not None:
-        paths["metadata"] = metadata
-    context.obj["paths"] = paths
+    if config is not None:
+        context.obj["config"] = {}
+        context.obj["config"]["paths"] = {}
+        context.obj["config"]["paths"]["config"] = config
+        dirs["config"] = os.path.dirname(os.path.abspath(config))
+    else:
+        config = dirs["config"] + "/config.json"
     context.obj["cores"] = cores
+    if os.path.isfile(config):
+        with open(config, 'r') as f:
+            params = json.load(f)
+        if "paths" in params.keys():
+            for key, value in dirs.items():
+                if key not in params["paths"].keys():
+                    params["paths"][key] = dirs[key]
+                else:
+                    dirs[key] = params["paths"][key]
+        else:
+            params["paths"] = dirs
+        params["paths"]["index"] = params["paths"]["metadata"] + "/index.csv"
+        context.obj["config"] = params
+        process = deepprofiler.dataset.utils.Parallel(params, numProcs=context.obj["cores"])
+        context.obj["process"] = process
+    context.obj["dirs"] = dirs
 
 
 # Optional tool: Create the support file and folder structure in a root directory
 @cli.command()
 @click.pass_context
-def make_struct(context):
-    for path in context.obj["paths"]:
-        if os.path.isdir(context.obj["paths"].get(path)+"/") == False:
-            print("Creating directory: " + context.obj["paths"].get(path)+"/")
-            os.makedirs(context.obj["paths"].get(path)+"/")
+def setup(context):
+    for path in context.obj["dirs"].values():
+        if not os.path.isdir(path):
+            print("Creating directory: ", path)
+            os.makedirs(path)
         else:
-            print("Directory already exists: " + context.obj["paths"].get(path)+"/")
+            print("Directory exists: ", path)
     
 # First tool: Compute illumination statistics and compress images
 @cli.command()
 @click.pass_context
-def prepare_data(context):
-    if "setup" not in context.obj.keys():
-        cmd_setup(context)
+def prepare(context):
     process = context.obj["process"]
     metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["paths"]["index"])
     process.compute(deepprofiler.dataset.illumination_statistics.calculate_statistics, metadata)
@@ -107,11 +124,9 @@ def prepare_data(context):
 @click.option("--seed", default=None)
 @click.pass_context
 def optimize(context, epoch, seed):
-    if "setup" not in context.obj.keys():
-        cmd_setup(context)
-        if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-            context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
-            context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]['compressed_images']
+    if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
+        context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
+        context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]['compressed_images']
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     optim = deepprofiler.learning.optimization.Optimize(context.obj["config"], metadata, epoch, seed)
     optim.optimize()
@@ -122,11 +137,9 @@ def optimize(context, epoch, seed):
 @click.option("--seed", default=None)
 @click.pass_context
 def train(context, epoch, seed):
-    if "setup" not in context.obj.keys():
-        cmd_setup(context)
-        if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-            context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
-            context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]['compressed_images']
+    if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
+        context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
+        context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]['compressed_images']
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     deepprofiler.learning.training.learn_model(context.obj["config"], metadata, epoch, seed)
 
@@ -139,11 +152,9 @@ def train(context, epoch, seed):
               default=-1, 
               type=click.INT)
 def profile(context, part):
-    if "setup" not in context.obj.keys():
-        cmd_setup(context)
-        if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-            context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
-            context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]['compressed_images']
+    if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
+        context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
+        context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]['compressed_images']
     config = context.obj["config"]
     if part >= 0:
         partfile = "index-{0:03d}.csv".format(part)
@@ -158,13 +169,12 @@ def profile(context, part):
 @click.option("--parts", 
               help="Number of parts to split the index",
               type=click.INT)
-def split_index(context, parts):
-    if "setup" not in context.obj.keys():
-        cmd_setup(context)
-        if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-            context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
-            context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]['compressed_images']
+def split(context, parts):
+    if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
+        context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
+        context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]['compressed_images']
     deepprofiler.dataset.indexing.split_index(context.obj["config"], parts)
+
 
 if __name__ == "__main__":
     cli(obj={})
