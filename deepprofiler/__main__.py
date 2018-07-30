@@ -13,7 +13,7 @@ import deepprofiler.dataset.image_dataset
 import deepprofiler.learning.training
 import deepprofiler.learning.profiling
 import deepprofiler.learning.optimization
-
+import deepprofiler.download.normalize_bbbc021_metadata
 
 def cmd_setup(context):
     with open(context.obj["paths"]["root_dir"]+"/inputs/config/config.json", 'r') as f:
@@ -63,12 +63,21 @@ def cli(context, root, cores):
 @cli.command()
 @click.pass_context
 def make_struct(context):
+    print(context.obj["paths"])
     for path in context.obj["paths"]:
+        
         if os.path.isdir(context.obj["paths"].get(path)+"/") == False:
             print("Creating directory: " + context.obj["paths"].get(path)+"/")
             os.makedirs(context.obj["paths"].get(path)+"/")
         else:
             print("Directory already exists: " + context.obj["paths"].get(path)+"/")
+
+@cli.command()
+@click.pass_context
+def prepare_bbbc(context):
+    context.invoke(make_struct);    
+    deepprofiler.download.normalize_bbbc021_metadata.normalize_bbbc021_metadata(context)   
+    print("BBBC preparation complete!")
     
 # First tool: Compute illumination statistics and compress images
 @cli.command()
@@ -76,6 +85,7 @@ def make_struct(context):
 def prepare_data(context):
     if "setup" not in context.obj.keys():
         cmd_setup(context)
+        
     process = context.obj["process"]
     metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["paths"]["index"])
     process.compute(deepprofiler.dataset.illumination_statistics.calculate_statistics, metadata)
@@ -85,6 +95,9 @@ def prepare_data(context):
     deepprofiler.dataset.indexing.write_compression_index(context.obj["config"])
     context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
     print("Compression complete!")
+
+
+
 
 # Optional learning tool: Optimize the hyperparameters of a model
 @cli.command()
