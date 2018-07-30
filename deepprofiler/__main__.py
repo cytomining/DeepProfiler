@@ -15,19 +15,6 @@ import deepprofiler.learning.profiling
 import deepprofiler.learning.optimization
 
 
-# def cmd_setup(context):
-#     with open(context.obj["config_file"], 'r') as f:
-#         params = json.load(f)
-#     process = deepprofiler.dataset.utils.Parallel(params, numProcs=context.obj["cores"])
-#     context.parent.obj["process"] = process
-#     context.parent.obj["config"] = params
-#     if
-#     context.parent.obj["config"]["paths"] = context.obj["paths"]
-#
-#     # context.parent.obj["config"]["paths"]["index"] = context.obj["paths"]["metadata"]+"/index.csv"
-#     context.parent.obj["setup"] = True
-
-
 # Main interaction point
 @click.group()
 @click.option("--root", prompt="Root directory for DeepProfiler experiment",
@@ -36,15 +23,6 @@ import deepprofiler.learning.optimization
 @click.option("--config", default=None,
               help="Path to existing config file",
               type=click.Path('r'))
-# @click.option("--locations", default=None,
-#               help="Specify existing locations directory",
-#               type=click.Path('r'))
-# @click.option("--images", default=None,
-#               help="Specify existing images directory",
-#               type=click.Path('r'))
-# @click.option("--metadata", default=None,
-#               help="Specify existing metadata directory",
-#               type=click.Path('r'))
 @click.option("--cores", default=0,
               help="Number of CPU cores for parallel processing (all=0)",
               type=click.INT)
@@ -103,7 +81,8 @@ def setup(context):
             os.makedirs(path)
         else:
             print("Directory exists: ", path)
-    
+
+
 # First tool: Compute illumination statistics and compress images
 @cli.command()
 @click.pass_context
@@ -118,6 +97,7 @@ def prepare(context):
     context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
     print("Compression complete!")
 
+
 # Optional learning tool: Optimize the hyperparameters of a model
 @cli.command()
 @click.option("--epoch", default=1)
@@ -130,6 +110,7 @@ def optimize(context, epoch, seed):
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     optim = deepprofiler.learning.optimization.Optimize(context.obj["config"], metadata, epoch, seed)
     optim.optimize()
+
 
 # Second tool: Train a network
 @cli.command()
