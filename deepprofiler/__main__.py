@@ -13,6 +13,7 @@ import deepprofiler.dataset.image_dataset
 import deepprofiler.learning.training
 import deepprofiler.learning.profiling
 import deepprofiler.learning.optimization
+import deepprofiler.download.normalize_bbbc021_metadata
 
 
 # Main interaction point
@@ -96,6 +97,15 @@ def prepare(context):
     deepprofiler.dataset.indexing.write_compression_index(context.obj["config"])
     context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
     print("Compression complete!")
+
+
+# Optional tool: Download and prepare the BBBC021 dataset
+@cli.command()
+@click.pass_context
+def download_bbbc(context):
+    context.invoke(prepare);    
+    deepprofiler.download.normalize_bbbc021_metadata.normalize_bbbc021_metadata(context)   
+    print("BBBC021 download and preparation complete!")
 
 
 # Optional learning tool: Optimize the hyperparameters of a model
