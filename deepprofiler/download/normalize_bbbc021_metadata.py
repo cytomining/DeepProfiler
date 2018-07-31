@@ -10,8 +10,8 @@ import requests, zipfile, io
 
 def normalize_bbbc021_metadata(context):
 
-    outpathI=context.obj["paths"]["images"]+'/'
-    outpathM=context.obj["paths"]["metadata"]+'/'
+    outpathI=context.obj["config"]["paths"]["images"]+'/'
+    outpathM=context.obj["config"]["paths"]["metadata"]+'/'
     print(outpathI,outpathM)
     url = 'https://data.broadinstitute.org/bbbc/BBBC021/'
     mbyte=1024*1024

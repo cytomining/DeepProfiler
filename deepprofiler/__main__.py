@@ -82,30 +82,31 @@ def setup(context):
             os.makedirs(path)
         else:
             print("Directory exists: ", path)
-
-
-# First tool: Compute illumination statistics and compress images
-@cli.command()
-@click.pass_context
-def prepare(context):
-    process = context.obj["process"]
-    metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["paths"]["index"])
-    process.compute(deepprofiler.dataset.illumination_statistics.calculate_statistics, metadata)
-    print("Illumination complete!")
-    metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["paths"]["index"])
-    process.compute(deepprofiler.dataset.compression.compress_plate, metadata)
-    deepprofiler.dataset.indexing.write_compression_index(context.obj["config"])
-    context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
-    print("Compression complete!")
+    context.obj["config"] = {}
+    context.obj["config"]["paths"] = context.obj["dirs"]
 
 
 # Optional tool: Download and prepare the BBBC021 dataset
 @cli.command()
 @click.pass_context
 def download_bbbc021(context):
-    context.invoke(prepare);    
-    deepprofiler.download.normalize_bbbc021_metadata.normalize_bbbc021_metadata(context)   
+    context.invoke(setup)
+    deepprofiler.download.normalize_bbbc021_metadata.normalize_bbbc021_metadata(context)
     print("BBBC021 download and preparation complete!")
+
+
+# First tool: Compute illumination statistics and compress images
+@cli.command()
+@click.pass_context
+def prepare(context):
+    metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["paths"]["index"])
+    process = context.obj["process"]
+    process.compute(deepprofiler.dataset.illumination_statistics.calculate_statistics, metadata)
+    print("Illumination complete!")
+    process.compute(deepprofiler.dataset.compression.compress_plate, metadata)
+    deepprofiler.dataset.indexing.write_compression_index(context.obj["config"])
+    context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
+    print("Compression complete!")
 
 
 # Optional learning tool: Optimize the hyperparameters of a model
