@@ -102,7 +102,7 @@ def prepare(context):
 # Optional tool: Download and prepare the BBBC021 dataset
 @cli.command()
 @click.pass_context
-def download_bbbc(context):
+def download_bbbc021(context):
     context.invoke(prepare);    
     deepprofiler.download.normalize_bbbc021_metadata.normalize_bbbc021_metadata(context)   
     print("BBBC021 download and preparation complete!")
