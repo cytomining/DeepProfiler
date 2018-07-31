@@ -1,12 +1,10 @@
+sudo: false
 language: python
 python:
   - "3.6"
-cache: pip3
-install:
-  - pip3 install -r requirements.txt
-  - pip3 install codecov
-  - pip3 install pytest pytest-cov
+install: 
+  - pip install .[test]
 script:
-  - pytest --cov=./ -v
+  - pytest
 after_success:
   - codecov
