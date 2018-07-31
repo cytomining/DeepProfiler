@@ -17,9 +17,11 @@ setuptools.setup(
         "License :: OSI Approved :: BSD License"
     ],
     install_requires=[
+        "beautifulsoup4>=4.6",
         "click>=6.7",
         "cycler>=0.10.0",
         "decorator>=4.1.2",
+        "lxml>=4.2",
         "matplotlib>=2.0.2",
         "networkx>=1.11",
         "numpy>=1.13.1",
