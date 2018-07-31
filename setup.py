@@ -19,29 +19,23 @@ setuptools.setup(
     install_requires=[
         "beautifulsoup4>=4.6",
         "click>=6.7",
-        "cycler>=0.10.0",
-        "decorator>=4.1.2",
-        "lxml>=4.2",
-        "matplotlib>=2.0.2",
-        "networkx>=1.11",
-        "numpy>=1.13.1",
-        "olefile>=0.44",
-        "pandas>=0.20.3",
-        "Pillow>=4.2.1",
-        "pyparsing>=2.2.0",
-        "python-dateutil>=2.6.1",
-        "pytz>=2017.2",
-        "PyWavelets>=0.5.2",
-        "scikit-image>=0.13.0",
-        "scipy>=0.19.1",
-        "six>=1.10.0",
-        "tensorflow>=1.8.0",
-        "comet_ml>=1.0.0",
-        "keras>=2.2.0",
+        "comet_ml>=1.0",
+        "gpyopt>=1.2"
+        "keras>=2.2",
         "keras_resnet>=0.1.0",
-        "scikit-learn>=0.19.1",
-        "gpyopt>=1.2.5"
+        "lxml>=4.2",
+        "numpy>=1.13",
+        "pandas>=0.23.0",
+        "scikit-image>=0.14.0",
+        "scikit-learn>=0.19.0",
+        "scipy>=1.1",
+        "tensorflow>=1.8"
     ],
-    setup_requires=["pytest-runner"],
-    tests_requires=["pytest"]
+    extras_require={
+        "test": [
+            "pytest>=3.6",
+            "pytest-cov>=2.0",
+            "codecov>=2.0"
+        ]
+    }
 )
