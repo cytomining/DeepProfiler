@@ -44,7 +44,7 @@ def cli(context, root, config, cores):
         "checkpoints": root+"/outputs/training/checkpoints/",
         "logs": root+"/outputs/training/logs/",
         "summaries": root+"/outputs/training/summaries/",
-        "features": root+"/outputs/features/",
+        "features": root+"/outputs/features/"
     }
     if config is not None:
         context.obj["config"] = {}

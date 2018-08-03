@@ -109,7 +109,9 @@ def val_generator():
 
 @pytest.fixture(scope='function')
 def model(config, dataset, generator, val_generator):
-    return plugins.models.gan.ModelClass(config, dataset, generator, val_generator)
+    def create():
+        return plugins.models.gan.ModelClass(config, dataset, generator, val_generator)
+    return create
 
 
 def test_gan(config, generator, val_generator):
@@ -146,14 +148,16 @@ def test_init(config, dataset, generator, val_generator):
 
 
 def test_train(model, out_dir, data, locations, config, make_struct):
-    model.train()
+    model1 = model()
+    model1.train()
     assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "discriminator_epoch_0001.hdf5"))
     assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "generator_epoch_0001.hdf5"))
     assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "discriminator_epoch_0002.hdf5"))
     assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "generator_epoch_0002.hdf5"))
+    model2 = model()
     epoch = 3
-    model.config["train"]["model"]["epochs"] = 4
-    model.train(epoch)
+    model2.config["train"]["model"]["epochs"] = 4
+    model2.train(epoch)
     assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "discriminator_epoch_0003.hdf5"))
     assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "generator_epoch_0003.hdf5"))
     assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "discriminator_epoch_0004.hdf5"))
