@@ -85,6 +85,9 @@ class Profile(object):
                                    meta,
                                    self.config["train"]["validation"]["sample_first_crops"]
                             )
+        if total_crops == 0:
+            print("No cells to profile:", output_file)
+            return
         num_features = self.config["train"]["model"]["params"]["feature_dim"]
         repeats = "channel_repeats" in self.config["prepare"]["images"].keys()
         # Initialize data buffer

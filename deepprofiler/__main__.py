@@ -67,7 +67,7 @@ def cli(context, root, config, cores):
             params["paths"] = dirs
         params["paths"]["index"] = params["paths"]["metadata"] + "/index.csv"
         context.obj["config"] = params
-        process = deepprofiler.dataset.utils.Parallel(params, numProcs=context.obj["cores"])
+        process = deepprofiler.dataset.utils.Parallel(context.obj["config"], numProcs=context.obj["cores"])
         context.obj["process"] = process
     context.obj["dirs"] = dirs
 
@@ -103,6 +103,7 @@ def prepare(context):
     process = context.obj["process"]
     process.compute(deepprofiler.dataset.illumination_statistics.calculate_statistics, metadata)
     print("Illumination complete!")
+    metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["paths"]["index"])  # reinitialize generator
     process.compute(deepprofiler.dataset.compression.compress_plate, metadata)
     deepprofiler.dataset.indexing.write_compression_index(context.obj["config"])
     context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]['compressed_metadata']+"/compressed.csv"
