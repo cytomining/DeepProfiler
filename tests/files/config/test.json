@@ -72,15 +72,14 @@
           },
           "validation": {
             "top_k": 1,
-            "batch_size": 2,
-            "frame": "val",
-            "sample_first_crops": true
+            "batch_size": 2
           }
-    },  
+    },
     "profile": {
       "feature_layer": "features",
       "checkpoint": "checkpoint_0003.hdf5",
-      "gpu": "0"
+      "gpus": "0",
+      "batch_size": 2
     },
     "paths": {
         "locations": "/inputs/locations",
