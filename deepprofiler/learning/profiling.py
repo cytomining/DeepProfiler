@@ -20,15 +20,6 @@ import keras
 from keras.models import Model
 
 
-def crop_transform(crop_ph, image_size):
-    crops_shape = crop_ph.shape
-    resized_crops = tf.image.resize_images(crop_ph, size=(image_size, image_size))
-    reordered_channels = tf.transpose(resized_crops, [3, 0, 1, 2])
-    reshaped_data = tf.reshape(reordered_channels, shape=[-1, image_size, image_size, 1])
-    rgb_data = tf.image.grayscale_to_rgb(reshaped_data)
-    return rgb_data
-
-
 class Profile(object):
     
     def __init__(self, config, dset):
@@ -45,19 +36,24 @@ class Profile(object):
         self.profile_crop_generator = self.profile_crop_generator(config, dset)
 
 
-    def configure(self):
-        if self.config["profile"]["checkpoint"] is not None:
-            checkpoint = self.config["paths"]["checkpoints"]+"/"+self.config["profile"]["checkpoint"]
-            self.dpmodel.feature_model.load_weights(checkpoint)
-        self.feat_extractor = keras.Model(self.dpmodel.feature_model.inputs, self.dpmodel.feature_model.get_layer(
-            self.config["profile"]["feature_layer"]).output)
-        
-        # Session configuration
+    def configure(self):        
+        # Main session configuration
         configuration = tf.ConfigProto()
-        configuration.gpu_options.allow_growth = True
         configuration.gpu_options.visible_device_list = self.config["profile"]["gpu"]
+        configuration.gpu_options.allow_growth = True
         self.sess = tf.Session(config=configuration)
         self.profile_crop_generator.start(self.sess)
+        K.set_session(self.sess)
+        
+        # Create feature extractor
+        if self.config["train"]["pretrained"]:
+            checkpoint = self.config["paths"]["pretrained"]+"/"+self.config["profile"]["checkpoint"]
+        else:
+            checkpoint = self.config["paths"]["checkpoints"]+"/"+self.config["profile"]["checkpoint"]
+        self.dpmodel.feature_model.load_weights(checkpoint)
+        self.feat_extractor = keras.Model(self.dpmodel.feature_model.inputs, self.dpmodel.feature_model.get_layer(
+            self.config["profile"]["feature_layer"]).output)
+        self.feat_extractor.summary()
 
 
     def check(self, meta):
@@ -74,6 +70,7 @@ class Profile(object):
     
     # Function to process a single image
     def extract_features(self, key, image_array, meta):  # key is a placeholder
+        start = tic()
         output_file = self.config["paths"]["features"] + "/{}_{}_{}.npz"
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
 
@@ -83,34 +80,24 @@ class Profile(object):
                                    self.sess,
                                    image_array,
                                    meta,
-                                   self.config["train"]["validation"]["sample_first_crops"]
+                                   False
                             )
+        if total_crops == 0:
+            print("No cells to profile:", output_file)
+            return
         num_features = self.config["train"]["model"]["params"]["feature_dim"]
         repeats = "channel_repeats" in self.config["prepare"]["images"].keys()
-        # Initialize data buffer
+        
+        # Extract features
+        crops = next(self.profile_crop_generator.generate(self.sess))[0]  # single image crop generator yields one batch
+        feats = self.feat_extractor.predict(crops, batch_size=self.config["train"]["validation"]["batch_size"])
         if repeats:
-            data = np.zeros(shape=(self.num_channels, total_crops, num_features))
-        else:
-            data = np.zeros(shape=(total_crops, num_features))
-        b = 0
-        start = tic()
-
-        # Extract features in batches
-        batches = []
-        for batch in self.profile_crop_generator.generate(self.sess):
-            crops = batch[0]
-            feats = self.feat_extractor.predict(crops)
-            if repeats:
-                feats = np.reshape(feats, (self.num_channels, batch_size, num_features))
-                data[:, b * batch_size:(b + 1) * batch_size, :] = feats
-            else:
-                data[b * batch_size:(b + 1) * batch_size, :] = feats
-            b += 1
-            batches.append(batch)
-
+            feats = np.reshape(feats, (self.num_channels, total_crops, num_features))
+            feats = np.concatenate(feats, axis=-1)
+            
         # Save features
-        np.savez_compressed(output_file, f=data)
-        toc(image_key + " (" + str(data.shape[0]) + " cells)", start)
+        np.savez_compressed(output_file, f=feats)
+        toc(image_key + " (" + str(total_crops) + " cells)", start)
 
         
 def profile(config, dset):

@@ -114,10 +114,12 @@ def val_crop_generator(config):
 
 @pytest.fixture(scope='function')
 def model(config, dataset, crop_generator, val_crop_generator):
-    module = importlib.import_module("plugins.models.{}".format(config['train']['model']['name']))
-    importlib.invalidate_caches()
-    dpmodel = module.ModelClass(config, dataset, crop_generator, val_crop_generator)
-    return dpmodel
+    def create():
+        module = importlib.import_module("plugins.models.{}".format(config['train']['model']['name']))
+        importlib.invalidate_caches()
+        dpmodel = module.ModelClass(config, dataset, crop_generator, val_crop_generator)
+        return dpmodel
+    return create
 
 
 def test_init(config, dataset, crop_generator, val_crop_generator):
@@ -131,19 +133,22 @@ def test_init(config, dataset, crop_generator, val_crop_generator):
 
 
 def test_seed(model):
+    model1 = model()
     seed = random.randint(0, 256)
-    model.seed(seed)
-    assert model.random_seed == seed
+    model1.seed(seed)
+    assert model1.random_seed == seed
 
 
 def test_train(model, out_dir, data, locations, make_struct, config):
-    model.train()
+    model1 = model()
+    model1.train()
     assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0001.hdf5"))
     assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0002.hdf5"))
     assert os.path.exists(os.path.join(config["paths"]["logs"], "log.csv"))
+    model2 = model()
     epoch = 3
-    model.config["train"]["model"]['epochs'] = 4
-    model.train(epoch)
+    model2.config["train"]["model"]['epochs'] = 4
+    model2.train(epoch)
     assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0003.hdf5"))
     assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0004.hdf5"))
     assert os.path.exists(os.path.join(config["paths"]["logs"], "log.csv"))

@@ -20,7 +20,7 @@ class Validation(object):
                                    self.session, 
                                    image_array, 
                                    meta, 
-                                   self.config["train"]["validation"]["sample_first_crops"]
+                                   True
                             )
         if total_crops > 0:
             # We expect all crops in a single batch
@@ -31,5 +31,5 @@ class Validation(object):
 def validate(config, dset, crop_generator, session):
 
     validation = Validation(config, dset, crop_generator, session)
-    dset.scan(validation.process_batches, frame=config["train"]["validation"]["frame"])
+    dset.scan(validation.process_batches, frame="val")
     return np.concatenate(validation.batch_inputs), np.concatenate(validation.batch_outputs)

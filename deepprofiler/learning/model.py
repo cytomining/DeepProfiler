@@ -58,6 +58,8 @@ class DeepProfilerModel(ABC):
         val_session, x_validation, y_validation = start_val_session(self, configuration)
         # Create main session
         main_session = start_main_session(configuration)
+        # Initialize all tf variables to avoid tf bug (TODO: this causes problem with saving/loading weights, do not use)
+#         init_tf_vars()
         if verbose != 0:  # verbose is only 0 when optimizing hyperparameters
             # Load weights
             load_weights(self, epoch)
@@ -67,8 +69,6 @@ class DeepProfilerModel(ABC):
             callbacks = None
         # Create params (epochs, steps, log model params to comet ml)
         epochs, steps = setup_params(self, experiment)
-        # Initialize all tf variables to avoid tf bug
-        init_tf_vars()
         # Train model
         self.feature_model.fit_generator(
             generator=self.train_crop_generator.generate(crop_session),
@@ -96,6 +96,8 @@ def setup_comet_ml(dpmodel):
             api_key=dpmodel.config["train"]["comet_ml"]["api_key"],
             project_name=dpmodel.config["train"]["comet_ml"]["project_name"]
         )
+        if "experiment_name" in dpmodel.config["train"]["comet_ml"].keys():
+            experiment.set_name(dpmodel.config["train"]["comet_ml"]["experiment_name"])
     else:
         experiment = None
     return experiment
@@ -115,6 +117,7 @@ def start_crop_session(dpmodel):
 def tf_configure(dpmodel):
     configuration = tf.ConfigProto()
     configuration.gpu_options.visible_device_list = dpmodel.config["train"]["gpus"]
+    configuration.gpu_options.allow_growth = True
     return configuration
 
 

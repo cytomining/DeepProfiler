@@ -3,14 +3,23 @@ from keras.applications import inception_resnet_v2
 from keras.models import Model
 from keras.layers import Input, Dense
 from keras.optimizers import Adam
+from keras import backend as K
+import tensorflow as tf
 
 from deepprofiler.learning.model import DeepProfilerModel
 
 
 def define_model(config, dset):
+    # Set session
+    configuration = tf.ConfigProto()
+    configuration.gpu_options.visible_device_list = config["train"]["gpus"]
+    configuration.gpu_options.allow_growth = True
+    sess = tf.Session(config=configuration)
+    K.set_session(sess)
+    
     # Load InceptionResnetV2 base architecture
     if config['train']["pretrained"]:
-        weights = "imagenet"
+        weights = None
         input_tensor = Input((
             config['train']["sampling"]["box_size"],  # height
             config['train']["sampling"]["box_size"],  # width
@@ -18,7 +27,6 @@ def define_model(config, dset):
         ), name='input')
         base = inception_resnet_v2.InceptionResNetV2(
             include_top=True,
-            weights=weights,
             input_tensor=input_tensor
         )
         base.get_layer(index=-2).name = "global_{}_pool".format(config["train"]["model"]["params"]["pooling"])
