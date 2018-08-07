@@ -119,13 +119,6 @@ def profile(config, dataset):
     return deepprofiler.learning.profiling.Profile(config, dataset)
 
 
-def test_crop_transform():
-    test_crop_ph = tf.placeholder(tf.float32, shape=(16,16,16,10))
-    test_image_size = 8
-    test_rgb_data = deepprofiler.learning.profiling.crop_transform(test_crop_ph, test_image_size)
-    assert test_rgb_data.shape == (160,8,8,3)
-
-
 def test_init(config, dataset):
     prof = deepprofiler.learning.profiling.Profile(config, dataset)
     test_num_channels = len(config["prepare"]["images"]["channels"])

@@ -24,7 +24,8 @@
             "scaling_factor": 1.0
         }
     },
-    "train": {           
+    "train": {
+        "pretrained": false,
         "gpus": "0",
         "dset": {
             "targets": [
@@ -79,8 +80,7 @@
     "profile": {
       "feature_layer": "features",
       "checkpoint": "checkpoint_0003.hdf5",
-      "gpu": "0",
-      "pretrained": false
+      "gpu": "0"
     },
     "paths": {
         "locations": "/inputs/locations",
