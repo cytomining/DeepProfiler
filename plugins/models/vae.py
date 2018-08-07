@@ -31,7 +31,9 @@ def define_model(config, dset):
     # Add convolutional blocks to encoder based on number specified in config, with increasing number of filters
     x = input_image
     for i in range(config['train']['model']['params']['conv_blocks']):
-        x = Conv2D(8 * 2 ** i, (3, 3), activation='relu', padding='same')(x)
+        x = Conv2D(8 * 2 ** i, (3, 3), padding='same')(x)
+        x = BatchNormalization()(x)
+        x = Activation('relu')(x)
         x = MaxPooling2D((2, 2))(x)
     encoded_shape = x._keras_shape[1:]
     x = Flatten()(x)
@@ -58,7 +60,9 @@ def define_model(config, dset):
     decoder_layers.append(Reshape(encoded_shape))
     for i in reversed(range(config['train']['model']['params']['conv_blocks'])):
         decoder_layers.extend([
-            Conv2DTranspose(8 * 2 ** i, (3, 3), activation='relu', padding='same'),
+            Conv2DTranspose(8 * 2 ** i, (3, 3), padding='same'),
+            BatchNormalization(),
+            Activation('relu'),
             UpSampling2D((2, 2))
         ])
     decoder_layers.append(

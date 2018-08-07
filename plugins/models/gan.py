@@ -73,8 +73,8 @@ class GAN(object):
         x = Reshape((s, s, 1))(x)
         for i in reversed(range(self.config['train']['model']['params']['conv_blocks'])):
             x = Conv2DTranspose(8 * 2 ** i, (3, 3), padding='same')(x)
-            x = LeakyReLU(alpha=0.2)(x)
             x = BatchNormalization(momentum=0.8)(x)
+            x = LeakyReLU(alpha=0.2)(x)
             x = UpSampling2D((2, 2))(x)
         img = Conv2DTranspose(self.channels, (3, 3), padding='same', activation='sigmoid')(x)
 
@@ -86,6 +86,7 @@ class GAN(object):
         x = img
         for i in range(self.config['train']['model']['params']['conv_blocks']):
             x = Conv2D(8 * 2 ** i, (3, 3), padding='same')(x)
+            x = BatchNormalization(momentum=0.8)(x)
             x = LeakyReLU(alpha=0.2)(x)
             x = MaxPooling2D((2, 2))(x)
         x = Flatten()(x)
