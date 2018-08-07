@@ -50,10 +50,10 @@ class DeepProfilerModel(ABC):
         self.feature_model.compile(self.optimizer, self.loss, metrics)
         # Create comet ml experiment
         experiment = setup_comet_ml(self)
-        # Start train crop generator
-        crop_session = start_crop_session(self)
         # Create tf configuration
         configuration = tf_configure(self)
+        # Start train crop generator
+        crop_session = start_crop_session(self, configuration)
         # Start val crop generator
         val_session, x_validation, y_validation = start_val_session(self, configuration)
         # Create main session
@@ -103,12 +103,12 @@ def setup_comet_ml(dpmodel):
     return experiment
 
 
-def start_crop_session(dpmodel):
+def start_crop_session(dpmodel, configuration):
     crop_graph = tf.Graph()
     with crop_graph.as_default():
-        cpu_config = tf.ConfigProto(device_count={'CPU': 1, 'GPU': 0})
-        cpu_config.gpu_options.visible_device_list = ""
-        crop_session = tf.Session(config=cpu_config)
+#         cpu_config = tf.ConfigProto(device_count={'CPU': 1, 'GPU': 0})
+#         cpu_config.gpu_options.visible_device_list = ""
+        crop_session = tf.Session(config=configuration)
         dpmodel.train_crop_generator.start(crop_session)
     gc.collect()
     return crop_session

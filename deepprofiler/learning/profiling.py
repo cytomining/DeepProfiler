@@ -39,7 +39,7 @@ class Profile(object):
     def configure(self):        
         # Main session configuration
         configuration = tf.ConfigProto()
-        configuration.gpu_options.visible_device_list = self.config["profile"]["gpu"]
+        configuration.gpu_options.visible_device_list = self.config["profile"]["gpus"]
         configuration.gpu_options.allow_growth = True
         self.sess = tf.Session(config=configuration)
         self.profile_crop_generator.start(self.sess)
@@ -74,7 +74,7 @@ class Profile(object):
         output_file = self.config["paths"]["features"] + "/{}_{}_{}.npz"
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
 
-        batch_size = self.config["train"]["validation"]["batch_size"]
+        batch_size = self.config["profile"]["batch_size"]
         image_key, image_names, outlines = self.dset.getImagePaths(meta)
         total_crops = self.profile_crop_generator.prepare_image(
                                    self.sess,
@@ -90,7 +90,7 @@ class Profile(object):
         
         # Extract features
         crops = next(self.profile_crop_generator.generate(self.sess))[0]  # single image crop generator yields one batch
-        feats = self.feat_extractor.predict(crops, batch_size=self.config["train"]["validation"]["batch_size"])
+        feats = self.feat_extractor.predict(crops, batch_size=batch_size)
         if repeats:
             feats = np.reshape(feats, (self.num_channels, total_crops, num_features))
             feats = np.concatenate(feats, axis=-1)
