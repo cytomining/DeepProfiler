@@ -117,6 +117,7 @@ def start_crop_session(dpmodel):
 def tf_configure(dpmodel):
     configuration = tf.ConfigProto()
     configuration.gpu_options.visible_device_list = dpmodel.config["train"]["gpus"]
+    configuration.gpu_options.allow_growth = True
     return configuration
 
 
