@@ -58,8 +58,6 @@ class DeepProfilerModel(ABC):
         val_session, x_validation, y_validation = start_val_session(self, configuration)
         # Create main session
         main_session = start_main_session(configuration)
-        # Initialize all tf variables to avoid tf bug (TODO: this causes problem with saving/loading weights, do not use)
-#         init_tf_vars()
         if verbose != 0:  # verbose is only 0 when optimizing hyperparameters
             # Load weights
             load_weights(self, epoch)
@@ -148,6 +146,9 @@ def load_weights(dpmodel, epoch):
     if epoch >= 1 and os.path.isfile(previous_model):
         dpmodel.feature_model.load_weights(previous_model)
         print("Weights from previous model loaded:", previous_model)
+    else:
+        # Initialize all tf variables to avoid tf bug
+        keras.backend.get_session().run(tf.global_variables_initializer())
 
 
 def setup_callbacks(dpmodel):
@@ -170,10 +171,6 @@ def setup_params(dpmodel, experiment):
         params = dpmodel.config["train"]["model"]["params"]
         experiment.log_multiple_params(params)
     return epochs, steps
-
-
-def init_tf_vars():
-    keras.backend.get_session().run(tf.global_variables_initializer())
 
 
 def close(dpmodel, crop_session):
