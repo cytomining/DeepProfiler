@@ -159,9 +159,10 @@ class ModelClass(DeepProfilerModel):
             self.gan.discriminator.load_weights(discriminator_file)
             self.gan.generator.load_weights(generator_file)
             print("Weights from previous models loaded:", discriminator_file, generator_file)
+        else:
+            keras.backend.get_session().run(tf.global_variables_initializer())  # workaround for tf bug
         # TODO: no callbacks
         epochs, steps = model.setup_params(self, experiment)
-        model.init_tf_vars()
         self.gan.train(epochs, steps, epoch)
         model.close(self, crop_session)
         # TODO: no return values
