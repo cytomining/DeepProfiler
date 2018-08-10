@@ -2,7 +2,7 @@ import setuptools
 
 
 setuptools.setup(
-    name="deep-profiler",
+    name="deepprofiler",
     version="0.1.0",
     author="Juan Caicedo",
     author_email="jcaicedo@gmail.com",
@@ -12,7 +12,7 @@ setuptools.setup(
     url="https://github.com/jccaicedo/DeepProfiler",
     packages=["deepprofiler"],
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Topic :: Utilities",
         "License :: OSI Approved :: BSD License"
     ],
