@@ -13,27 +13,62 @@ Morphological profiling using deep learning
 
 ## Contents
 
-This projects provide tools and APIs to manipulate high-throughput images for deep learning. The dataset tools are the only ones currently implemented. 
+This project provides tools and APIs to manipulate high-throughput images for deep learning. The dataset tools are the only ones currently implemented. This project only supports Python 3.
 
-## Dataset Tools
+## Tools
 
-To prepare microscopy datasets for deep learning we have implemented the following steps that should be run sequentially: 1) Collect illumination statistics, 2) Compress images, and 3) Create cell location indices. Prior to these three steps, we need to create a metadata file with image locations and labels.
-
-Any of these three steps requires a configuration file written in JSON format. With this file available for a particular dataset, you can run the dataset tools as follows:
+All of the following commands require the --root flag to be set to the root project directory. They also require a configuration file to be present (excluding the setup command). The commands use the following syntax:
 
 <pre>
-    python dataset --config=data.json metadata
-    python dataset --config=data.json illumination
-    python dataset --config=data.json compression
-    python dataset --config=data.json locations
+    python deepprofiler --root=[project root] [command] [command flags]
 </pre>
 
-These commands take some time to get your dataset ready. After that, you can launch the learning commands [under construction].
+Additionally, the --config flag can be used to manually specify a configuration file not in the config directory. See the project Wiki for documentation on configuration files.
 
-## Learning Tools
+### Setting up the project directory
 
-Learn a convolutional network from single cell data using the following convention:
+The project directory can be set up automatically from a specified root directory:
 
 <pre>
-    python learning --config=learn.json training
+    python deepprofiler --root=[project root] setup
 </pre>
+
+A configuration file is not necessary for this step, but you can specify one with the --config flag after deepprofiler if you want to use existing directories.
+
+### Preparing the dataset
+
+The dataset can be optionally preprocessed with illumination correction and compression, as specified in the configuration file, with one command:
+
+<pre>
+    python deepprofiler --root=[project root] prepare
+</pre>
+
+### Training the model
+
+To train your model on the dataset:
+
+<pre>
+    python deepprofiler --root=[project root] train
+</pre>
+
+You may optionally specify the --epoch and --seed flags after train, to set the current epoch or the random seed.
+
+### Extracting features
+
+To extract single-cell features for profiling:
+
+<pre>
+    python deepprofiler --root=[project root] profile
+</pre>
+
+You will need to specify the name of the model checkpoint to use in the configuration file.
+
+### Hyperparameter optimization
+
+Optionally, you may run DeepProfiler's hyperparameter optimization feature (which uses GPyOpt) to find optimal values for your model's hyperparameters:
+
+<pre>
+    python deepprofiler --root=[project root] optimize
+</pre>
+
+This may take a while as it will train a model for the number of epochs specified for each step in the process. It is recommended to decrease the epochs and steps to manageable values when running this command.
