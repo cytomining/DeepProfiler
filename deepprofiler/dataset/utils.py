@@ -8,7 +8,7 @@ PI = 3.1415926539
 
 # From: http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
 # Print iterations progress
-def print_progress (iteration, total, prefix='Progress', suffix='Complete', decimals=1, barLength=50):
+def print_progress (iteration, total, prefix="Progress", suffix="Complete", decimals=1, barLength=50):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -23,26 +23,26 @@ def print_progress (iteration, total, prefix='Progress', suffix='Complete', deci
         formatStr       = "{0:." + str(decimals) + "f}"
         percents        = formatStr.format(100 * (iteration / float(total)))
         filledLength    = int(round(barLength * iteration / float(total)))
-        bar             = '#' * filledLength + '-' * (barLength - filledLength)
-        sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
+        bar             = "#" * filledLength + "-" * (barLength - filledLength)
+        sys.stdout.write("\r%s |%s| %s%s %s" % (prefix, bar, percents, "%", suffix)),
         sys.stdout.flush()
         if iteration == total:
-            sys.stdout.write('\n')
+            sys.stdout.write("\n")
             sys.stdout.flush()
     elif sum([iteration<0,total<0,barLength<0]) > 1:
-        sys.stdout.write('\rError: print_progress() function received multiple negative values.')
+        sys.stdout.write("\rError: print_progress() function received multiple negative values.")
         sys.stdout.flush()
     elif iteration < 0:
-        sys.stdout.write('\rError: print_progress() function received a negative "iteration" value.')
+        sys.stdout.write("\rError: print_progress() function received a negative 'iteration' value.")
         sys.stdout.flush()
     elif total < 0:
-        sys.stdout.write('\rError: print_progress() function received a negative "total" value.')
+        sys.stdout.write("\rError: print_progress() function received a negative 'total' value.")
         sys.stdout.flush()
     elif barLength < 0:
-        sys.stdout.write('\rError: print_progress() function received a negative "barLength" value.')
+        sys.stdout.write("\rError: print_progress() function received a negative 'barLength' value.")
         sys.stdout.flush()
     elif iteration > total:
-        sys.stdout.write('\rError: print_progress() function received an "iteration" value greater than the "total" value.')
+        sys.stdout.write("\rError: print_progress() function received an 'iteration' value greater than the 'total' value.")
         sys.stdout.flush()
 
 ################################################################################
@@ -63,7 +63,7 @@ def tic():
 def toc(msg, beginning):
     end = time.time()
     elapsed = end - beginning
-    print(msg, ': {:.2f} secs'.format(elapsed))
+    print(msg, ": {:.2f} secs".format(elapsed))
     return end
 
 ################################################################################
@@ -95,7 +95,7 @@ class Logger():
         self.root.setLevel(logging.INFO)
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         ch.setFormatter(formatter)
         self.root.addHandler(ch)
 

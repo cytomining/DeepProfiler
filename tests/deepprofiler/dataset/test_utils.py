@@ -11,13 +11,13 @@ def test_print_progress():
     backup = sys.stdout
     test_iterations = [-1,0,1,2,3,4,5]
     test_outputs = []
-    expected_outputs = ['\rError: print_progress() function received a negative "iteration" value.',
-                        '\rProgress |' + '-' * 50 +'| 0.0% Complete',
-                        '\rProgress |' + '#' * 12 + '-' * 38 +'| 25.0% Complete',
-                        '\rProgress |' + '#' * 25 + '-' * 25 +'| 50.0% Complete',
-                        '\rProgress |' + '#' * 38 + '-' * 12 +'| 75.0% Complete',
-                        '\rProgress |' + '#' * 50 +'| 100.0% Complete\n',
-                        '\rError: print_progress() function received an "iteration" value greater than the "total" value.']
+    expected_outputs = ["\rError: print_progress() function received a negative 'iteration' value.",
+                        "\rProgress |" + "-" * 50 +"| 0.0% Complete",
+                        "\rProgress |" + "#" * 12 + "-" * 38 +"| 25.0% Complete",
+                        "\rProgress |" + "#" * 25 + "-" * 25 +"| 50.0% Complete",
+                        "\rProgress |" + "#" * 38 + "-" * 12 +"| 75.0% Complete",
+                        "\rProgress |" + "#" * 50 +"| 100.0% Complete\n",
+                        "\rError: print_progress() function received an 'iteration' value greater than the 'total' value."]
     test_total = 4
     for iteration in test_iterations:
 
@@ -33,7 +33,7 @@ def test_print_progress():
     
     test_iteration = 1
     test_total = -1
-    expected_output = '\rError: print_progress() function received a negative "total" value.'
+    expected_output = "\rError: print_progress() function received a negative 'total' value."
     
 
     # ####
@@ -46,7 +46,7 @@ def test_print_progress():
     
     test_total = 2
     test_barLength = -100
-    expected_output = '\rError: print_progress() function received a negative "barLength" value.'
+    expected_output = "\rError: print_progress() function received a negative 'barLength' value."
     
 
     # ####
@@ -60,7 +60,7 @@ def test_print_progress():
     test_total = -2
     test_iteration = -1
     test_barLength = -100
-    expected_output = '\rError: print_progress() function received multiple negative values.'
+    expected_output = "\rError: print_progress() function received multiple negative values."
     
 
     # ####
@@ -75,9 +75,9 @@ def test_print_progress():
     test_iteration = 1
     test_barLength = 200
     test_decimals = 2
-    test_prefix = 'Dog'
-    test_suffix = 'Cat'
-    expected_output = '\rDog |' + '#' * 100 + '-' * 100 +'| 50.00% Cat'
+    test_prefix = "Dog"
+    test_suffix = "Cat"
+    expected_output = "\rDog |" + "#" * 100 + "-" * 100 +"| 50.00% Cat"
     
 
     # ####

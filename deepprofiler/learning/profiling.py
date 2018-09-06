@@ -26,12 +26,12 @@ class Profile(object):
         self.config = config
         self.dset = dset
         self.num_channels = len(self.config["prepare"]["images"]["channels"])
-        self.crop_generator = importlib.import_module("plugins.crop_generators.{}".format(config["train"]['model']['crop_generator']))\
+        self.crop_generator = importlib.import_module("plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"]))\
             .GeneratorClass
         self.profile_crop_generator = importlib.import_module(
-            "plugins.crop_generators.{}".format(config["train"]['model']['crop_generator'])) \
+            "plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"])) \
             .SingleImageGeneratorClass
-        self.dpmodel = importlib.import_module("plugins.models.{}".format(config["train"]['model']['name']))\
+        self.dpmodel = importlib.import_module("plugins.models.{}".format(config["train"]["model"]["name"]))\
             .ModelClass(config, dset, self.crop_generator, self.profile_crop_generator)
         self.profile_crop_generator = self.profile_crop_generator(config, dset)
 

@@ -22,15 +22,15 @@ class Optimize(object):
         for i in range(len(self.config["optim"]["names"])):
             if self.config["optim"]["types"][i] == "logarithmic":
                 self.bounds.append({
-                    'name': self.config["optim"]["names"][i],
-                    'type': "continuous",
-                    'domain': parse_tuple(self.config["optim"]["domains"][i])
+                    "name": self.config["optim"]["names"][i],
+                    "type": "continuous",
+                    "domain": parse_tuple(self.config["optim"]["domains"][i])
                 })
             else:
                 self.bounds.append({
-                    'name': self.config["optim"]["names"][i],
-                    'type': self.config["optim"]["types"][i],
-                    'domain': parse_tuple(self.config["optim"]["domains"][i])
+                    "name": self.config["optim"]["names"][i],
+                    "type": self.config["optim"]["types"][i],
+                    "domain": parse_tuple(self.config["optim"]["domains"][i])
                 })
 
     def evaluate(self):
@@ -40,11 +40,11 @@ class Optimize(object):
     def f(self, x):
         for i in range(len(self.config["optim"]["names"])):
             if self.config["optim"]["types"][i] == "continuous":
-                self.config['train']["model"]["params"][self.config["optim"]["names"][i]] = float(x[:,i])
+                self.config["train"]["model"]["params"][self.config["optim"]["names"][i]] = float(x[:,i])
             elif self.config["optim"]["types"][i] == "discrete":
-                self.config['train']["model"]["params"][self.config["optim"]["names"][i]] = int(x[:,i])
+                self.config["train"]["model"]["params"][self.config["optim"]["names"][i]] = int(x[:,i])
             elif self.config["optim"]["types"][i] == "logarithmic":
-                self.config['train']["model"]["params"][self.config["optim"]["names"][i]] = float(10**x[:,i])
+                self.config["train"]["model"]["params"][self.config["optim"]["names"][i]] = float(10**x[:,i])
         evaluation = self.evaluate()
         return evaluation[0]
 

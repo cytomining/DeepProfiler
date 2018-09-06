@@ -18,7 +18,7 @@ class Logger():
         self.root.setLevel(logging.INFO)
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         ch.setFormatter(formatter)
         self.root.addHandler(ch)
 
@@ -33,11 +33,11 @@ logger = Logger()
 
 def parse_delimiter(delimiter):
     if delimiter == "blanks":
-        return '\s+'
+        return "\s+"
     elif delimiter == "tabs":
-        return '\t'
+        return "\t"
     else:
-        return ','
+        return ","
 
 class Metadata():
 
@@ -85,7 +85,7 @@ def read_plates(metaFile):
         yield plate
     return
 
-def print_progress (iteration, total, prefix='Progress', suffix='Complete', decimals=1, barLength=100):
+def print_progress (iteration, total, prefix="Progress", suffix="Complete", decimals=1, barLength=100):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -100,26 +100,26 @@ def print_progress (iteration, total, prefix='Progress', suffix='Complete', deci
         formatStr       = "{0:." + str(decimals) + "f}"
         percents        = formatStr.format(100 * (iteration / float(total)))
         filledLength    = int(round(barLength * iteration / float(total)))
-        bar             = '#' * filledLength + '-' * (barLength - filledLength)
-        sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
+        bar             = "#" * filledLength + "-" * (barLength - filledLength)
+        sys.stdout.write("\r%s |%s| %s%s %s" % (prefix, bar, percents, "%", suffix)),
         sys.stdout.flush()
         if iteration == total:
-            sys.stdout.write('\n')
+            sys.stdout.write("\n")
             sys.stdout.flush()
     elif sum([iteration<0,total<0,barLength<0]) > 1:
-        sys.stdout.write('\rError: print_progress() function received multiple negative values.')
+        sys.stdout.write("\rError: print_progress() function received multiple negative values.")
         sys.stdout.flush()
     elif iteration < 0:
-        sys.stdout.write('\rError: print_progress() function received a negative "iteration" value.')
+        sys.stdout.write("\rError: print_progress() function received a negative "iteration" value.")
         sys.stdout.flush()
     elif total < 0:
-        sys.stdout.write('\rError: print_progress() function received a negative "total" value.')
+        sys.stdout.write("\rError: print_progress() function received a negative "total" value.")
         sys.stdout.flush()
     elif barLength < 0:
-        sys.stdout.write('\rError: print_progress() function received a negative "barLength" value.')
+        sys.stdout.write("\rError: print_progress() function received a negative "barLength" value.")
         sys.stdout.flush()
     elif iteration > total:
-        sys.stdout.write('\rError: print_progress() function received an "iteration" value greater than the "total" value.')
+        sys.stdout.write("\rError: print_progress() function received an "iteration" value greater than the "total" value.")
         sys.stdout.flush()
 
 def write_locations(field, query_template, plate_name, row, conn, config):
@@ -174,7 +174,7 @@ def create_cell_indices(args):
     for index, row in plate.data.iterrows():
         write_locations("Cells", query_template, plate_name, row, conn, config)
         write_locations("Nuclei", query_template, plate_name, row, conn, config)
-        print_progress(iteration, len(plate.data), prefix='Locations in plate ' + str(plate_name))
+        print_progress(iteration, len(plate.data), prefix="Locations in plate " + str(plate_name))
         iteration += 1
     print("")
 
@@ -192,13 +192,13 @@ class Parallel():
         self.pool.map(operation, iterable)
         return
 
-parser = argparse.ArgumentParser(description='Find cell locations')
-parser.add_argument('config', help='The path to the configuration file')
-parser.add_argument('core', help='Number of CPU cores for parallel processing (all=0)')
+parser = argparse.ArgumentParser(description="Find cell locations")
+parser.add_argument("config", help="The path to the configuration file")
+parser.add_argument("core", help="Number of CPU cores for parallel processing (all=0)")
 options = parser.parse_args()
 
 cores = int(options.core)
-with open(options.config, 'r') as f:
+with open(options.config, "r") as f:
     config = json.load(f)
 process = Parallel(config, numProcs=cores)
 metadata = read_plates(config["metadata"]["path"]+config["metadata"]["filename"])

@@ -18,13 +18,13 @@ def define_model(config, dset):
     K.set_session(sess)
     
     # Load InceptionResnetV2 base architecture
-    if config['train']["pretrained"]:
+    if config["train"]["pretrained"]:
         weights = None
         input_tensor = Input((
-            config['train']["sampling"]["box_size"],  # height
-            config['train']["sampling"]["box_size"],  # width
-            config['prepare']['images']["channel_repeats"]  # channels
-        ), name='input')
+            config["train"]["sampling"]["box_size"],  # height
+            config["train"]["sampling"]["box_size"],  # width
+            config["prepare"]["images"]["channel_repeats"]  # channels
+        ), name="input")
         base = inception_resnet_v2.InceptionResNetV2(
             include_top=True,
             input_tensor=input_tensor
@@ -37,8 +37,8 @@ def define_model(config, dset):
         input_tensor = Input((
             config["train"]["sampling"]["box_size"],  # height
             config["train"]["sampling"]["box_size"],  # width
-            len(config['prepare']['images']["channels"])  # channels
-        ), name='input')
+            len(config["prepare"]["images"]["channels"])  # channels
+        ), name="input")
         base = inception_resnet_v2.InceptionResNetV2(
             include_top=False,
             weights=weights,
@@ -58,8 +58,8 @@ def define_model(config, dset):
         model = Model(input_tensor, class_outputs)
 
     # Define optimizer and loss
-    optimizer = Adam(lr=config['train']['model']['params']['learning_rate'])
-    loss = 'categorical_crossentropy'
+    optimizer = Adam(lr=config["train"]["model"]["params"]["learning_rate"])
+    loss = "categorical_crossentropy"
 
     return model, optimizer, loss
 

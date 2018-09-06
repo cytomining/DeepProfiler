@@ -23,20 +23,20 @@ def define_model(config, dset):
     )
     input_image = keras.layers.Input(input_shape)
 
-    if config["train"]['model']["params"]['conv_blocks'] < 1:
+    if config["train"]["model"]["params"]["conv_blocks"] < 1:
         raise ValueError("At least 1 convolutional block is required.")
 
     # Add convolutional blocks to encoder based on number specified in config, with increasing number of filters
     x = input_image
-    for i in range(config["train"]['model']['params']['conv_blocks']):
-        x = Conv2D(8 * 2 ** i, (3, 3), padding='same')(x)
+    for i in range(config["train"]["model"]["params"]["conv_blocks"]):
+        x = Conv2D(8 * 2 ** i, (3, 3), padding="same")(x)
         x = BatchNormalization()(x)
-        x = Activation('relu')(x)
+        x = Activation("relu")(x)
         x = MaxPooling2D((2, 2))(x)
     conv_shape = x._keras_shape[1:]
     x = Flatten()(x)
     flattened_shape = x._keras_shape[1:]
-    encoded = Dense(config["train"]["model"]['params']["feature_dim"], name='encoded')(x)
+    encoded = Dense(config["train"]["model"]["params"]["feature_dim"], name="encoded")(x)
     encoded_shape = encoded._keras_shape[1:]
     encoder = Model(input_image, encoded)
 
@@ -45,22 +45,22 @@ def define_model(config, dset):
     decoder_layers = []
     decoder_layers.append(Dense(flattened_shape[0], input_shape=encoded_shape))
     decoder_layers.append(Reshape(conv_shape))
-    for i in reversed(range(config["train"]['model']['params']['conv_blocks'])):
+    for i in reversed(range(config["train"]["model"]["params"]["conv_blocks"])):
         decoder_layers.extend([
-            Conv2DTranspose(8 * 2 ** i, (3, 3), padding='same'),
+            Conv2DTranspose(8 * 2 ** i, (3, 3), padding="same"),
             BatchNormalization(),
-            Activation('relu'),
+            Activation("relu"),
             UpSampling2D((2, 2))
         ])
-    decoder_layers.append(Conv2DTranspose(len(config["prepare"]["images"]["channels"]), (3, 3), activation='sigmoid', padding='same'))
-    decoder = Sequential(decoder_layers, name='decoded')
+    decoder_layers.append(Conv2DTranspose(len(config["prepare"]["images"]["channels"]), (3, 3), activation="sigmoid", padding="same"))
+    decoder = Sequential(decoder_layers, name="decoded")
     decoded = decoder(encoded)
     decoder = Model(decoder_input, decoder(decoder_input))
 
     # Define autoencoder
     autoencoder = Model(input_image, decoded)
-    optimizer = Adam(lr=config['train']["model"]["params"]['learning_rate'])
-    loss = 'mse'
+    optimizer = Adam(lr=config["train"]["model"]["params"]["learning_rate"])
+    loss = "mse"
 
     return autoencoder, encoder, decoder, optimizer, loss
 

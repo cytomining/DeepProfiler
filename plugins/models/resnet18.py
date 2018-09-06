@@ -18,9 +18,9 @@ from deepprofiler.learning.model import DeepProfilerModel
 def define_model(config, dset):
     # 1. Create ResNet architecture to extract features
     input_shape = (
-        config['train']["sampling"]["box_size"],  # height
-        config['train']["sampling"]["box_size"],  # width
-        len(config['prepare']["images"]["channels"])  # channels
+        config["train"]["sampling"]["box_size"],  # height
+        config["train"]["sampling"]["box_size"],  # width
+        len(config["prepare"]["images"]["channels"])  # channels
     )
     input_image = keras.layers.Input(input_shape)
 
@@ -44,7 +44,7 @@ def define_model(config, dset):
 
     # 4. Create and compile model
     model = keras.models.Model(inputs=input_image, outputs=class_outputs)
-    optimizer = keras.optimizers.Adam(lr=config['train']["model"]["params"]["learning_rate"])
+    optimizer = keras.optimizers.Adam(lr=config["train"]["model"]["params"]["learning_rate"])
 
     return model, optimizer, loss_func
 
