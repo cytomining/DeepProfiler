@@ -111,7 +111,7 @@ for i in range(len(label_values)):
     print_progress(i + 1, len(label_values), prefix=label_field)
 
 # Load barcodes and csv files
-barcodes = Metadata(config["original_images"]["barcode_file"], "single")
+barcodes = Metadata(config["metadata"]["barcode_file"], "single")
 load_data = Metadata(config["metadata"]["path"]+config["metadata"]["csv_list"], "multi")
 
 # Merge two frames: csvs + barcodes to attach labels to each image
@@ -126,13 +126,13 @@ metadata = pd.merge(
 del load_data, barcodes
 
 # Concatenate paths and filenames and make them relative
-for ch in config["original_images"]["channels"]:
+for ch in config["metadata"]["channels"]:
     metadata = relative_paths(
         metadata,
         ch,
         "PathName_Orig" + ch,
         "FileName_Orig" + ch,
-        config["original_images"]["path"]
+        config["metadata"]["path"]
     )
 print(metadata.info())
 
@@ -147,7 +147,7 @@ metadata = pd.merge(
 
 # Remove unnecessary columns from the index
 required_columns = ["Metadata_Plate","Metadata_Well","Metadata_Site","Assay_Plate_Barcode","Plate_Map_Name"]
-required_columns += config["original_images"]["channels"] + [label_field]
+required_columns += config["metadata"]["channels"] + [label_field]
 available_columns = list(metadata.columns.values)
 columns_to_remove = [c for c in available_columns if c not in required_columns]
 metadata = metadata.drop(columns_to_remove, axis=1)
@@ -172,6 +172,6 @@ metadata = metadata.drop(["plate_well"], axis=1)
 print(replicate_distribution)
 
 # Save resulting metadata
-metadata.to_csv(config["metadata"]["path"]+config["metadata"]["filename"], index=False)
+metadata.to_csv(config["metadata"]["path"]+"metadata.csv", index=False)
 dframe = pd.DataFrame({"ID":pd.Series(range(len(label_values))), "Treatment":pd.Series(label_values)})
-dframe.to_csv(config["metadata"]["path"]+config["metadata"]["labels_file"], index=False)
+dframe.to_csv(config["metadata"]["path"]+"labels.csv", index=False)
