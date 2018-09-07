@@ -5,7 +5,7 @@ import sys
 import argparse
 
 def relative_paths(df, target, path, filename, root):
-    df[target] = df[path].str.replace(root, "") + df[filename]
+    df[target] = df[path].str.replace(root, "") + "/" + df[filename]
     return df.drop([path, filename], axis=1)
 
 def print_progress (iteration, total, prefix='Progress', suffix='Complete', decimals=1, barLength=50):
@@ -132,7 +132,7 @@ for ch in config["metadata"]["channels"]:
         ch,
         "PathName_Orig" + ch,
         "FileName_Orig" + ch,
-        config["metadata"]["path"]
+        config["metadata"]["image_path"]
     )
 print(metadata.info())
 
