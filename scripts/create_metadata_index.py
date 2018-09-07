@@ -98,17 +98,17 @@ plate_maps = Metadata(
 )
 
 maps = plate_maps.data
-label_field = config["metadata"]["label_field"]
-field1 = config["metadata"]["label_composition"][0]
-field2 = config["metadata"]["label_composition"][1]
-maps[label_field] = maps[field1].astype(str) + "@" + maps[field2].astype(str)
+treatment_name = config["metadata"]["treatment_name"]
+field1 = config["metadata"]["treatment_columns"][0]
+field2 = config["metadata"]["treatment_columns"][1]
+maps[treatment_name] = maps[field1].astype(str) + "@" + maps[field2].astype(str)
 
-label_values = maps[label_field].unique()
+label_values = maps[treatment_name].unique()
 
-print("Unique {}: {}".format(label_field, len(label_values)))
+print("Unique {}: {}".format(treatment_name, len(label_values)))
 for i in range(len(label_values)):
-    maps.loc[lambda df: df[label_field] == label_values[i], label_field] = i
-    print_progress(i + 1, len(label_values), prefix=label_field)
+    maps.loc[lambda df: df[treatment_name] == label_values[i], treatment_name] = i
+    print_progress(i + 1, len(label_values), prefix=treatment_name)
 
 # Load barcodes and csv files
 barcodes = Metadata(config["metadata"]["barcode_file"], "single")
@@ -147,18 +147,18 @@ metadata = pd.merge(
 
 # Remove unnecessary columns from the index
 required_columns = ["Metadata_Plate","Metadata_Well","Metadata_Site","Assay_Plate_Barcode","Plate_Map_Name"]
-required_columns += config["metadata"]["channels"] + [label_field]
+required_columns += config["metadata"]["channels"] + [treatment_name]
 available_columns = list(metadata.columns.values)
 columns_to_remove = [c for c in available_columns if c not in required_columns]
 metadata = metadata.drop(columns_to_remove, axis=1)
 
 # Find replicates
-replicate_field = label_field + "_Replicate"
+replicate_field = treatment_name + "_Replicate"
 metadata["plate_well"] = metadata["Metadata_Plate"].astype(str) + "::" + metadata["Metadata_Well"].astype(str)
 metadata[replicate_field] = 0
 replicate_distribution = {}
 for i in range(len(label_values)):
-    mask1 = metadata[label_field] == i
+    mask1 = metadata[treatment_name] == i
     wells = metadata[mask1]["plate_well"].unique()
     print_progress(i + 1, len(label_values), "Replicates")
     replicate = 1
