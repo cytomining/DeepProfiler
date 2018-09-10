@@ -304,7 +304,7 @@ class SingleImageCropGenerator(CropGenerator):
 
         if has_orientation:
             # Align cells by rotating to the major axis of nuclei
-            feed_dict[self.angles] = (batch["locations"][0]["orientation"]*deepprofiler.dataset.utils.PI)/180.
+            feed_dict[self.angles] = (batch["locations"][0]["Orientation"]*deepprofiler.dataset.utils.PI)/180.
             output = session.run(self.aligned_labeled, feed_dict)
         else:
             output = session.run(self.input_variables["labeled_crops"], feed_dict)
