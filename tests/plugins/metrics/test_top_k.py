@@ -11,20 +11,20 @@ import json
 def is_method(obj, name):
     return hasattr(obj, name) and inspect.ismethod(getattr(obj, name))
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def out_dir(tmpdir):
     return os.path.abspath(tmpdir.mkdir("test"))
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def config(out_dir):
-    with open("tests/files/config/test.json", 'r') as f:
+    with open("tests/files/config/test.json", "r") as f:
         config = json.load(f)
     for path in config["paths"]:
         config["paths"][path] = out_dir + config["paths"].get(path)
     config["paths"]["root_dir"] = out_dir
     return config
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def make_struct(config):
     for key, path in config["paths"].items():
         if key not in ["index", "config_file", "root_dir"]:
@@ -34,7 +34,7 @@ def make_struct(config):
 def test_create_metric(config, make_struct):
     name = "Dog"
     metric = plugins.metrics.top_k.MetricClass(config, name)
-    expected_name = "top_" + str(config['train']['validation']['top_k'])
+    expected_name = "top_" + str(config["train"]["validation"]["top_k"])
     assert is_method(metric, "create_metric")
     assert metric.f.__name__ == expected_name
 

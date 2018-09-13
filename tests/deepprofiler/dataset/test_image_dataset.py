@@ -15,20 +15,20 @@ def __rand_array():
     return np.array(random.sample(range(100), 12))
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def out_dir(tmpdir):
     return os.path.abspath(tmpdir.mkdir("test"))
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def config(out_dir):
-    with open("tests/files/config/test.json", 'r') as f:
+    with open("tests/files/config/test.json", "r") as f:
         config = json.load(f)
     for path in config["paths"]:
         config["paths"][path] = out_dir + config["paths"].get(path)
     config["paths"]["root_dir"] = out_dir
     return config
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def make_struct(config):
     for key, path in config["paths"].items():
         if key not in ["index", "config_file", "root_dir"]:
@@ -36,32 +36,32 @@ def make_struct(config):
     return
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def metadata(out_dir, make_struct, config):
-    filename = os.path.join(config["paths"]["metadata"], 'index.csv')
+    filename = os.path.join(config["paths"]["metadata"], "index.csv")
     df = pd.DataFrame({
-        'Metadata_Plate': __rand_array(),
-        'Metadata_Well': __rand_array(),
-        'Metadata_Site': __rand_array(),
-        'R': [str(x) + '.png' for x in __rand_array()],
-        'G': [str(x) + '.png' for x in __rand_array()],
-        'B': [str(x) + '.png' for x in __rand_array()],
-        'Class': ['0', '1', '2', '3', '0', '1', '2', '3', '0', '1', '2', '3'],
-        'Sampling': [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-        'Split': [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
+        "Metadata_Plate": __rand_array(),
+        "Metadata_Well": __rand_array(),
+        "Metadata_Site": __rand_array(),
+        "R": [str(x) + ".png" for x in __rand_array()],
+        "G": [str(x) + ".png" for x in __rand_array()],
+        "B": [str(x) + ".png" for x in __rand_array()],
+        "Class": ["0", "1", "2", "3", "0", "1", "2", "3", "0", "1", "2", "3"],
+        "Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+        "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
     }, dtype=int)
     df.to_csv(filename, index=False)
     meta = deepprofiler.dataset.metadata.Metadata(filename)
-    train_rule = lambda data: data['Split'].astype(int) == 0
-    val_rule = lambda data: data['Split'].astype(int) == 1
+    train_rule = lambda data: data["Split"].astype(int) == 0
+    val_rule = lambda data: data["Split"].astype(int) == 1
     meta.splitMetadata(train_rule, val_rule)
     return meta
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def dataset(metadata, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    return deepprofiler.dataset.image_dataset.ImageDataset(metadata, 'Sampling', ['R', 'G', 'B'], config["paths"]["root_dir"], keygen)
+    return deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen)
 
 
 def test_init(metadata, out_dir, dataset, config, make_struct):
@@ -81,7 +81,7 @@ def test_get_image_paths(metadata, out_dir, dataset, config, make_struct):
     for idx, row in dataset.meta.data.iterrows():
         key, image, outlines = dataset.getImagePaths(row)
         testKey = dataset.keyGen(row)
-        testImage = [dataset.root + '/' + row[ch] for ch in dataset.channels]
+        testImage = [dataset.root + "/" + row[ch] for ch in dataset.channels]
         testOutlines = dataset.outlines
         assert key == testKey
         assert image == testImage
@@ -101,13 +101,13 @@ def test_sample_images(metadata, out_dir, dataset, config, make_struct):
 def test_get_train_batch(metadata, out_dir, dataset, config, make_struct):
     images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
     for i in range(0, 36, 3):
-        skimage.io.imsave(os.path.join(out_dir, dataset.meta.data['R'][i // 3]), images[:, :, i])
-        skimage.io.imsave(os.path.join(out_dir, dataset.meta.data['G'][i // 3]), images[:, :, i + 1])
-        skimage.io.imsave(os.path.join(out_dir, dataset.meta.data['B'][i // 3]), images[:, :, i + 2])
+        skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["R"][i // 3]), images[:, :, i])
+        skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["G"][i // 3]), images[:, :, i + 1])
+        skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["B"][i // 3]), images[:, :, i + 2])
     batch_size = 3
     batch = dataset.getTrainBatch(batch_size)
     assert len(batch) == batch_size
-    for image in batch['images']:
+    for image in batch["images"]:
         assert image.shape == (128, 128, 3)
         for i in range(3):
             assert image[:, :, i] in np.rollaxis(images, -1)
@@ -116,36 +116,36 @@ def test_get_train_batch(metadata, out_dir, dataset, config, make_struct):
 def test_scan(metadata, out_dir, dataset, config, make_struct):
     images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
     for i in range(0, 36, 3):
-        skimage.io.imsave(os.path.join(out_dir, dataset.meta.data['R'][i // 3]), images[:, :, i])
-        skimage.io.imsave(os.path.join(out_dir, dataset.meta.data['G'][i // 3]), images[:, :, i + 1])
-        skimage.io.imsave(os.path.join(out_dir, dataset.meta.data['B'][i // 3]), images[:, :, i + 2])
-    data = {'index': [], 'image': [], 'meta': []}
+        skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["R"][i // 3]), images[:, :, i])
+        skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["G"][i // 3]), images[:, :, i + 1])
+        skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["B"][i // 3]), images[:, :, i + 2])
+    data = {"index": [], "image": [], "meta": []}
 
     def func(index, image, meta):
-        data['index'].append(index)
-        data['image'].append(image)
-        data['meta'].append(meta)
+        data["index"].append(index)
+        data["image"].append(image)
+        data["meta"].append(meta)
 
-    dataset.scan(func, frame='all')
-    for index in data['index']:
+    dataset.scan(func, frame="all")
+    for index in data["index"]:
         assert index in range(12)
-    for image in data['image']:
+    for image in data["image"]:
         assert image.shape == (128, 128, 3)
         for i in range(3):
             assert image[:, :, i] in np.rollaxis(images, -1)
-    for meta in data['meta']:
+    for meta in data["meta"]:
         assert (dataset.meta.data == meta).all(1).any()
 
 
 def test_number_of_records(metadata, out_dir, dataset, config, make_struct):
-    assert dataset.number_of_records('all') == len(dataset.meta.data)
-    assert dataset.number_of_records('val') == len(dataset.meta.val)
-    assert dataset.number_of_records('train') == len(dataset.meta.train)
-    assert dataset.number_of_records('other') == 0
+    assert dataset.number_of_records("all") == len(dataset.meta.data)
+    assert dataset.number_of_records("val") == len(dataset.meta.val)
+    assert dataset.number_of_records("train") == len(dataset.meta.train)
+    assert dataset.number_of_records("other") == 0
 
 
 def test_add_target(metadata, out_dir, dataset, config, make_struct):
-    target = deepprofiler.dataset.target.MetadataColumnTarget('Target', random.sample(range(100), 12))
+    target = deepprofiler.dataset.target.MetadataColumnTarget("Target", random.sample(range(100), 12))
     dataset.add_target(target)
     assert target in dataset.targets
 
