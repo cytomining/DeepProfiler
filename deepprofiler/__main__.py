@@ -151,7 +151,7 @@ def profile(context, part):
     config = context.obj["config"]
     if part >= 0:
         partfile = "index-{0:03d}.csv".format(part)
-        config["paths"]["index"] = os.path.join(context.obj["config"]["paths"]["index"], partfile)
+        config["paths"]["index"] = context.obj["config"]["paths"]["index"].replace("index.csv", partfile)
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     deepprofiler.learning.profiling.profile(context.obj["config"], metadata)
     
