@@ -6,11 +6,11 @@ import sqlite3
 
 def parse_delimiter(delimiter):
     if delimiter == "blanks":
-        return '\s+'
+        return "\s+"
     elif delimiter == "tabs":
-        return '\t'
+        return "\t"
     else:
-        return ','
+        return ","
 
 #TODO: This function is only useful for the LUAD dataset
 def conditionalWellName(row):

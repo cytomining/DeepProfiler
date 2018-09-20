@@ -8,7 +8,7 @@ def relative_paths(df, target, path, filename, root):
     df[target] = df[path].str.replace(root, "") + "/" + df[filename]
     return df.drop([path, filename], axis=1)
 
-def print_progress (iteration, total, prefix='Progress', suffix='Complete', decimals=1, barLength=50):
+def print_progress (iteration, total, prefix="Progress", suffix="Complete", decimals=1, barLength=50):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -23,35 +23,35 @@ def print_progress (iteration, total, prefix='Progress', suffix='Complete', deci
         formatStr       = "{0:." + str(decimals) + "f}"
         percents        = formatStr.format(100 * (iteration / float(total)))
         filledLength    = int(round(barLength * iteration / float(total)))
-        bar             = '#' * filledLength + '-' * (barLength - filledLength)
-        sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
+        bar             = "#" * filledLength + "-" * (barLength - filledLength)
+        sys.stdout.write("\r%s |%s| %s%s %s" % (prefix, bar, percents, "%", suffix)),
         sys.stdout.flush()
         if iteration == total:
-            sys.stdout.write('\n')
+            sys.stdout.write("\n")
             sys.stdout.flush()
     elif sum([iteration<0,total<0,barLength<0]) > 1:
-        sys.stdout.write('\rError: print_progress() function received multiple negative values.')
+        sys.stdout.write("\rError: print_progress() function received multiple negative values.")
         sys.stdout.flush()
     elif iteration < 0:
-        sys.stdout.write('\rError: print_progress() function received a negative "iteration" value.')
+        sys.stdout.write("\rError: print_progress() function received a negative 'iteration' value.")
         sys.stdout.flush()
     elif total < 0:
-        sys.stdout.write('\rError: print_progress() function received a negative "total" value.')
+        sys.stdout.write("\rError: print_progress() function received a negative 'total' value.")
         sys.stdout.flush()
     elif barLength < 0:
-        sys.stdout.write('\rError: print_progress() function received a negative "barLength" value.')
+        sys.stdout.write("\rError: print_progress() function received a negative 'barLength' value.")
         sys.stdout.flush()
     elif iteration > total:
-        sys.stdout.write('\rError: print_progress() function received an "iteration" value greater than the "total" value.')
+        sys.stdout.write("\rError: print_progress() function received an 'iteration' value greater than the 'total' value.")
         sys.stdout.flush()
 
 def parse_delimiter(delimiter):
     if delimiter == "blanks":
-        return '\s+'
+        return "\s+"
     elif delimiter == "tabs":
-        return '\t'
+        return "\t"
     else:
-        return ','
+        return ","
 
 class Metadata():
 
@@ -81,13 +81,13 @@ class Metadata():
         self.data = pd.concat(frames)
         print("Multiple CSV files loaded")
 
-parser = argparse.ArgumentParser(description='Create metadata index')
-parser.add_argument('config', help='The path to the configuration file')
+parser = argparse.ArgumentParser(description="Create metadata index")
+parser.add_argument("config", help="The path to the configuration file")
 options = parser.parse_args()
 
 assert os.path.exists(options.config)
 
-with open(options.config, 'r') as f:
+with open(options.config, "r") as f:
     config = json.load(f)
 
 # Load plate maps dataset and create labels

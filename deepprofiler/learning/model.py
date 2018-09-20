@@ -40,7 +40,7 @@ class DeepProfilerModel(ABC):
         np.random.seed(seed)
         tf.set_random_seed(seed)
 
-    def train(self, epoch=1, metrics=['accuracy'], verbose=1):
+    def train(self, epoch=1, metrics=["accuracy"], verbose=1):
         # Raise ValueError if feature model isn't properly defined
         check_feature_model(self)
         # Print model summary
@@ -84,7 +84,7 @@ class DeepProfilerModel(ABC):
 
 
 def check_feature_model(dpmodel):
-    if 'feature_model' not in vars(dpmodel) or not isinstance(dpmodel.feature_model, keras.Model):
+    if "feature_model" not in vars(dpmodel) or not isinstance(dpmodel.feature_model, keras.Model):
         raise ValueError("Feature model is not properly defined.")
 
 
@@ -104,7 +104,7 @@ def setup_comet_ml(dpmodel):
 def start_crop_session(dpmodel, configuration):
     crop_graph = tf.Graph()
     with crop_graph.as_default():
-#         cpu_config = tf.ConfigProto(device_count={'CPU': 1, 'GPU': 0})
+#         cpu_config = tf.ConfigProto(device_count={"CPU": 1, "GPU": 0})
 #         cpu_config.gpu_options.visible_device_list = ""
         crop_session = tf.Session(config=configuration)
         dpmodel.train_crop_generator.start(crop_session)
@@ -166,7 +166,7 @@ def setup_callbacks(dpmodel):
 
 def setup_params(dpmodel, experiment):
     epochs = dpmodel.config["train"]["model"]["epochs"]
-    steps = dpmodel.config["train"]['model']["steps"]
+    steps = dpmodel.config["train"]["model"]["steps"]
     if dpmodel.config["train"]["comet_ml"]["track"]:
         params = dpmodel.config["train"]["model"]["params"]
         experiment.log_multiple_params(params)

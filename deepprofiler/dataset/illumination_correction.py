@@ -22,7 +22,7 @@ class IlluminationCorrection(object):
         # We currently assume 16 bit images
         operator = skimage.morphology.disk(disk_size)
         filtered_channel = skimage.filters.median(mean_channel.astype(np.uint16), operator)
-        filtered_channel = skimage.transform.resize(filtered_channel, self.target_dim, mode='reflect', anti_aliasing=True, preserve_range=True)
+        filtered_channel = skimage.transform.resize(filtered_channel, self.target_dim, mode="reflect", anti_aliasing=True, preserve_range=True)
         robust_minimum = scipy.stats.scoreatpercentile(filtered_channel, 2)
         filtered_channel = np.maximum(filtered_channel, robust_minimum)
         illum_corr_func = filtered_channel / robust_minimum

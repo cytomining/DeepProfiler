@@ -87,7 +87,7 @@ class IlluminationStatistics():
         stats["illum_correction_function"] = correct.illum_corr_func
 
         # Plate ready
-        utils.logger.info('Plate ' + self.name + ' done')
+        utils.logger.info("Plate " + self.name + " done")
         return stats
 
 
@@ -113,18 +113,18 @@ def calculate_statistics(args):
 
     dset = deepprofiler.dataset.image_dataset.ImageDataset(
         plate,
-        config['prepare']["metadata"]["label_field"],
-        config['prepare']["images"]["channels"],
+        config["prepare"]["metadata"]["label_field"],
+        config["prepare"]["images"]["channels"],
         config["paths"]["images"],
         keyGen
     )
 
     # Prepare ImageStatistics object
     hist = IlluminationStatistics(
-        config['prepare']["images"]["bits"],
-        config['prepare']["images"]["channels"],
-        config['prepare']["illumination_correction"]["down_scale_factor"],
-        config['prepare']["illumination_correction"]["median_filter_size"],
+        config["prepare"]["images"]["bits"],
+        config["prepare"]["images"]["channels"],
+        config["prepare"]["illumination_correction"]["down_scale_factor"],
+        config["prepare"]["illumination_correction"]["median_filter_size"],
         name=plateName
     )
 

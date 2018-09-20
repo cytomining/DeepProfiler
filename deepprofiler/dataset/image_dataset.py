@@ -21,7 +21,7 @@ class ImageDataset():
 
     def getImagePaths(self, r):
         key = self.keyGen(r)
-        image = [self.root + '/' + r[ch] for ch in self.channels]
+        image = [self.root + "/" + r[ch] for ch in self.channels]
         outlines = self.outlines
         if outlines is not None:
             outlines = self.outlines + r["Outlines"]
@@ -67,20 +67,20 @@ class ImageDataset():
             outlines += ro
 
         # 4. Open images
-        batch = {'keys': keys, 'images': [], 'targets': targets}
+        batch = {"keys": keys, "images": [], "targets": targets}
         for i in range(len(images)):
             image_array = deepprofiler.dataset.pixels.openImage(images[i], outlines[i])
             # TODO: Implement pixel normalization using control statistics
             #image_array -= 128.0
-            batch['images'].append(image_array)
-        #dataset.utils.toc('Loading batch', s)
+            batch["images"].append(image_array)
+        #dataset.utils.toc("Loading batch", s)
 
         return batch
 
-    def scan(self, f, frame='train', check=lambda k: True):
-        if frame == 'all':
+    def scan(self, f, frame="train", check=lambda k: True):
+        if frame == "all":
             frame = self.meta.data.iterrows()
-        elif frame == 'val':
+        elif frame == "val":
             frame = self.meta.val.iterrows()
         else:
             frame = self.meta.train.iterrows()
@@ -96,11 +96,11 @@ class ImageDataset():
         return
 
     def number_of_records(self, dataset):
-        if dataset == 'all':
+        if dataset == "all":
             return len(self.meta.data)
-        elif dataset == 'val':
+        elif dataset == "val":
             return len(self.meta.val)
-        elif dataset == 'train':
+        elif dataset == "train":
             return len(self.meta.train)
         else:
             return 0
@@ -122,28 +122,28 @@ def read_dataset(config):
     print(metadata.data.info())
 
     # Split training data
-    split_field = config["train"]['dset']["split_field"]
-    trainingFilter = lambda df: df[split_field].isin(config['train']["dset"]["training_values"])
-    validationFilter = lambda df: df[split_field].isin(config['train']["dset"]["validation_values"])
+    split_field = config["train"]["dset"]["split_field"]
+    trainingFilter = lambda df: df[split_field].isin(config["train"]["dset"]["training_values"])
+    validationFilter = lambda df: df[split_field].isin(config["train"]["dset"]["validation_values"])
     metadata.splitMetadata(trainingFilter, validationFilter)
 
     # Create a dataset
     keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     dset = ImageDataset(
         metadata,
-        config['train']["sampling"]["field"],
-        config['prepare']["images"]["channels"],
+        config["train"]["sampling"]["field"],
+        config["prepare"]["images"]["channels"],
         config["paths"]["images"],
         keyGen
     )
 
     # Add training targets
-    for t in config['train']["dset"]["targets"]:
+    for t in config["train"]["dset"]["targets"]:
         new_target = deepprofiler.dataset.target.MetadataColumnTarget(t, metadata.data[t].unique())
         dset.add_target(new_target)
 
     # Activate outlines for masking if needed
-    if config['train']["dset"]["mask_objects"]:
+    if config["train"]["dset"]["mask_objects"]:
         dset.outlines = outlines
 
     return dset

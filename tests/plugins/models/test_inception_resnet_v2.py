@@ -20,12 +20,12 @@
 #     return np.array(random.sample(range(100), 12))
 #
 #
-# @pytest.fixture(scope='function')
+# @pytest.fixture(scope="function")
 # def out_dir(tmpdir):
-#     return os.path.abspath(tmpdir.mkdir('test'))
+#     return os.path.abspath(tmpdir.mkdir("test"))
 #
 #
-# @pytest.fixture(scope='function')
+# @pytest.fixture(scope="function")
 # def config(out_dir):
 #     return {
 #         "model": {
@@ -43,10 +43,10 @@
 #             "images": 12,
 #             "box_size": 139,
 #             "locations": 2,
-#             "locations_field": 'R'
+#             "locations_field": "R"
 #         },
 #         "image_set": {
-#             "channels": ['R', 'G', 'B'],
+#             "channels": ["R", "G", "B"],
 #             "mask_objects": False,
 #             "width": 256,
 #             "height": 256,
@@ -67,8 +67,8 @@
 #         "validation": {
 #             "minibatch": 2,
 #             "output": out_dir,
-#             "api_key":'[REDACTED]',
-#             "project_name":'pytests',
+#             "api_key":"[REDACTED]",
+#             "project_name":"pytests",
 #             "frame":"train",
 #             "sample_first_crops": True,
 #             "top_k": 2
@@ -76,43 +76,43 @@
 #     }
 #
 #
-# @pytest.fixture(scope='function')
+# @pytest.fixture(scope="function")
 # def metadata(out_dir):
-#     filename = os.path.join(out_dir, 'metadata.csv')
+#     filename = os.path.join(out_dir, "metadata.csv")
 #     df = pd.DataFrame({
-#         'Metadata_Plate': __rand_array(),
-#         'Metadata_Well': __rand_array(),
-#         'Metadata_Site': __rand_array(),
-#         'R': [str(x) + '.png' for x in __rand_array()],
-#         'G': [str(x) + '.png' for x in __rand_array()],
-#         'B': [str(x) + '.png' for x in __rand_array()],
-#         'Class': ['0', '1', '2', '3', '0', '1', '2', '3', '0', '1', '2', '3'],
-#         'Sampling': [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-#         'Split': [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
+#         "Metadata_Plate": __rand_array(),
+#         "Metadata_Well": __rand_array(),
+#         "Metadata_Site": __rand_array(),
+#         "R": [str(x) + ".png" for x in __rand_array()],
+#         "G": [str(x) + ".png" for x in __rand_array()],
+#         "B": [str(x) + ".png" for x in __rand_array()],
+#         "Class": ["0", "1", "2", "3", "0", "1", "2", "3", "0", "1", "2", "3"],
+#         "Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+#         "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
 #     }, dtype=int)
 #     df.to_csv(filename, index=False)
 #     meta = deepprofiler.dataset.metadata.Metadata(filename)
-#     train_rule = lambda data: data['Split'].astype(int) == 0
-#     val_rule = lambda data: data['Split'].astype(int) == 1
+#     train_rule = lambda data: data["Split"].astype(int) == 0
+#     val_rule = lambda data: data["Split"].astype(int) == 1
 #     meta.splitMetadata(train_rule, val_rule)
 #     return meta
 #
 #
-# @pytest.fixture(scope='function')
+# @pytest.fixture(scope="function")
 # def dataset(metadata, out_dir):
 #     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-#     dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, 'Sampling', ['R', 'G', 'B'], out_dir, keygen)
-#     target = deepprofiler.dataset.target.MetadataColumnTarget('Class', metadata.data['Class'].unique())
+#     dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], out_dir, keygen)
+#     target = deepprofiler.dataset.target.MetadataColumnTarget("Class", metadata.data["Class"].unique())
 #     dset.add_target(target)
 #     return dset
 #
 #
-# @pytest.fixture(scope='function')
+# @pytest.fixture(scope="function")
 # def generator():
 #     return deepprofiler.imaging.cropping.CropGenerator
 #
 #
-# @pytest.fixture(scope='function')
+# @pytest.fixture(scope="function")
 # def val_generator():
 #     return deepprofiler.imaging.cropping.SingleImageCropGenerator
 #

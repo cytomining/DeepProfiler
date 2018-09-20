@@ -14,20 +14,20 @@ import deepprofiler.imaging.cropping
 def __rand_array():
     return np.array(random.sample(range(100), 12))
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def out_dir(tmpdir):
     return os.path.abspath(tmpdir.mkdir("test"))
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def config(out_dir):
-    with open("tests/files/config/test.json", 'r') as f:
+    with open("tests/files/config/test.json", "r") as f:
         config = json.load(f)
     for path in config["paths"]:
         config["paths"][path] = out_dir + config["paths"].get(path)
     config["paths"]["root_dir"] = out_dir
     return config
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def make_struct(config):
     for key, path in config["paths"].items():
         if key not in ["index", "config_file", "root_dir"]:
@@ -35,47 +35,47 @@ def make_struct(config):
     return
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def metadata(config, make_struct):
-    filename = os.path.join(config["paths"]["metadata"], 'index.csv')
+    filename = os.path.join(config["paths"]["metadata"], "index.csv")
     df = pd.DataFrame({
-        'Metadata_Plate': __rand_array(),
-        'Metadata_Well': __rand_array(),
-        'Metadata_Site': __rand_array(),
-        'R': [str(x) + '.png' for x in __rand_array()],
-        'G': [str(x) + '.png' for x in __rand_array()],
-        'B': [str(x) + '.png' for x in __rand_array()],
-        'Sampling': [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-        'Split': [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
-        'Target': [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
+        "Metadata_Plate": __rand_array(),
+        "Metadata_Well": __rand_array(),
+        "Metadata_Site": __rand_array(),
+        "R": [str(x) + ".png" for x in __rand_array()],
+        "G": [str(x) + ".png" for x in __rand_array()],
+        "B": [str(x) + ".png" for x in __rand_array()],
+        "Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+        "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+        "Target": [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
     }, dtype=int)
     df.to_csv(filename, index=False)
     meta = deepprofiler.dataset.metadata.Metadata(filename)
-    train_rule = lambda data: data['Split'].astype(int) == 0
-    val_rule = lambda data: data['Split'].astype(int) == 1
+    train_rule = lambda data: data["Split"].astype(int) == 0
+    val_rule = lambda data: data["Split"].astype(int) == 1
     meta.splitMetadata(train_rule, val_rule)
     return meta
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def dataset(metadata, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, 'Sampling', ['R', 'G', 'B'], config["paths"]["root_dir"], keygen)
-    target = deepprofiler.dataset.target.MetadataColumnTarget('Target', metadata.data['Target'].unique())
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen)
+    target = deepprofiler.dataset.target.MetadataColumnTarget("Target", metadata.data["Target"].unique())
     dset.add_target(target)
     return dset
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def crop_generator(config, dataset):
     return plugins.crop_generators.mixup_crop_generator.GeneratorClass(config, dataset)
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def prepared_crop_generator(crop_generator, out_dir):
     images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
     for i in range(0, 36, 3):
-        skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data['R'][i // 3]), images[:, :, i])
-        skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data['G'][i // 3]), images[:, :, i + 1])
-        skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data['B'][i // 3]), images[:, :, i + 2])
+        skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["R"][i // 3]), images[:, :, i])
+        skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["G"][i // 3]), images[:, :, i + 1])
+        skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["B"][i // 3]), images[:, :, i + 2])
     crop_generator.build_input_graph()
     crop_generator.build_augmentation_graph()
     return crop_generator
@@ -175,7 +175,7 @@ def test_start(prepared_crop_generator):  # includes test for training queues
     prepared_crop_generator.start(sess)
     assert not prepared_crop_generator.coord.joined
     assert not prepared_crop_generator.exception_occurred
-    assert len(prepared_crop_generator.queue_threads) == prepared_crop_generator.config['train']['queueing']['loading_workers']
+    assert len(prepared_crop_generator.queue_threads) == prepared_crop_generator.config["train"]["queueing"]["loading_workers"]
     assert prepared_crop_generator.batch_size == prepared_crop_generator.config["train"]["model"]["params"]["batch_size"]
     assert prepared_crop_generator.target_sizes[0] == 3
     assert isinstance(prepared_crop_generator.mixer, plugins.crop_generators.mixup_crop_generator.Mixup)
@@ -189,9 +189,9 @@ def test_generate(prepared_crop_generator):
     test_steps = 3
     for i in range(test_steps):
         data = next(generator)
-        assert np.array(data[0]).shape == (prepared_crop_generator.config['train']['model']["params"]['batch_size'],
-                                           prepared_crop_generator.config['train']['sampling']['box_size'],
-                                           prepared_crop_generator.config['train']['sampling']['box_size'],
-                                           len(prepared_crop_generator.config['prepare']['images']['channels']))
-        assert data[1].shape == (prepared_crop_generator.config['train']['model']["params"]['batch_size'], prepared_crop_generator.dset.targets[0].shape[1])
+        assert np.array(data[0]).shape == (prepared_crop_generator.config["train"]["model"]["params"]["batch_size"],
+                                           prepared_crop_generator.config["train"]["sampling"]["box_size"],
+                                           prepared_crop_generator.config["train"]["sampling"]["box_size"],
+                                           len(prepared_crop_generator.config["prepare"]["images"]["channels"]))
+        assert data[1].shape == (prepared_crop_generator.config["train"]["model"]["params"]["batch_size"], prepared_crop_generator.dset.targets[0].shape[1])
     prepared_crop_generator.stop(sess)

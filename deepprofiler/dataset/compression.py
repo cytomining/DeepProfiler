@@ -33,15 +33,15 @@ class Compress():
 
     # Allows to recalculate the percentiles computed by default in the ImageStatistics class
     def recompute_percentile(self, p, side="upper_percentile"):
-        print("Percentiles for the", side, " >> ", end='')
+        print("Percentiles for the", side, " >> ", end="")
         self.stats[side] = numpy.zeros((len(self.channels)))
         for i in range(len(self.channels)):
             probs = self.stats["histogram"][i]/self.stats["histogram"][i].sum()
             cum = numpy.cumsum(probs)
             pos = cum > p
             self.stats[side][i] = numpy.argmax(pos)
-            print(self.channels[i], ':', self.stats[side][i], ' ', end='')
-        print('')
+            print(self.channels[i], ":", self.stats[side][i], " ", end="")
+        print("")
 
     # Filter images that belong to control samples, to compute their histogram distribution
     def set_control_samples_filter(self, filterFunc):
