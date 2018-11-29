@@ -267,8 +267,9 @@ class SingleImageCropGenerator(CropGenerator):
             self.build_input_graph()
             # Align cells by rotating nuclei
             self.angles = tf.placeholder(tf.float32, shape=[None], name="nuclei_angles")
-            rotated_imgs = tf.contrib.image.rotate(self.input_variables["labeled_crops"][0], self.angles, interpolation="BILINEAR")
-            self.aligned_labeled = [rotated_imgs, self.input_variables["labeled_crops"][1]]
+            #rotated_imgs = tf.contrib.image.rotate(self.input_variables["labeled_crops"][0], self.angles, interpolation="BILINEAR")
+            #self.aligned_labeled = [rotated_imgs, self.input_variables["labeled_crops"][1]]
+            self.aligned_labeled = [self.input_variables["labeled_crops"][0], self.input_variables["labeled_crops"][1]]
 
     def prepare_image(self, session, image_array, meta, sample_first_crops=False):
 

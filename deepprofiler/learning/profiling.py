@@ -8,7 +8,7 @@ import skimage.transform
 import pickle
 
 import tensorflow as tf
-from tensorflow.contrib import slim
+#from tensorflow.contrib import slim
 from keras import backend as K
 
 import deepprofiler.learning.training
