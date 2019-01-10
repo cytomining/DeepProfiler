@@ -41,7 +41,7 @@ def cli(context, root, config, cores):
         "compressed_images": root+"/outputs/compressed/images/",
         "compressed_metadata": root+"/outputs/compressed/metadata/",
         "training": root+"/outputs/training/",
-        "checkpoints": root+"/outputs/training/checkpoints/",
+        "checkpoints": root+"/outputs/training/checkpoint/",
         "logs": root+"/outputs/training/logs/",
         "summaries": root+"/outputs/training/summaries/",
         "features": root+"/outputs/features/"
