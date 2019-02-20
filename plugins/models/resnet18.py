@@ -24,7 +24,7 @@ def define_model(config, dset):
     )
     input_image = keras.layers.Input(input_shape)
 
-    model = keras_resnet.models.ResNet2D18(input_image, include_top=False)#, freeze_bn=not is_training)
+    model = keras_resnet.models.ResNet18(input_image, include_top=False)#, freeze_bn=not is_training)
     features = keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-1].output)
     #features = keras.layers.core.Dropout(0.5)(features)
 
