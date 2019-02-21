@@ -1,6 +1,6 @@
-from abc import ABC, abstractmethod
+import abc
 
-class Metric(ABC):
+class Metric(abc.ABC):
 
     def __init__(self, config, name):
         self.config = config
@@ -13,6 +13,6 @@ class Metric(ABC):
         metric_func.__name__ = self.name
         self.f = metric_func
 
-    @abstractmethod
+    @abc.abstractmethod
     def metric(self, y_true, y_pred):
         pass

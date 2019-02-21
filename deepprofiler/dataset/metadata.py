@@ -1,7 +1,6 @@
 import pandas as pd
 
 import deepprofiler.dataset.utils
-import sqlite3
 
 
 def parse_delimiter(delimiter):

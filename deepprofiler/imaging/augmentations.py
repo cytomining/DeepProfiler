@@ -1,7 +1,5 @@
 import tensorflow as tf
 
-import deepprofiler.dataset.utils
-
 #################################################
 ## CROPPING AND TRANSFORMATION OPERATIONS
 #################################################

@@ -1,16 +1,14 @@
-from comet_ml import Experiment
 import gc
 import threading
-import pandas as pd
 import time
 
+import keras
 import numpy as np
 import tensorflow as tf
-import keras
 
-import deepprofiler.imaging.boxes
-import deepprofiler.imaging.augmentations
 import deepprofiler.dataset.utils
+import deepprofiler.imaging.augmentations
+import deepprofiler.imaging.boxes
 
 def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False):
     with tf.variable_scope("cropping"):

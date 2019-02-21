@@ -1,4 +1,5 @@
-import GPy, GPyOpt
+import GPyOpt
+
 import deepprofiler.learning.training
 
 def parse_tuple(string):

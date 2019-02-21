@@ -1,6 +1,4 @@
-from comet_ml import Experiment
 import importlib
-import keras
 
 #################################################
 ## MAIN TRAINING ROUTINE

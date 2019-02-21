@@ -1,18 +1,16 @@
-from comet_ml import Experiment
-from abc import ABC, abstractmethod
 import gc
 import os
 import random
+import abc
 
-import tensorflow as tf
-import numpy as np
 import keras
-import sklearn.metrics
+import numpy as np
+import tensorflow as tf
+import comet_ml
 
+import deepprofiler.dataset.utils
 import deepprofiler.imaging.cropping
 import deepprofiler.learning.validation
-import deepprofiler.dataset.utils
-
 
 ##################################################
 # This class should be used as an abstract base
@@ -20,7 +18,7 @@ import deepprofiler.dataset.utils
 ##################################################
 
 
-class DeepProfilerModel(ABC):
+class DeepProfilerModel(abc.ABC):
 
     def __init__(self, config, dset, crop_generator, val_crop_generator):
         self.feature_model = None
@@ -91,7 +89,7 @@ def check_feature_model(dpmodel):
 
 def setup_comet_ml(dpmodel):
     if dpmodel.config["train"]["comet_ml"]["track"]:
-        experiment = Experiment(
+        experiment = comet_ml.Experiment(
             api_key=dpmodel.config["train"]["comet_ml"]["api_key"],
             project_name=dpmodel.config["train"]["comet_ml"]["project_name"]
         )
