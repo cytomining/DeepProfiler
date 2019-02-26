@@ -1,9 +1,6 @@
-from comet_ml import Experiment
-
 import keras
 import keras_resnet
 import keras_resnet.models
-import tensorflow as tf
 
 from deepprofiler.learning.model import DeepProfilerModel
 

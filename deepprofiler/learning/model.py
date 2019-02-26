@@ -3,10 +3,11 @@ import os
 import random
 import abc
 
+
+import comet_ml
 import keras
 import numpy as np
 import tensorflow as tf
-import comet_ml
 
 import deepprofiler.dataset.utils
 import deepprofiler.imaging.cropping

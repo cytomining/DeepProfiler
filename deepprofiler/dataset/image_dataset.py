@@ -115,9 +115,9 @@ def read_dataset(config):
     # Add outlines if specified
     outlines = None
     if "outlines" in config["prepare"].keys() and config["prepare"]["outlines"] != "":
-        df = pd.read_csv(config["paths"]["locations"] + "/outlines.csv")
+        df = pd.read_csv(config["paths"]["metadata"] + "/outlines.csv")
         metadata.mergeOutlines(df)
-        outlines = config["paths"]["locations"]
+        outlines = config["paths"]["root"] + "inputs/outlines/"
 
     print(metadata.data.info())
 
