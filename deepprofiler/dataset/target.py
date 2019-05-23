@@ -8,6 +8,7 @@ class MetadataColumnTarget(object):
         values.sort()
         for i in range(len(values)):
             self.index[values[i]] = i
+        print(self.index)
 
     def get_values(self, record):
         value = record[self.field_name]

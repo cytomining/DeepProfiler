@@ -8,6 +8,7 @@ import tensorflow as tf
 import numpy as np
 import keras
 import sklearn.metrics
+from sklearn.ensemble import AdaBoostClassifier
 
 import deepprofiler.imaging.cropping
 import deepprofiler.learning.validation
@@ -77,7 +78,8 @@ class DeepProfilerModel(ABC):
             verbose=verbose,
             initial_epoch=epoch - 1,
             validation_data=(x_validation, y_validation)
-        )
+        ) 
+            
         # Stop threads and close sessions
         close(self, crop_session)
         # Return the feature model and validation data
