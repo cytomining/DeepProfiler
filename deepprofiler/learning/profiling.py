@@ -1,23 +1,12 @@
-from comet_ml import Experiment
 import importlib
 import os
-import numpy as np
-import pandas
-import glob
-import skimage.transform
-import pickle
-
-import tensorflow as tf
-#from tensorflow.contrib import slim
-from keras import backend as K
-
-import deepprofiler.learning.training
-import deepprofiler.imaging.boxes
-import deepprofiler.imaging.cropping
-from deepprofiler.dataset.utils import tic, toc
 
 import keras
-from keras.models import Model
+import numpy as np
+import tensorflow as tf
+from keras import backend as K
+
+from deepprofiler.dataset.utils import tic, toc
 
 
 class Profile(object):
