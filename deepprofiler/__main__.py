@@ -4,7 +4,6 @@ import os
 import click
 
 import deepprofiler.dataset.compression
-import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.indexing
 import deepprofiler.dataset.illumination_statistics
 import deepprofiler.dataset.metadata
@@ -31,41 +30,46 @@ import deepprofiler.download.normalize_bbbc021_metadata
 def cli(context, root, config, cores):
     dirs = {
         "root": root,
-        "locations": root+"/inputs/locations/",  # TODO: use os.path.join()
-        "config": root+"/inputs/config/",
-        "images": root+"/inputs/images/",
-        "metadata": root+"/inputs/metadata/",
-        "preprocessed": root+"/inputs/preprocessed/",
-        "pretrained": root+"/inputs/pretrained/",
-        "intensities": root+"/outputs/intensities/",
-        "compressed_images": root+"/outputs/compressed/images/",
-        "compressed_metadata": root+"/outputs/compressed/metadata/",
-        "training": root+"/outputs/training/",
-        "checkpoints": root+"/outputs/training/checkpoint/",
-        "logs": root+"/outputs/training/logs/",
-        "summaries": root+"/outputs/training/summaries/",
-        "features": root+"/outputs/features/"
+        "locations": os.path.join(root, "inputs", "locations"),
+        "config": os.path.join(root, "inputs", "config"),
+        "images": os.path.join(root, "inputs", "images"),
+        "metadata": os.path.join(root, "inputs", "metadata"),
+        "preprocessed": os.path.join(root, "inputs", "preprocessed"),
+        "pretrained": os.path.join(root, "inputs", "pretrained"),
+        "intensities": os.path.join(root, "outputs", "intensities"),
+        "compressed_images": os.path.join(root, "outputs", "compressed", "images"),
+        "compressed_metadata": os.path.join(root, "outputs", "compressed", "metadata"),
+        "training": os.path.join(root, "outputs", "training"),
+        "checkpoints": os.path.join(root, "outputs", "training", "checkpoint"),
+        "logs": os.path.join(root, "outputs", "training", "logs"),
+        "summaries": os.path.join(root, "outputs", "training", "summaries"),
+        "features": os.path.join(root, "outputs", "features")
     }
     if config is not None:
+
         context.obj["config"] = {}
         context.obj["config"]["paths"] = {}
         context.obj["config"]["paths"]["config"] = config
         dirs["config"] = os.path.dirname(os.path.abspath(config))
     else:
-        config = dirs["config"] + "/config.json"
+        config = os.path.join(dirs["config"], "config.json")
+
     context.obj["cores"] = cores
+
     if os.path.isfile(config):
         with open(config, "r") as f:
             params = json.load(f)
         if "paths" in params.keys():
             for key, value in dirs.items():
                 if key not in params["paths"].keys():
-                    params["paths"][key] = dirs[key]
+                    params["paths"][key] = os.path.join(root, dirs[key])
                 else:
-                    dirs[key] = params["paths"][key]
+                    dirs[key] = os.path.join(root, params["paths"][key])
+
         else:
             params["paths"] = dirs
-        params["paths"]["index"] = params["paths"]["metadata"] + "/index.csv"
+
+        params["paths"]["index"] = os.path.join(root, params["paths"]["metadata"], "index.csv")
         context.obj["config"] = params
         process = deepprofiler.dataset.utils.Parallel(context.obj["config"], numProcs=context.obj["cores"])
         context.obj["process"] = process
@@ -106,7 +110,7 @@ def prepare(context):
     metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["paths"]["index"])  # reinitialize generator
     process.compute(deepprofiler.dataset.compression.compress_plate, metadata)
     deepprofiler.dataset.indexing.write_compression_index(context.obj["config"])
-    context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
+    context.parent.obj["config"]["paths"]["index"] = os.path.join(context.obj["config"]["paths"]["compressed_metadata"], "compressed.csv")
     print("Compression complete!")
 
 
@@ -117,7 +121,7 @@ def prepare(context):
 @click.pass_context
 def optimize(context, epoch, seed):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-        context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
+        context.parent.obj["config"]["paths"]["index"] = os.path.join(context.obj["config"]["paths"]["compressed_metadata"], "compressed.csv")
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     optim = deepprofiler.learning.optimization.Optimize(context.obj["config"], metadata, epoch, seed)
@@ -131,7 +135,7 @@ def optimize(context, epoch, seed):
 @click.pass_context
 def train(context, epoch, seed):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-        context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
+        context.parent.obj["config"]["paths"]["index"] = os.path.join(context.obj["config"]["paths"]["compressed_metadata"], "compressed.csv")
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     deepprofiler.learning.training.learn_model(context.obj["config"], metadata, epoch, seed)
@@ -141,12 +145,12 @@ def train(context, epoch, seed):
 @cli.command()
 @click.pass_context
 @click.option("--part",
-              help="Part of index to process", 
-              default=-1, 
+              help="Part of index to process",
+              default=-1,
               type=click.INT)
 def profile(context, part):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-        context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
+        context.parent.obj["config"]["paths"]["index"] = os.path.join(context.obj["config"]["paths"]["compressed_metadata"], "compressed.csv")
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     config = context.obj["config"]
     if part >= 0:
@@ -154,17 +158,17 @@ def profile(context, part):
         config["paths"]["index"] = context.obj["config"]["paths"]["index"].replace("index.csv", partfile)
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     deepprofiler.learning.profiling.profile(context.obj["config"], metadata)
-    
+
 
 # Auxiliary tool: Split index in multiple parts
 @cli.command()
 @click.pass_context
-@click.option("--parts", 
+@click.option("--parts",
               help="Number of parts to split the index",
               type=click.INT)
 def split(context, parts):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-        context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
+        context.parent.obj["config"]["paths"]["index"] = os.path.join(context.obj["config"]["paths"]["compressed_metadata"], "compressed.csv")
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     deepprofiler.dataset.indexing.split_index(context.obj["config"], parts)
 
