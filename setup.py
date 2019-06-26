@@ -28,7 +28,7 @@ setuptools.setup(
         "pandas>=0.23.0",
         "scikit-image>=0.14.0",
         "scikit-learn>=0.19.0",
-        "scipy>=1.1",
+        "scipy>=1.3",
         "tensorflow>=1.8"
     ],
     extras_require={

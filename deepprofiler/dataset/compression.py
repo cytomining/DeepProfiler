@@ -1,10 +1,11 @@
 import pickle as pickle
 
 import numpy
-import scipy.misc
 import scipy.stats
 import skimage.transform
 import os.path
+import skimage
+import skimage.io
 
 import deepprofiler.dataset.utils
 import deepprofiler.dataset.illumination_statistics
@@ -88,10 +89,11 @@ class Compress():
             image[image > vmax] = vmax
 
             # Save resulting image in 8-bits PNG format
-            image = scipy.misc.toimage(image, low=0, high=255, mode="L", cmin=vmin, cmax=vmax)
+            image = skimage.exposure.rescale_intensity(image)
+            image = skimage.img_as_ubyte(image)
             if self.metadata_control_filter(meta):
-                self.controls_distribution[c] += image.histogram()
-            image.save(self.target_path(meta[self.channels[c]]))
+                self.controls_distribution[c] += numpy.histogram(image)[0]
+            skimage.io.imsave(self.target_path(meta[self.channels[c]]), image)
         return
 
     def getUpdatedStats(self):
