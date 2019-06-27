@@ -5,6 +5,6 @@ python:
 install: 
   - pip install .[test]
 script:
-  - pytest
+  - python -m pytest
 after_success:
   - codecov
