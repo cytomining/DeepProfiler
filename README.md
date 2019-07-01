@@ -1,4 +1,4 @@
-![DeepProfiler](images/logo/banner.png)
+![DeepProfiler](figures/logo/banner.png)
 
 -----------------
 
