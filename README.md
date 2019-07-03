@@ -24,7 +24,8 @@ For instance, to initialize your project, you can use:
 <pre>
 python deepprofiler --root=/home/ubuntu/project setup
 </pre>
-In the created directories, you will need to organize your input files, including metadata, images and single-cell locations. See moredetails about the [project structure here](https://github.com/broadinstitute/DeepProfiler/wiki/2.-Project-structure).
+In the created directories, you will need to organize your input files, including metadata, images and single-cell locations. 
+See more details about the [project structure here](https://github.com/broadinstitute/DeepProfiler/wiki/2.-Project-structure).
 
 Next, if you want to train a model, as specified in the [configuration file](https://github.com/broadinstitute/DeepProfiler/wiki/3.-The-configuration-file), you can then run the following command:
 
