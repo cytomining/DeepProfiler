@@ -19,7 +19,7 @@ def define_model(config, dset):
     input_shape = (
         config["train"]["sampling"]["box_size"],  # height
         config["train"]["sampling"]["box_size"],  # width
-        len(config["prepare"]["images"]["channels"])  # channels
+        len(config["dataset"]["images"]["channels"])  # channels
     )
     input_image = keras.layers.Input(input_shape)
 
@@ -52,7 +52,7 @@ def define_model(config, dset):
             Activation("relu"),
             UpSampling2D((2, 2))
         ])
-    decoder_layers.append(Conv2DTranspose(len(config["prepare"]["images"]["channels"]), (3, 3), activation="sigmoid", padding="same"))
+    decoder_layers.append(Conv2DTranspose(len(config["dataset"]["images"]["channels"]), (3, 3), activation="sigmoid", padding="same"))
     decoder = Sequential(decoder_layers, name="decoded")
     decoded = decoder(encoded)
     decoder = Model(decoder_input, decoder(decoder_input))

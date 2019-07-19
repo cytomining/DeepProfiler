@@ -1,10 +1,10 @@
 {
-    "prepare": {
+    "dataset": {
         "metadata": {
             "label_field": "Compound_Concentration",
             "label_composition": ["NCBIGeneID", "x_mutation_status"],
             "control_field": "Compound_Concentration",
-            "control_value": "17"
+            "control_id": "17"
         },
         "images": {
             "channels": [
@@ -14,7 +14,9 @@
               ],
             "file_format": "tif",
             "bits": 16
-        },
+        }
+    },
+    "prepare": {
         "illumination_correction": {
             "down_scale_factor": 4,
             "median_filter_size": 24

@@ -21,7 +21,7 @@ setuptools.setup(
         "click>=6.7",
         "comet_ml>=1.0",
         "gpyopt>=1.2"
-        "keras>=2.2",
+        "keras>=2.2.4",
         "keras_resnet>=0.1.0",
         "lxml>=4.2",
         "numpy>=1.13",
@@ -29,7 +29,7 @@ setuptools.setup(
         "scikit-image>=0.14.0",
         "scikit-learn>=0.19.0",
         "scipy>=1.1",
-        "tensorflow>=1.8"
+        "tensorflow==1.12.2"
     ],
     extras_require={
         "test": [

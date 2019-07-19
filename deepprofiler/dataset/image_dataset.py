@@ -134,7 +134,7 @@ def read_dataset(config):
     dset = ImageDataset(
         metadata=metadata,
         sampling_field=config["train"]["sampling"]["field"],
-        channels=config["prepare"]["images"]["channels"],
+        channels=config["dataset"]["images"]["channels"],
         dataRoot=os.path.join(config["paths"]["root"], config["paths"]["images"]),
         keyGen=keyGen
     )
