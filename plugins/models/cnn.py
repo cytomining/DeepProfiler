@@ -19,7 +19,7 @@ def define_model(config, dset):
     input_shape = (
         config["train"]["sampling"]["box_size"],  # height
         config["train"]["sampling"]["box_size"],  # width
-        len(config["prepare"]["images"]["channels"])  # channels
+        len(config["dataset"]["images"]["channels"])  # channels
     )
     input_image = keras.layers.Input(input_shape)
 

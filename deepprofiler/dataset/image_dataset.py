@@ -132,7 +132,7 @@ def read_dataset(config):
     dset = ImageDataset(
         metadata,
         config["train"]["sampling"]["field"],
-        config["prepare"]["images"]["channels"],
+        config["dataset"]["images"]["channels"],
         config["paths"]["images"],
         keyGen
     )

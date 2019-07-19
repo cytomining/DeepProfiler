@@ -14,7 +14,7 @@ class Profile(object):
     def __init__(self, config, dset):
         self.config = config
         self.dset = dset
-        self.num_channels = len(self.config["prepare"]["images"]["channels"])
+        self.num_channels = len(self.config["dataset"]["images"]["channels"])
         self.crop_generator = importlib.import_module("plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"]))\
             .GeneratorClass
         self.profile_crop_generator = importlib.import_module(
@@ -75,7 +75,7 @@ class Profile(object):
             print("No cells to profile:", output_file)
             return
         num_features = self.config["train"]["model"]["params"]["feature_dim"]
-        repeats = "channel_repeats" in self.config["prepare"]["images"].keys()
+        repeats = "channel_repeats" in self.config["dataset"]["images"].keys()
         
         # Extract features
         crops = next(self.profile_crop_generator.generate(self.sess))[0]  # single image crop generator yields one batch
