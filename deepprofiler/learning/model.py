@@ -66,7 +66,7 @@ class DeepProfilerModel(abc.ABC):
             callbacks = None
         # Create params (epochs, steps, log model params to comet ml)
         epochs, steps = setup_params(self, experiment)
-        keras.backend.get_session().run(tf.initialize_all_variables())
+        #keras.backend.get_session().run(tf.initialize_all_variables())
         # Train model
         self.feature_model.fit_generator(
             generator=self.train_crop_generator.generate(crop_session),
