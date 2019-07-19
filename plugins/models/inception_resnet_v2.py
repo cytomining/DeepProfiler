@@ -23,7 +23,7 @@ def define_model(config, dset):
         input_tensor = Input((
             config["train"]["sampling"]["box_size"],  # height
             config["train"]["sampling"]["box_size"],  # width
-            config["prepare"]["images"]["channel_repeats"]  # channels
+            config["dataset"]["images"]["channel_repeats"]  # channels
         ), name="input")
         base = inception_resnet_v2.InceptionResNetV2(
             include_top=True,
@@ -37,7 +37,7 @@ def define_model(config, dset):
         input_tensor = Input((
             config["train"]["sampling"]["box_size"],  # height
             config["train"]["sampling"]["box_size"],  # width
-            len(config["prepare"]["images"]["channels"])  # channels
+            len(config["dataset"]["images"]["channels"])  # channels
         ), name="input")
         base = inception_resnet_v2.InceptionResNetV2(
             include_top=False,

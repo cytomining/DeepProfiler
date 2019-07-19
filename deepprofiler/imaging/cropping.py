@@ -39,10 +39,10 @@ class CropGenerator(object):
         # Identify number of channels
         mask_objects = self.config["train"]["dset"]["mask_objects"]
         if mask_objects:
-            img_channels = len(self.config["prepare"]["images"]["channels"]) + 1
+            img_channels = len(self.config["dataset"]["images"]["channels"]) + 1
         else:
-            img_channels = len(self.config["prepare"]["images"]["channels"])
-        crop_channels = len(self.config["prepare"]["images"]["channels"])
+            img_channels = len(self.config["dataset"]["images"]["channels"])
+        crop_channels = len(self.config["dataset"]["images"]["channels"])
 
         # Identify image and box sizes
         box_size = self.config["train"]["sampling"]["box_size"]

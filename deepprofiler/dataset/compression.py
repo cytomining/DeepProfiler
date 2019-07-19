@@ -115,8 +115,8 @@ def compress_plate(args):
     keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     dset = deepprofiler.dataset.image_dataset.ImageDataset(
         plate,
-        config["prepare"]["metadata"]["label_field"],
-        config["prepare"]["images"]["channels"],
+        config["dataset"]["metadata"]["label_field"],
+        config["dataset"]["images"]["channels"],
         config["paths"]["images"],
         keyGen
     )
@@ -125,17 +125,17 @@ def compress_plate(args):
     plate_output_dir = png_dir(config["paths"]["compressed_images"], plate_name)
     compress = Compress(
         stats,
-        config["prepare"]["images"]["channels"],
+        config["dataset"]["images"]["channels"],
         plate_output_dir
     )
-    compress.set_formats(source_format=config["prepare"]["images"]["file_format"], target_format="png")
+    compress.set_formats(source_format=config["dataset"]["images"]["file_format"], target_format="png")
     compress.set_scaling_factor(config["prepare"]["compression"]["scaling_factor"])
     compress.recompute_percentile(0.0001, side="lower_percentile")
     compress.recompute_percentile(0.9999, side="upper_percentile")
     compress.expected = dset.number_of_records("all")
 
     # Setup control samples filter (for computing control illumination statistics)
-    filter_func = lambda x: x[config["prepare"]["metadata"]["control_field"]] == config["prepare"]["metadata"]["control_id"]
+    filter_func = lambda x: x[config["dataset"]["metadata"]["control_field"]] == config["dataset"]["metadata"]["control_id"]
     compress.set_control_samples_filter(filter_func)
 
     # Run compression

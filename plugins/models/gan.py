@@ -32,7 +32,7 @@ class GAN(object):
         self.val_crop_generator = val_crop_generator
         self.img_rows = config["train"]["sampling"]["box_size"]
         self.img_cols = config["train"]["sampling"]["box_size"]
-        self.channels = len(config["prepare"]["images"]["channels"])
+        self.channels = len(config["dataset"]["images"]["channels"])
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
         self.latent_dim = config["train"]["model"]["params"]["latent_dim"]  # TODO: move to params
 

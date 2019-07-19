@@ -5,9 +5,9 @@ import deepprofiler.dataset.metadata
 def write_compression_index(config):
     metadata = deepprofiler.dataset.metadata.Metadata(config["paths"]["index"], dtype=None)
     new_index = metadata.data
-    for ch in config["prepare"]["images"]["channels"]:
+    for ch in config["dataset"]["images"]["channels"]:
         new_index[ch] = new_index[ch].str.split("/").str[-1]
-        png_path = lambda x: "/" + x.replace("."+config["prepare"]["images"]["file_format"], ".png")
+        png_path = lambda x: "/" + x.replace("."+config["dataset"]["images"]["file_format"], ".png")
         new_index[ch] = new_index["Metadata_Plate"].astype(str) + new_index[ch].map(png_path)
     new_index.to_csv(config["paths"]["compressed_metadata"] + "/compressed.csv")
 

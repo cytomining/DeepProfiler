@@ -20,7 +20,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
             data = self.sample_batch(pool_index)
             crops = data[0]
             labels = data[1]  # TODO: enable multiple targets
-            crops, labels = repeat_channels(crops, labels, self.config["prepare"]["images"]["channel_repeats"])
+            crops, labels = repeat_channels(crops, labels, self.config["dataset"]["images"]["channel_repeats"])
             global_step += 1
             yield (crops, labels)
 
@@ -30,5 +30,5 @@ class SingleImageGeneratorClass(deepprofiler.imaging.cropping.SingleImageCropGen
     def generate(self, session, global_step=0):
         crops = self.image_pool
         labels = self.label_pool
-        crops, labels = repeat_channels(crops, labels, self.config["prepare"]["images"]["channel_repeats"])
+        crops, labels = repeat_channels(crops, labels, self.config["dataset"]["images"]["channel_repeats"])
         yield [crops, labels]
