@@ -113,16 +113,16 @@ def calculate_statistics(args):
 
     dset = deepprofiler.dataset.image_dataset.ImageDataset(
         plate,
-        config["prepare"]["metadata"]["label_field"],
-        config["prepare"]["images"]["channels"],
+        config["dataset"]["metadata"]["label_field"],
+        config["dataset"]["images"]["channels"],
         config["paths"]["images"],
         keyGen
     )
 
     # Prepare ImageStatistics object
     hist = IlluminationStatistics(
-        config["prepare"]["images"]["bits"],
-        config["prepare"]["images"]["channels"],
+        config["dataset"]["images"]["bits"],
+        config["dataset"]["images"]["channels"],
         config["prepare"]["illumination_correction"]["down_scale_factor"],
         config["prepare"]["illumination_correction"]["median_filter_size"],
         name=plateName

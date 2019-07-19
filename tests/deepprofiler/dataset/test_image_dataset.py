@@ -66,7 +66,7 @@ def dataset(metadata, config, make_struct):
 
 def test_init(metadata, out_dir, dataset, config, make_struct):
     sampling_field = config["train"]["sampling"]["field"]
-    channels = config["prepare"]["images"]["channels"]
+    channels = config["dataset"]["images"]["channels"]
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, sampling_field, channels, out_dir, keygen)
     assert dset.meta == metadata
@@ -153,7 +153,7 @@ def test_add_target(metadata, out_dir, dataset, config, make_struct):
 def test_read_dataset(metadata, out_dir, dataset, config, make_struct):
     dset = deepprofiler.dataset.image_dataset.read_dataset(config)
     pd.testing.assert_frame_equal(dset.meta.data, deepprofiler.dataset.metadata.Metadata(config["paths"]["index"], dtype=None).data)
-    assert dset.channels == config["prepare"]["images"]["channels"]
+    assert dset.channels == config["dataset"]["images"]["channels"]
     assert dset.root == config["paths"]["images"]
     assert dset.sampling_field == config["train"]["sampling"]["field"]
     np.testing.assert_array_equal(dset.sampling_values, dset.meta.data[dset.sampling_field].unique())

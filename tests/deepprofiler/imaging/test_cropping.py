@@ -117,7 +117,7 @@ def test_crop_generator_build_input_graph(crop_generator):
     assert crop_generator.input_variables["image_ph"].get_shape().as_list() == [None,
                                                                                 crop_generator.config["train"]["dset"]["height"],
                                                                                 crop_generator.config["train"]["dset"]["width"],
-                                                                                len(crop_generator.config["prepare"]["images"]["channels"])]
+                                                                                len(crop_generator.config["dataset"]["images"]["channels"])]
     assert crop_generator.input_variables["boxes_ph"].get_shape().as_list() == [None, 4]
     assert crop_generator.input_variables["box_ind_ph"].get_shape().as_list() == [None]
     assert len(crop_generator.input_variables["targets_phs"]) == len(crop_generator.dset.targets)
@@ -126,7 +126,7 @@ def test_crop_generator_build_input_graph(crop_generator):
     assert crop_generator.input_variables["labeled_crops"][0].get_shape().as_list() == [None,
                                                                                         crop_generator.config["train"]["sampling"]["box_size"],
                                                                                         crop_generator.config["train"]["sampling"]["box_size"],
-                                                                                        len(crop_generator.config["prepare"]["images"]["channels"])]
+                                                                                        len(crop_generator.config["dataset"]["images"]["channels"])]
     for target in crop_generator.input_variables["labeled_crops"][1:]:
         assert target.get_shape().as_list() == [None]
 
@@ -137,7 +137,7 @@ def test_crop_generator_build_augmentation_graph(crop_generator):
     assert crop_generator.train_variables["image_batch"].get_shape().as_list() == [None,
                                                                                    crop_generator.config["train"]["sampling"]["box_size"],
                                                                                    crop_generator.config["train"]["sampling"]["box_size"],
-                                                                                   len(crop_generator.config["prepare"]["images"]["channels"])]
+                                                                                   len(crop_generator.config["dataset"]["images"]["channels"])]
 
 
 def test_crop_generator_start(prepared_crop_generator):  # includes test for training queues
@@ -158,7 +158,7 @@ def test_crop_generator_sample_batch(prepared_crop_generator):
     assert np.array(data[0]).shape == (prepared_crop_generator.config["train"]["model"]["params"]["batch_size"],
                                        prepared_crop_generator.config["train"]["sampling"]["box_size"],
                                        prepared_crop_generator.config["train"]["sampling"]["box_size"],
-                                       len(prepared_crop_generator.config["prepare"]["images"]["channels"]))
+                                       len(prepared_crop_generator.config["dataset"]["images"]["channels"]))
     assert data[1].shape == (prepared_crop_generator.config["train"]["model"]["params"]["batch_size"], prepared_crop_generator.dset.targets[0].shape[1])
     assert data[2] == 0
     prepared_crop_generator.stop(sess)
@@ -175,7 +175,7 @@ def test_crop_generator_generate(prepared_crop_generator):
         assert np.array(data[0]).shape == (prepared_crop_generator.config["train"]["model"]["params"]["batch_size"],
                                            prepared_crop_generator.config["train"]["sampling"]["box_size"],
                                            prepared_crop_generator.config["train"]["sampling"]["box_size"],
-                                           len(prepared_crop_generator.config["prepare"]["images"]["channels"]))
+                                           len(prepared_crop_generator.config["dataset"]["images"]["channels"]))
         assert len(data[1]) == len(prepared_crop_generator.dset.targets)
         for item in data[1]:
             assert item.shape == (prepared_crop_generator.config["train"]["model"]["params"]["batch_size"], prepared_crop_generator.dset.targets[0].shape[1])
@@ -205,7 +205,7 @@ def test_single_image_crop_generator_start(single_image_crop_generator):
     assert single_image_crop_generator.aligned_labeled[0].get_shape().as_list() == [None,
                                                                                     single_image_crop_generator.config["train"]["sampling"]["box_size"],
                                                                                     single_image_crop_generator.config["train"]["sampling"]["box_size"],
-                                                                                    len(single_image_crop_generator.config["prepare"]["images"]["channels"])]
+                                                                                    len(single_image_crop_generator.config["dataset"]["images"]["channels"])]
     assert single_image_crop_generator.aligned_labeled[1].get_shape().as_list() == [None]
 
 
@@ -233,7 +233,7 @@ def test_single_image_crop_generator_prepare_image(single_image_crop_generator, 
     assert np.array(single_image_crop_generator.image_pool).shape == (single_image_crop_generator.config["train"]["sampling"]["locations"],
                                                                       single_image_crop_generator.config["train"]["sampling"]["box_size"],
                                                                       single_image_crop_generator.config["train"]["sampling"]["box_size"],
-                                                                      len(single_image_crop_generator.config["prepare"]["images"]["channels"]))
+                                                                      len(single_image_crop_generator.config["dataset"]["images"]["channels"]))
     assert np.array(single_image_crop_generator.label_pool).shape == (single_image_crop_generator.config["train"]["sampling"]["locations"], num_classes)
 
 
@@ -260,6 +260,6 @@ def test_single_image_crop_generator_generate(single_image_crop_generator, make_
         assert np.array(item[0]).shape == (single_image_crop_generator.config["train"]["sampling"]["locations"],
                                            single_image_crop_generator.config["train"]["sampling"]["box_size"],
                                            single_image_crop_generator.config["train"]["sampling"]["box_size"],
-                                           len(single_image_crop_generator.config["prepare"]["images"]["channels"]))
+                                           len(single_image_crop_generator.config["dataset"]["images"]["channels"]))
         assert np.array(item[1]).shape == (single_image_crop_generator.config["train"]["sampling"]["locations"], num_classes)
         assert i == 0

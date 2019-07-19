@@ -121,11 +121,11 @@ def test_gan(config, generator, val_generator):
     assert gan.val_crop_generator == val_generator
     assert gan.img_cols == config["train"]["sampling"]["box_size"]
     assert gan.img_rows == config["train"]["sampling"]["box_size"]
-    assert gan.channels == len(config["prepare"]["images"]["channels"])
+    assert gan.channels == len(config["dataset"]["images"]["channels"])
     assert gan.img_shape == (
         config["train"]["sampling"]["box_size"],
         config["train"]["sampling"]["box_size"],
-        len(config["prepare"]["images"]["channels"])
+        len(config["dataset"]["images"]["channels"])
     )
     assert gan.latent_dim == config["train"]["model"]["params"]["latent_dim"]
     assert isinstance(gan.generator, keras.Model)
