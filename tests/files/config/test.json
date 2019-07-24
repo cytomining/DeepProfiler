@@ -2,7 +2,6 @@
     "dataset": {
         "metadata": {
             "label_field": "Compound_Concentration",
-            "label_composition": ["NCBIGeneID", "x_mutation_status"],
             "control_field": "Compound_Concentration",
             "control_id": "17"
         },
