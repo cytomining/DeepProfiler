@@ -2,7 +2,6 @@
     "dataset": {
         "metadata": {
             "label_field": "Compound_Concentration",
-            "control_field": "Compound_Concentration",
             "control_id": "17"
         },
         "images": {
