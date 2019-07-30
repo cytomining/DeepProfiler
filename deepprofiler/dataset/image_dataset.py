@@ -135,7 +135,7 @@ def read_dataset(config):
         metadata=metadata,
         sampling_field=config["train"]["sampling"]["field"],
         channels=config["dataset"]["images"]["channels"],
-        dataRoot=os.path.join(config["paths"]["root"], config["paths"]["images"]),
+        dataRoot=config["paths"]["images"],
         keyGen=keyGen
     )
 
