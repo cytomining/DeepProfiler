@@ -76,8 +76,8 @@ class DeepProfilerModel(abc.ABC):
             verbose=verbose,
             initial_epoch=epoch - 1,
             validation_data=(x_validation, y_validation)
-        ) 
-            
+        )
+
         # Stop threads and close sessions
         close(self, crop_session)
         # Return the feature model and validation data
@@ -127,10 +127,11 @@ def start_val_session(dpmodel, configuration):
         keras.backend.set_session(val_session)
         dpmodel.val_crop_generator.start(val_session)
         x_validation, y_validation = deepprofiler.learning.validation.validate(
-            dpmodel.config,
-            dpmodel.dset,
-            dpmodel.val_crop_generator,
-            val_session)
+            config=dpmodel.config,
+            dset=dpmodel.dset,
+            crop_generator=dpmodel.val_crop_generator,
+            session=val_session
+            )
     gc.collect()
     return val_session, x_validation, y_validation
 
@@ -142,7 +143,9 @@ def start_main_session(configuration):
 
 
 def load_weights(dpmodel, epoch):
-    output_file = dpmodel.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
+    output_file = os.path.join(dpmodel.config["paths"]["root"],
+                               dpmodel.config["paths"]["checkpoints"],
+                               "checkpoint_{epoch:04d}.hdf5")
     previous_model = output_file.format(epoch=epoch - 1)
     if epoch >= 1 and os.path.isfile(previous_model):
         dpmodel.feature_model.load_weights(previous_model)
@@ -153,13 +156,19 @@ def load_weights(dpmodel, epoch):
 
 
 def setup_callbacks(dpmodel):
-    output_file = dpmodel.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
+    output_file = os.path.join(dpmodel.config["paths"]["root"],
+                               dpmodel.config["paths"]["checkpoints"],
+                               "checkpoint_{epoch:04d}.hdf5")
+
     callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
         filepath=output_file,
         save_weights_only=True,
         save_best_only=False
     )
-    csv_output = dpmodel.config["paths"]["logs"] + "/log.csv"
+
+    csv_output = os.path.join(dpmodel.config["paths"]["root"],
+                              dpmodel.config["paths"]["logs"],
+                              "log.csv")
     callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
     callbacks = [callback_model_checkpoint, callback_csv]
     return callbacks

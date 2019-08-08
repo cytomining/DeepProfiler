@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 
@@ -21,7 +22,7 @@ class ImageDataset():
 
     def getImagePaths(self, r):
         key = self.keyGen(r)
-        image = [self.root + "/" + r[ch] for ch in self.channels]
+        image = [os.path.join(self.root, r[ch]) for ch in self.channels]
         outlines = self.outlines
         if outlines is not None:
             outlines = self.outlines + r["Outlines"]
@@ -115,9 +116,9 @@ def read_dataset(config):
     # Add outlines if specified
     outlines = None
     if "outlines" in config["prepare"].keys() and config["prepare"]["outlines"] != "":
-        df = pd.read_csv(config["paths"]["metadata"] + "/outlines.csv")
+        df = pd.read_csv(os.path.join(config["paths"]["metadata"], "outlines.csv"))
         metadata.mergeOutlines(df)
-        outlines = config["paths"]["root"] + "inputs/outlines/"
+        outlines = os.path.join(config["paths"]["root"], "inputs", "outlines")
 
     print(metadata.data.info())
 
@@ -128,13 +129,14 @@ def read_dataset(config):
     metadata.splitMetadata(trainingFilter, validationFilter)
 
     # Create a dataset
-    keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
+    keyGen = lambda r: os.path.join(r["Metadata_Plate"], "{}-{}".format(r["Metadata_Well"], r["Metadata_Site"]))
+
     dset = ImageDataset(
-        metadata,
-        config["train"]["sampling"]["field"],
-        config["dataset"]["images"]["channels"],
-        config["paths"]["images"],
-        keyGen
+        metadata=metadata,
+        sampling_field=config["train"]["sampling"]["field"],
+        channels=config["dataset"]["images"]["channels"],
+        dataRoot=config["paths"]["images"],
+        keyGen=keyGen
     )
 
     # Add training targets
@@ -147,5 +149,3 @@ def read_dataset(config):
         dset.outlines = outlines
 
     return dset
-
-

@@ -14,82 +14,6 @@ import deepprofiler.dataset.target
 import deepprofiler.imaging.cropping
 
 
-def __rand_array():
-    return np.array(random.sample(range(100), 12))
-
-
-@pytest.fixture(scope="function")
-def out_dir(tmpdir):
-    return os.path.abspath(tmpdir.mkdir("test"))
-
-@pytest.fixture(scope="function")
-def config(out_dir):
-    with open("tests/files/config/test.json", "r") as f:
-        config = json.load(f)
-    for path in config["paths"]:
-        config["paths"][path] = out_dir + config["paths"].get(path)
-    config["paths"]["root_dir"] = out_dir
-    return config
-
-@pytest.fixture(scope="function")
-def make_struct(config):
-    for key, path in config["paths"].items():
-        if key not in ["index", "config_file", "root_dir"]:
-            os.makedirs(path+"/")
-    return
-
-
-@pytest.fixture(scope="function")
-def metadata(config, make_struct):
-    filename = os.path.join(config["paths"]["metadata"], "index.csv")
-    df = pd.DataFrame({
-        "Metadata_Plate": __rand_array(),
-        "Metadata_Well": __rand_array(),
-        "Metadata_Site": __rand_array(),
-        "R": [str(x) + ".png" for x in __rand_array()],
-        "G": [str(x) + ".png" for x in __rand_array()],
-        "B": [str(x) + ".png" for x in __rand_array()],
-        "Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-        "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
-        "Target": [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
-    }, dtype=int)
-    df.to_csv(filename, index=False)
-    meta = deepprofiler.dataset.metadata.Metadata(filename)
-    train_rule = lambda data: data["Split"].astype(int) == 0
-    val_rule = lambda data: data["Split"].astype(int) == 1
-    meta.splitMetadata(train_rule, val_rule)
-    return meta
-
-
-@pytest.fixture(scope="function")
-def dataset(metadata, config, make_struct):
-    keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen)
-    target = deepprofiler.dataset.target.MetadataColumnTarget("Target", metadata.data["Target"].unique())
-    dset.add_target(target)
-    return dset
-
-@pytest.fixture(scope="function")
-def crop_generator(config, dataset):
-    return deepprofiler.imaging.cropping.CropGenerator(config, dataset)
-
-
-@pytest.fixture(scope="function")
-def single_image_crop_generator(config, dataset):
-    return deepprofiler.imaging.cropping.SingleImageCropGenerator(config, dataset)
-
-@pytest.fixture(scope="function")
-def prepared_crop_generator(crop_generator, out_dir):
-    images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
-    for i in range(0, 36, 3):
-        skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["R"][i // 3]), images[:, :, i])
-        skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["G"][i // 3]), images[:, :, i + 1])
-        skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["B"][i // 3]), images[:, :, i + 2])
-    crop_generator.build_input_graph()
-    crop_generator.build_augmentation_graph()
-    return crop_generator
-
-
 def test_crop_graph():
     num_crops = 100
     channels = 3
@@ -106,10 +30,10 @@ def test_crop_graph():
     sess.close()
 
 
-def test_crop_generator_init(config, dataset):
-    generator = deepprofiler.imaging.cropping.CropGenerator(config, dataset)
+def test_crop_generator_init(config, crop_dataset):
+    generator = deepprofiler.imaging.cropping.CropGenerator(config, crop_dataset)
     assert generator.config == config
-    assert generator.dset == dataset
+    assert generator.dset == crop_dataset
 
 
 def test_crop_generator_build_input_graph(crop_generator):
@@ -190,10 +114,10 @@ def test_crop_generator_stop(prepared_crop_generator):
     assert prepared_crop_generator.coord.joined
 
 
-def test_single_image_crop_generator_init(config, dataset):
-    generator = deepprofiler.imaging.cropping.SingleImageCropGenerator(config, dataset)
+def test_single_image_crop_generator_init(config, crop_dataset):
+    generator = deepprofiler.imaging.cropping.SingleImageCropGenerator(config, crop_dataset)
     assert generator.config == config
-    assert generator.dset == dataset
+    assert generator.dset == crop_dataset
 
 
 def test_single_image_crop_generator_start(single_image_crop_generator):

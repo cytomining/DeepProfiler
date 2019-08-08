@@ -10,12 +10,13 @@ import pandas as pd
 
 def get_locations(image_key, config, randomize=True, seed=None):
     keys = image_key.split("/")
-    locations_file = "{}/{}-{}.csv".format(
-        keys[0],
+    locations_file = os.path.join(keys[0], "{}-{}.csv".format(
         keys[1],
         config["train"]["sampling"]["locations_field"]
-    )
-    locations_path = os.path.join(config["paths"]["locations"], locations_file)
+    ))
+    locations_path = os.path.join(config["paths"]["root"],
+                                  config["paths"]["locations"],
+                                  locations_file)
     if os.path.exists(locations_path):
         locations = pd.read_csv(locations_path)
         random_sample = config["train"]["sampling"]["locations"]
@@ -28,10 +29,12 @@ def get_locations(image_key, config, randomize=True, seed=None):
         x_key = config["train"]["sampling"]["locations_field"] + "_Location_Center_X"
         return pd.DataFrame(columns=[x_key, y_key])
 
+
 def load_batch(dataset, config):
     batch = dataset.getTrainBatch(config["train"]["sampling"]["images"])
     batch["locations"] = [ get_locations(x, config) for x in batch["keys"] ]
     return batch
+
 
 def prepare_boxes(batch, config):
     locationsBatch = batch["locations"]
@@ -78,6 +81,5 @@ def prepare_boxes(batch, config):
     result = (np.concatenate(all_boxes),
               np.concatenate(all_indices),
               [np.concatenate(t) for t in all_targets],
-              np.concatenate(all_masks)
-             )
+              np.concatenate(all_masks))
     return result
