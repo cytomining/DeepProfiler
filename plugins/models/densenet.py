@@ -890,7 +890,8 @@ def define_model(config, dset):
     )
     input_image = keras.layers.Input(input_shape)
 
-    model = DenseNet(input_shape=input_shape, depth=config["train"]["model"]["params"]["layers"],classes=len(config["dataset"]["metadata"]["label_composition"]), input_tensor=input_image)#, freeze_bn=not is_training)
+    model = DenseNet(input_shape=input_shape, depth=config["train"]["model"]["params"]["layers"],
+                     classes=len(set(config["dataset"]["metadata"]["label_field"])), input_tensor=input_image)  #freeze_bn=not is_training)
     #features = keras.layers.core.Dropout(0.5)(features)
 
     # TODO: factorize the multi-target output model

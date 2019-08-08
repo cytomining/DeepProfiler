@@ -135,7 +135,7 @@ def compress_plate(args):
     compress.expected = dset.number_of_records("all")
 
     # Setup control samples filter (for computing control illumination statistics)
-    filter_func = lambda x: x[config["dataset"]["metadata"]["control_field"]] == config["dataset"]["metadata"]["control_id"]
+    filter_func = lambda x: x[config["dataset"]["metadata"]["label_field"]] == config["dataset"]["metadata"]["control_id"]
     compress.set_control_samples_filter(filter_func)
 
     # Run compression
