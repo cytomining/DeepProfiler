@@ -67,8 +67,6 @@ def cli(context, root, config, cores):
             params["paths"] = dirs
         params["paths"]["index"] = params["paths"]["metadata"] + "/index.csv"
         context.obj["config"] = params
-        process = deepprofiler.dataset.utils.Parallel(context.obj["config"], numProcs=context.obj["cores"])
-        context.obj["process"] = process
     context.obj["dirs"] = dirs
 
 
@@ -100,7 +98,7 @@ def download_bbbc021(context):
 @click.pass_context
 def prepare(context):
     metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["paths"]["index"])
-    process = context.obj["process"]
+    process = deepprofiler.dataset.utils.Parallel(context.obj["config"], numProcs=context.obj["cores"])
     process.compute(deepprofiler.dataset.illumination_statistics.calculate_statistics, metadata)
     print("Illumination complete!")
     metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["paths"]["index"])  # reinitialize generator

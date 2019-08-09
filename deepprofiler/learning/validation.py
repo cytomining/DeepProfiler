@@ -10,6 +10,7 @@ class Validation(object):
         self.session = session
         self.batch_inputs = []
         self.batch_outputs = []
+        self.count = 0
 
     def process_batches(self, key, image_array, meta):
         # Prepare image for cropping
@@ -19,14 +20,17 @@ class Validation(object):
                                    meta, 
                                    True
                             )
+        self.count += 1
         if total_crops > 0:
             # We expect all crops in a single batch
             batches = [b for b in self.crop_generator.generate(self.session)]
             self.batch_inputs.append(batches[0][0])
             self.batch_outputs.append(batches[0][1])
+        print("Loading validation data:",self.count,"records of",self.dset.number_of_records("val"), end="\r")
 
-def validate(config, dset, crop_generator, session):
+def load_validation_data(config, dset, crop_generator, session):
 
     validation = Validation(config, dset, crop_generator, session)
     dset.scan(validation.process_batches, frame="val")
+    print("Validation data loaded")
     return np.concatenate(validation.batch_inputs), np.concatenate(validation.batch_outputs)

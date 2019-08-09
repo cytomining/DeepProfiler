@@ -126,7 +126,7 @@ def start_val_session(dpmodel, configuration):
         val_session = tf.Session(config=configuration)
         keras.backend.set_session(val_session)
         dpmodel.val_crop_generator.start(val_session)
-        x_validation, y_validation = deepprofiler.learning.validation.validate(
+        x_validation, y_validation = deepprofiler.learning.validation.load_validation_data(
             dpmodel.config,
             dpmodel.dset,
             dpmodel.val_crop_generator,

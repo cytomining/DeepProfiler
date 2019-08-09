@@ -125,6 +125,7 @@ class CropGenerator(object):
         self.exception_occurred = False
 
         # Enqueueing threads for raw images
+        # vvv Start of thread function vvv
         def data_loading_thread():
             while not coord.should_stop():
                 try:
@@ -179,6 +180,8 @@ class CropGenerator(object):
                     self.exception_occurred = True
                     return
 
+        # ^^^ End of thread function ^^^
+        
         load_threads = []
         for i in range(self.config["train"]["queueing"]["loading_workers"]):
             lt = threading.Thread(target=data_loading_thread)
