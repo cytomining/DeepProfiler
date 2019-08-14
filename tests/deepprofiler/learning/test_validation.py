@@ -132,8 +132,8 @@ def test_process_batches():  # tested in test_validate
     pass
 
 
-def test_validate(config, dataset, crop_generator, session, out_dir, data, locations):
-    test_images, test_labels = deepprofiler.learning.validation.validate(config, dataset, crop_generator, session)
+def test_load_validation_data(config, dataset, crop_generator, session, out_dir, data, locations):
+    test_images, test_labels = deepprofiler.learning.validation.load_validation_data(config, dataset, crop_generator, session)
     assert test_labels.shape == (12,4)
     assert test_images.shape == (12,16,16,3)
     test_labels_amax = np.amax(test_labels, axis=1)
