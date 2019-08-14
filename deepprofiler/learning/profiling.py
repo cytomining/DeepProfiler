@@ -40,6 +40,7 @@ class Profile(object):
         else:
             checkpoint = self.config["paths"]["checkpoints"]+"/"+self.config["profile"]["checkpoint"]
         self.dpmodel.feature_model.load_weights(checkpoint)
+        self.dpmodel.feature_model.summary()
         self.feat_extractor = keras.Model(self.dpmodel.feature_model.inputs, self.dpmodel.feature_model.get_layer(
             self.config["profile"]["feature_layer"]).output)
         self.feat_extractor.summary()
