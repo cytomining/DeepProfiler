@@ -1,9 +1,6 @@
-from comet_ml import Experiment
-
 import keras
 import keras_resnet
 import keras_resnet.models
-import tensorflow as tf
 
 from deepprofiler.learning.model import DeepProfilerModel
 
@@ -15,6 +12,14 @@ from deepprofiler.learning.model import DeepProfilerModel
 # https://arxiv.org/abs/1512.03385
 ##################################################
 
+supported_models = {
+    18: keras_resnet.models.ResNet18,
+    50: keras_resnet.models.ResNet2D50,
+    101: keras_resnet.models.ResNet2D101,
+    152: keras_resnet.models.ResNet2D152,
+    200: keras_resnet.models.ResNet2D200
+}
+
 def define_model(config, dset):
     # 1. Create ResNet architecture to extract features
     input_shape = (
@@ -24,9 +29,10 @@ def define_model(config, dset):
     )
     input_image = keras.layers.Input(input_shape)
 
-    model = keras_resnet.models.ResNet2D101(input_image, include_top=False)#, freeze_bn=not is_training)
+    num_layers = config["train"]["model"]["params"]["conv_blocks"]
+    
+    model = supported_models[num_layers](input_image, include_top=False)
     features = keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-1].output)
-    #features = keras.layers.core.Dropout(0.5)(features)
 
     # TODO: factorize the multi-target output model
 
