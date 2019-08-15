@@ -19,6 +19,7 @@ supported_models = {
     152: keras_resnet.models.ResNet2D152,
     200: keras_resnet.models.ResNet2D200
 }
+SM = "ResNet supported models: " + ",".join([str(x) for x in supported_models.keys()])
 
 def define_model(config, dset):
     # 1. Create ResNet architecture to extract features
@@ -30,6 +31,8 @@ def define_model(config, dset):
     input_image = keras.layers.Input(input_shape)
 
     num_layers = config["train"]["model"]["params"]["conv_blocks"]
+    error_msg = str(num_layers) + " conv_blocks not in " + SM
+    assert num_layers in supported_models.keys(), error_msg
     
     model = supported_models[num_layers](input_image, include_top=False)
     features = keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-1].output)
