@@ -86,6 +86,10 @@ class Profile(object):
             feats = np.concatenate(feats, axis=-1)
             
         # Save features
+        features = np.zeros(shape=(total_crops, num_features))
+        while len(feats.shape) > 2:  # 2D mean spatial pooling
+            feats = np.mean(feats, axis=1)
+
         np.savez_compressed(output_file, f=feats)
         toc(image_key + " (" + str(total_crops) + " cells)", start)
 
