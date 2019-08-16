@@ -40,11 +40,11 @@ def cli(context, root, config, cores):
         "intensities": root+"/outputs/intensities/",
         "compressed_images": root+"/outputs/compressed/images/",
         "compressed_metadata": root+"/outputs/compressed/metadata/",
-        "training": root+"/outputs/training/",
-        "checkpoints": root+"/outputs/training/checkpoint/",
-        "logs": root+"/outputs/training/logs/",
-        "summaries": root+"/outputs/training/summaries/",
-        "features": root+"/outputs/features/"
+        "results": root+"/outputs/results/",
+        "checkpoints": root+"/outputs/results/checkpoint/",
+        "logs": root+"/outputs/results/logs/",
+        "summaries": root+"/outputs/results/summaries/",
+        "features": root+"/outputs/results/features/"
     }
     if config is not None:
         context.obj["config"] = {}
@@ -54,9 +54,13 @@ def cli(context, root, config, cores):
     else:
         config = dirs["config"] + "/config.json"
     context.obj["cores"] = cores
+
+    # Load configuration file
     if os.path.isfile(config):
         with open(config, "r") as f:
             params = json.load(f)
+
+        # Override paths defined by user
         if "paths" in params.keys():
             for key, value in dirs.items():
                 if key not in params["paths"].keys():
@@ -65,8 +69,21 @@ def cli(context, root, config, cores):
                     dirs[key] = params["paths"][key]
         else:
             params["paths"] = dirs
+
+        # Rename results directory if a key is provided
+        if "results_key" in params.keys():
+            for k in ["results", "checkpoints", "logs", "summaries", "features"]:
+                dirs[k] = dirs[k].replace("results", params["results_key"])
+            params["paths"] = dirs
+        if os.path.isdir(dirs["images"]):
+            for k in ["results", "checkpoints", "logs", "summaries", "features"]:
+                os.makedirs(dirs[k], exist_ok=True)
+
+        # Update references
         params["paths"]["index"] = params["paths"]["metadata"] + "/index.csv"
         context.obj["config"] = params
+
+    
     context.obj["dirs"] = dirs
 
 
