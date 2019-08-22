@@ -53,7 +53,7 @@ def define_model(config, dset):
 
     # 4. Create and compile model
     model = keras.models.Model(inputs=input_image, outputs=class_outputs)
-    optimizer = keras.optimizers.Adam(lr=config["train"]["model"]["params"]["learning_rate"])
+    optimizer = keras.optimizers.SGD(lr=config["train"]["model"]["params"]["learning_rate"], momentum=0.9, nesterov=True)
 
     return model, optimizer, loss_func
 

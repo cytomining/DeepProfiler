@@ -6,7 +6,6 @@ import tensorflow as tf
 
 def augment(crop):
     with tf.variable_scope("augmentation"):
-        '''
         # Vertical and horizontal shifts:
         # Offsets is the amount of pixels to move the crop, sides is the direction of movement 
         offsets = tf.random_uniform([2], minval=0, maxval=int(crop.shape[0].value*0.3), dtype=tf.int32)
@@ -25,7 +24,6 @@ def augment(crop):
         left_pads = offsets[1] * (1 - sides[1])
         right_pads = offsets[1] * sides[1]
         crop = tf.pad(sub_crop, [[upper_pads, lower_pads], [left_pads, right_pads], [0, 0]], "CONSTANT")
-        '''
 
         # Horizontal flips
         augmented = tf.image.random_flip_left_right(crop)

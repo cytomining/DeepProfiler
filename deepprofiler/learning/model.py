@@ -161,7 +161,13 @@ def setup_callbacks(dpmodel):
     )
     csv_output = dpmodel.config["paths"]["logs"] + "/log.csv"
     callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
-    callbacks = [callback_model_checkpoint, callback_csv]
+    def lr_schedule(epoch, lr):
+        if epoch in [40,60,90]:
+            return lr/10.
+        else:
+            return lr
+    reduce_lr = keras.callbacks.LearningRateScheduler(lr_schedule, verbose=1)
+    callbacks = [callback_model_checkpoint, callback_csv, reduce_lr]
     return callbacks
 
 

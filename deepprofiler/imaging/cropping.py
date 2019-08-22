@@ -19,8 +19,8 @@ def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes
             mask_values = tf.ones_like(crops[:,:,:,-1], dtype=tf.float32) * tf.cast(mask_ind, dtype=tf.float32)
             masks = tf.to_float( tf.equal(crops[:,:,:,-1], mask_values) )
             crops = crops[:,:,:,0:-1] * tf.expand_dims(masks, -1)
-        max_intensities = tf.reduce_max( tf.reduce_max( crops, axis=1, keepdims=True), axis=2, keepdims=True) + 1e-6
-        crops = crops / max_intensities
+        max_intensities = tf.reduce_max( tf.reduce_max( crops, axis=1, keepdims=True), axis=2, keepdims=True)
+        crops = crops / (max_intensities + 1e-6)
     return crops
 
 # TODO: implement abstract crop generator
@@ -146,7 +146,7 @@ class CropGenerator(object):
                     output = sess.run(self.train_variables, feed_dict)
 
                     # Remove crops without any content TODO: enable multiple targets
-                    valid = np.sum(output["image_batch"], axis=(1,2,3)) > 0
+                    valid = np.sum(output["image_batch"], axis=(1,2,3)) != 0
                     output["image_batch"] = output["image_batch"][valid, ...]
                     output["target_0"] = output["target_0"][valid, ...]
 
@@ -267,10 +267,9 @@ class SingleImageCropGenerator(CropGenerator):
             self.config["train"]["model"]["params"]["batch_size"] = self.config["train"]["validation"]["batch_size"]
             self.build_input_graph()
             # Align cells by rotating nuclei
-            self.angles = tf.placeholder(tf.float32, shape=[None], name="nuclei_angles")
+            #self.angles = tf.placeholder(tf.float32, shape=[None], name="nuclei_angles")
             #rotated_imgs = tf.contrib.image.rotate(self.input_variables["labeled_crops"][0], self.angles, interpolation="BILINEAR")
             #self.aligned_labeled = [rotated_imgs, self.input_variables["labeled_crops"][1]]
-            self.aligned_labeled = [self.input_variables["labeled_crops"][0], self.input_variables["labeled_crops"][1]]
 
     def prepare_image(self, session, image_array, meta, sample_first_crops=False):
 
@@ -278,17 +277,17 @@ class SingleImageCropGenerator(CropGenerator):
         self.batch_size = self.config["train"]["validation"]["batch_size"]
         image_key, image_names, outlines = self.dset.getImagePaths(meta)
 
-        batch = {"images": [], "locations": [], "targets": [[]]}
+        batch = {"images": [], "locations": [], "targets": [[] for i in range(num_targets)]}
         batch["images"].append(image_array)
         batch["locations"].append(deepprofiler.imaging.boxes.get_locations(image_key, self.config, randomize=False))
         for i in range(num_targets):
             tgt = self.dset.targets[i]
-            batch["targets"][0].append(tgt.get_values(meta))
+            batch["targets"][i].append(tgt.get_values(meta))
 
         if sample_first_crops and self.batch_size < len(batch["locations"][0]):
             batch["locations"][0] = batch["locations"][0].head(self.batch_size)
 
-        has_orientation = len(batch["locations"][0].columns) > 2
+        has_orientation = "Orientation" in batch["locations"][0].columns
         boxes, box_ind, targets, mask_ind = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
         batch["images"] = np.reshape(image_array, self.input_variables["shapes"]["batch"])
         feed_dict = {
@@ -304,16 +303,16 @@ class SingleImageCropGenerator(CropGenerator):
 
         total_crops = len(batch["locations"][0])
 
-        if has_orientation:
-            # Align cells by rotating to the major axis of nuclei
-            feed_dict[self.angles] = (batch["locations"][0]["Orientation"]*deepprofiler.dataset.utils.PI)/180.
-            output = session.run(self.aligned_labeled, feed_dict)
-        else:
-            output = session.run(self.input_variables["labeled_crops"], feed_dict)
+        #if has_orientation:
+        #    # Align cells by rotating to the major axis of nuclei
+        #    feed_dict[self.angles] = (batch["locations"][0]["Orientation"]*deepprofiler.dataset.utils.PI)/180.
+        #    output = session.run(self.aligned_labeled, feed_dict)
+        #else:
+        output = session.run(self.input_variables["labeled_crops"], feed_dict)
 
         output = {"image_batch": output[0], "target_0": output[1]}
         # Remove crops without any content TODO: enable multiple targets
-        valid = np.sum(output["image_batch"], axis=(1,2,3)) > 0
+        valid = np.sum(output["image_batch"], axis=(1,2,3)) != 0
         self.image_pool = output["image_batch"][valid, ...]
         self.label_pool = output["target_0"][valid, ...]  
         num_classes = self.dset.targets[0].shape[1]
