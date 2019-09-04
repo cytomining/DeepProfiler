@@ -162,7 +162,7 @@ class ModelClass(DeepProfilerModel):
         else:
             keras.backend.get_session().run(tf.global_variables_initializer())  # workaround for tf bug
         # TODO: no callbacks
-        epochs, steps = model.setup_params(self, experiment)
+        epochs, steps, lr_schedule_epochs, lr_schedule_lr = model.setup_params(self, experiment)
         self.gan.train(epochs, steps, epoch)
         model.close(self, crop_session)
         # TODO: no return values

@@ -51,6 +51,10 @@
                 "feature_dim": 100,
                 "latent_dim": 100,
                 "epsilon_std": 1.0
+            },
+            "lr_schedule" : {
+                "epoch": [1,3,5],
+                "lr": [0.001, 0.0005, 0.0001]
             }
         },
         "sampling": {

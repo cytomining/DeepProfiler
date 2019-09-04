@@ -57,15 +57,16 @@ class DeepProfilerModel(abc.ABC):
         val_session, x_validation, y_validation = start_val_session(self, configuration)
         # Create main session
         main_session = start_main_session(configuration)
+        epochs, steps, lr_schedule_epochs, lr_schedule_lr = setup_params(self, experiment)
         if verbose != 0:  # verbose is only 0 when optimizing hyperparameters
             # Load weights
             load_weights(self, epoch)
             # Create callbacks
-            callbacks = setup_callbacks(self)
+            callbacks = setup_callbacks(self, lr_schedule_epochs, lr_schedule_lr)
         else:
             callbacks = None
         # Create params (epochs, steps, log model params to comet ml)
-        epochs, steps = setup_params(self, experiment)
+
         #keras.backend.get_session().run(tf.initialize_all_variables())
         # Train model
         self.feature_model.fit_generator(
@@ -152,7 +153,7 @@ def load_weights(dpmodel, epoch):
         keras.backend.get_session().run(tf.global_variables_initializer())
 
 
-def setup_callbacks(dpmodel):
+def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr):
     output_file = dpmodel.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
     callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
         filepath=output_file,
@@ -161,23 +162,38 @@ def setup_callbacks(dpmodel):
     )
     csv_output = dpmodel.config["paths"]["logs"] + "/log.csv"
     callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
+
     def lr_schedule(epoch, lr):
-        if epoch in [40,60,90]:
-            return lr/10.
+        if epoch in lr_schedule_epochs:
+            return lr_schedule_lr[lr_schedule_epochs.index(epoch)]
         else:
             return lr
-    reduce_lr = keras.callbacks.LearningRateScheduler(lr_schedule, verbose=1)
-    callbacks = [callback_model_checkpoint, callback_csv, reduce_lr]
+    if lr_schedule_epochs:
+        callback_lr_schedule = keras.callbacks.LearningRateScheduler(lr_schedule, verbose=1)
+        callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule]
+    else:
+        callbacks = [callback_model_checkpoint, callback_csv]
     return callbacks
 
 
 def setup_params(dpmodel, experiment):
     epochs = dpmodel.config["train"]["model"]["epochs"]
     steps = dpmodel.config["train"]["model"]["steps"]
+    lr_schedule_epochs = None
+    lr_schedule_lr = None
     if dpmodel.config["train"]["comet_ml"]["track"]:
         params = dpmodel.config["train"]["model"]["params"]
         experiment.log_multiple_params(params)
-    return epochs, steps
+    if "lr_schedule" in dpmodel.config["train"]["model"]:
+        assert len(dpmodel.config["train"]["model"]["lr_schedule"]["epoch"]) == \
+               len(dpmodel.config["train"]["model"]["lr_schedule"]["lr"]), "Make sure that the length of " \
+                                                                           "lr_schedule->epoch equals the length of " \
+                                                                           "lr_schedule->lr in the config file."
+
+        lr_schedule_epochs = dpmodel.config["train"]["model"]["lr_schedule"]["epoch"]
+        lr_schedule_lr = dpmodel.config["train"]["model"]["lr_schedule"]["lr"]
+
+    return epochs, steps, lr_schedule_epochs, lr_schedule_lr
 
 
 def close(dpmodel, crop_session):
