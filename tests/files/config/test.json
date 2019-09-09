@@ -11,6 +11,8 @@
                 "B"
               ],
             "file_format": "tif",
+            "width": 128,
+            "height": 128,
             "bits": 16
         }
     },
@@ -27,22 +29,19 @@
     "train": {
         "pretrained": false,
         "gpus": "0",
-        "dset": {
+        "partition": {
             "targets": [
                 "Class"
             ],
             "split_field": "Split",
             "training_values": [0],
-            "validation_values": [1],
-            "width": 128,
-            "height": 128,
-            "mask_objects": false
+            "validation_values": [1]
         },
         "model": {
             "name": "cnn",
             "crop_generator": "crop_generator",
             "metrics": ["accuracy"],
-            "epochs": 3,
+            "epochs": 5,
             "steps": 10,
             "params": {
                 "learning_rate": 0.0001,
@@ -63,6 +62,7 @@
             "locations_field": "R",
             "box_size": 16,
             "field": "Sampling",
+            "mask_objects": false,
             "alpha": 0.2
         },
           "queueing": {

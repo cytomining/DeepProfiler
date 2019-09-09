@@ -115,8 +115,8 @@ def test_crop_generator_init(config, dataset):
 def test_crop_generator_build_input_graph(crop_generator):
     crop_generator.build_input_graph()
     assert crop_generator.input_variables["image_ph"].get_shape().as_list() == [None,
-                                                                                crop_generator.config["train"]["dset"]["height"],
-                                                                                crop_generator.config["train"]["dset"]["width"],
+                                                                                crop_generator.config["dataset"]["images"]["height"],
+                                                                                crop_generator.config["dataset"]["images"]["width"],
                                                                                 len(crop_generator.config["dataset"]["images"]["channels"])]
     assert crop_generator.input_variables["boxes_ph"].get_shape().as_list() == [None, 4]
     assert crop_generator.input_variables["box_ind_ph"].get_shape().as_list() == [None]

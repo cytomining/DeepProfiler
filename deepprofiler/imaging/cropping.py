@@ -10,6 +10,7 @@ import deepprofiler.dataset.utils
 import deepprofiler.imaging.augmentations
 import deepprofiler.imaging.boxes
 
+
 def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False):
     with tf.variable_scope("cropping"):
         crop_size_ph = tf.constant([box_size, box_size], name="crop_size")
@@ -22,6 +23,7 @@ def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes
         max_intensities = tf.reduce_max( tf.reduce_max( crops, axis=1, keepdims=True), axis=2, keepdims=True)
         crops = crops / (max_intensities + 1e-6)
     return crops
+
 
 # TODO: implement abstract crop generator
 class CropGenerator(object):
@@ -37,7 +39,7 @@ class CropGenerator(object):
 
     def build_input_graph(self):
         # Identify number of channels
-        mask_objects = self.config["train"]["dset"]["mask_objects"]
+        mask_objects = self.config["train"]["sampling"]["mask_objects"]
         if mask_objects:
             img_channels = len(self.config["dataset"]["images"]["channels"]) + 1
         else:
@@ -46,8 +48,8 @@ class CropGenerator(object):
 
         # Identify image and box sizes
         box_size = self.config["train"]["sampling"]["box_size"]
-        img_width = self.config["train"]["dset"]["width"]
-        img_height = self.config["train"]["dset"]["height"]
+        img_width = self.config["dataset"]["images"]["width"]
+        img_height = self.config["dataset"]["images"]["height"]
 
         # Data shapes
         num_targets = len(self.dset.targets)

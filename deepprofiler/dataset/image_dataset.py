@@ -122,9 +122,9 @@ def read_dataset(config):
     print(metadata.data.info())
 
     # Split training data
-    split_field = config["train"]["dset"]["split_field"]
-    trainingFilter = lambda df: df[split_field].isin(config["train"]["dset"]["training_values"])
-    validationFilter = lambda df: df[split_field].isin(config["train"]["dset"]["validation_values"])
+    split_field = config["train"]["partition"]["split_field"]
+    trainingFilter = lambda df: df[split_field].isin(config["train"]["partition"]["training_values"])
+    validationFilter = lambda df: df[split_field].isin(config["train"]["partition"]["validation_values"])
     metadata.splitMetadata(trainingFilter, validationFilter)
 
     # Create a dataset
@@ -138,12 +138,12 @@ def read_dataset(config):
     )
 
     # Add training targets
-    for t in config["train"]["dset"]["targets"]:
+    for t in config["train"]["partition"]["targets"]:
         new_target = deepprofiler.dataset.target.MetadataColumnTarget(t, metadata.data[t].unique())
         dset.add_target(new_target)
 
     # Activate outlines for masking if needed
-    if config["train"]["dset"]["mask_objects"]:
+    if config["train"]["sampling"]["mask_objects"]:
         dset.outlines = outlines
 
     return dset
