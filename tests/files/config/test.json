@@ -28,7 +28,6 @@
     },
     "train": {
         "pretrained": false,
-        "gpus": "0",
         "partition": {
             "targets": [
                 "Class"
@@ -75,8 +74,9 @@
             "project_name": "test"
           },
           "validation": {
-            "top_k": 1,
-            "batch_size": 2
+              "top_k": 1,
+              "batch_size": 2,
+              "sample_first_crops" : false
           }
     },
     "profile": {

@@ -18,7 +18,7 @@ class Validation(object):
                                    self.session, 
                                    image_array, 
                                    meta, 
-                                   True
+                                   self.config["train"]["validation"]["sample_first_crops"]
                             )
         self.count += 1
         if total_crops > 0:

@@ -27,8 +27,15 @@ import deepprofiler.download.normalize_bbbc021_metadata
 @click.option("--cores", default=0,
               help="Number of CPU cores for parallel processing (all=0)",
               type=click.INT)
+@click.option("--gpu", default=0,
+              help="GPU device id",
+              type=click.INT)
+@click.option("--exp", default="results",
+              help="Name of experiment",
+              type=click.INT)
+
 @click.pass_context
-def cli(context, root, config, cores):
+def cli(context, root, config, exp, cores, gpu):
     dirs = {
         "root": root,
         "locations": root+"/inputs/locations/",  # TODO: use os.path.join()
@@ -40,11 +47,11 @@ def cli(context, root, config, cores):
         "intensities": root+"/outputs/intensities/",
         "compressed_images": root+"/outputs/compressed/images/",
         "compressed_metadata": root+"/outputs/compressed/metadata/",
-        "results": root+"/outputs/results/",
-        "checkpoints": root+"/outputs/results/checkpoint/",
-        "logs": root+"/outputs/results/logs/",
-        "summaries": root+"/outputs/results/summaries/",
-        "features": root+"/outputs/results/features/"
+        "results": root+"/outputs/" + exp + "/",
+        "checkpoints": root+"/outputs/" + exp + "/checkpoint/",
+        "logs": root+"/outputs/" + exp + "/logs/",
+        "summaries": root+"/outputs/" + exp + "/summaries/",
+        "features": root+"/outputs/" + exp + "/features/"
     }
     if config is not None:
         context.obj["config"] = {}
@@ -54,6 +61,7 @@ def cli(context, root, config, cores):
     else:
         config = dirs["config"] + "/config.json"
     context.obj["cores"] = cores
+    context.obj["gpu"] = gpu
 
     # Load configuration file
     if os.path.isfile(config):
@@ -149,7 +157,7 @@ def train(context, epoch, seed):
         context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
-    deepprofiler.learning.training.learn_model(context.obj["config"], metadata, epoch, seed)
+    deepprofiler.learning.training.learn_model(context.obj["config"], metadata,  context.obj["gpu"], epoch, seed)
 
 
 # Third tool: Profile cells and extract features
@@ -168,7 +176,7 @@ def profile(context, part):
         partfile = "index-{0:03d}.csv".format(part)
         config["paths"]["index"] = context.obj["config"]["paths"]["index"].replace("index.csv", partfile)
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
-    deepprofiler.learning.profiling.profile(context.obj["config"], metadata)
+    deepprofiler.learning.profiling.profile(context.obj["config"], metadata, context.obj["gpu"])
     
 
 # Auxiliary tool: Split index in multiple parts
