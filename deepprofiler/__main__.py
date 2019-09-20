@@ -28,10 +28,10 @@ import deepprofiler.download.normalize_bbbc021_metadata
               type=click.INT)
 @click.option("--gpu", default=0,
               help="GPU device id",
-              type=click.INT)
+              type=click.STRING)
 @click.option("--exp", default="results",
               help="Name of experiment",
-              type=click.INT)
+              type=click.STRING)
 
 @click.pass_context
 def cli(context, root, config, exp, cores, gpu):
@@ -163,7 +163,7 @@ def profile(context, part):
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     deepprofiler.learning.profiling.profile(context.obj["config"], metadata, context.obj["gpu"])
     
-
+""
 # Auxiliary tool: Split index in multiple parts
 @cli.command()
 @click.pass_context

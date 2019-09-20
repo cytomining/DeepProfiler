@@ -5,7 +5,7 @@ import importlib
 #################################################
 
 
-def learn_model(config, dset, epoch=1, seed=None, verbose=1):
+def learn_model(config, dset, gpu, epoch=1, seed=None, verbose=1):
     model_module = importlib.import_module("plugins.models.{}".format(config["train"]["model"]["name"]))
     crop_module = importlib.import_module("plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"]))
     if "metrics" in config["train"]["model"].keys():
@@ -33,7 +33,7 @@ def learn_model(config, dset, epoch=1, seed=None, verbose=1):
 
     crop_generator = crop_module.GeneratorClass
     val_crop_generator = crop_module.SingleImageGeneratorClass
-    model = model_module.ModelClass(config, dset, crop_generator, val_crop_generator)
+    model = model_module.ModelClass(config, dset, gpu, crop_generator, val_crop_generator)
 
     if seed is not None:
         model.seed(seed)

@@ -21,11 +21,12 @@ import deepprofiler.learning.validation
 
 class DeepProfilerModel(abc.ABC):
 
-    def __init__(self, config, dset, crop_generator, val_crop_generator):
+    def __init__(self, config, dset, gpu, crop_generator, val_crop_generator):
         self.feature_model = None
         self.loss = None
         self.optimizer = None
         self.config = config
+        self.gpu = gpu
         self.dset = dset
         self.train_crop_generator = crop_generator(config, dset)
         self.val_crop_generator = val_crop_generator(config, dset)
@@ -116,7 +117,7 @@ def start_crop_session(dpmodel, configuration):
 
 def tf_configure(dpmodel):
     configuration = tf.ConfigProto()
-    configuration.gpu_options.visible_device_list = dpmodel.config["train"]["gpus"]
+    configuration.gpu_options.visible_device_list = dpmodel.gpu
     configuration.gpu_options.allow_growth = True
     return configuration
 
