@@ -12,7 +12,6 @@ import deepprofiler.dataset.utils
 import deepprofiler.dataset.image_dataset
 import deepprofiler.learning.training
 import deepprofiler.learning.profiling
-import deepprofiler.learning.optimization
 import deepprofiler.download.normalize_bbbc021_metadata
 
 
@@ -131,20 +130,6 @@ def prepare(context):
     deepprofiler.dataset.indexing.write_compression_index(context.obj["config"])
     context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
     print("Compression complete!")
-
-
-# Optional learning tool: Optimize the hyperparameters of a model
-@cli.command()
-@click.option("--epoch", default=1)
-@click.option("--seed", default=None)
-@click.pass_context
-def optimize(context, epoch, seed):
-    if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-        context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
-        context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
-    metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
-    optim = deepprofiler.learning.optimization.Optimize(context.obj["config"], metadata, epoch, seed)
-    optim.optimize()
 
 
 # Second tool: Train a network
