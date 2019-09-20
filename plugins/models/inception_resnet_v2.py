@@ -18,7 +18,7 @@ def define_model(config, dset):
     K.set_session(sess)
     
     # Load InceptionResnetV2 base architecture
-    if config["train"]["pretrained"]:
+    if config["profile"]["pretrained"]:
         weights = None
         input_tensor = Input((
             config["train"]["sampling"]["box_size"],  # height

@@ -82,6 +82,7 @@
     "profile": {
       "feature_layer": "features",
       "checkpoint": "checkpoint_0003.hdf5",
+      "pretrained": false,
       "gpus": "0",
       "batch_size": 2
     },

@@ -35,7 +35,7 @@ class Profile(object):
         K.set_session(self.sess)
         
         # Create feature extractor
-        if self.config["train"]["pretrained"]:
+        if self.config["profile"]["pretrained"]:
             checkpoint = self.config["paths"]["pretrained"]+"/"+self.config["profile"]["checkpoint"]
         else:
             checkpoint = self.config["paths"]["checkpoints"]+"/"+self.config["profile"]["checkpoint"]
