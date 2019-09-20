@@ -27,7 +27,6 @@
         }
     },
     "train": {
-        "pretrained": false,
         "partition": {
             "targets": [
                 "Class"
