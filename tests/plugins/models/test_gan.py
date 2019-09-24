@@ -108,9 +108,14 @@ def val_generator():
 
 
 @pytest.fixture(scope="function")
-def model(config, dataset, generator, val_generator):
+def gpu():
+    return '0'
+
+
+@pytest.fixture(scope="function")
+def model(config, dataset, gpu, generator, val_generator):
     def create():
-        return plugins.models.gan.ModelClass(config, dataset, generator, val_generator)
+        return plugins.models.gan.ModelClass(config, dataset, gpu, generator, val_generator)
     return create
 
 
@@ -140,8 +145,8 @@ def test_gan(config, generator, val_generator):
     assert not gan.discriminator_fixed.trainable
 
 
-def test_init(config, dataset, generator, val_generator):
-    dpmodel = plugins.models.gan.ModelClass(config, dataset, generator, val_generator)
+def test_init(config, dataset, gpu, generator, val_generator):
+    dpmodel = plugins.models.gan.ModelClass(config, dataset, gpu, generator, val_generator)
     gan = plugins.models.gan.GAN(config, generator, val_generator)
     assert dpmodel.gan.__eq__(gan)
     assert isinstance(dpmodel.feature_model, keras.Model)

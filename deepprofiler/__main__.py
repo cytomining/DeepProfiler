@@ -22,7 +22,7 @@ import deepprofiler.download.normalize_bbbc021_metadata
               type=click.Path("r"))
 @click.option("--config", default=None,
               help="Path to existing config file",
-              type=click.Path("r"))
+              type=click.STRING)
 @click.option("--cores", default=0,
               help="Number of CPU cores for parallel processing (all=0)",
               type=click.INT)
@@ -52,13 +52,8 @@ def cli(context, root, config, exp, cores, gpu):
         "summaries": root+"/outputs/" + exp + "/summaries/",
         "features": root+"/outputs/" + exp + "/features/"
     }
-    if config is not None:
-        context.obj["config"] = {}
-        context.obj["config"]["paths"] = {}
-        context.obj["config"]["paths"]["config"] = config
-        dirs["config"] = os.path.dirname(os.path.abspath(config))
-    else:
-        config = dirs["config"] + "/config.json"
+
+    config = dirs["config"] + "/" + config
     context.obj["cores"] = cores
     context.obj["gpu"] = gpu
 

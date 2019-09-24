@@ -111,19 +111,22 @@ def val_crop_generator(config):
     generator = module.SingleImageGeneratorClass
     return generator
 
+@pytest.fixture(scope="function")
+def gpu():
+    return '0'
 
 @pytest.fixture(scope="function")
-def model(config, dataset, crop_generator, val_crop_generator):
+def model(config, dataset, gpu, crop_generator, val_crop_generator):
     def create():
         module = importlib.import_module("plugins.models.{}".format(config["train"]["model"]["name"]))
         importlib.invalidate_caches()
-        dpmodel = module.ModelClass(config, dataset, crop_generator, val_crop_generator)
+        dpmodel = module.ModelClass(config, dataset, gpu, crop_generator, val_crop_generator)
         return dpmodel
     return create
 
 
-def test_init(config, dataset, crop_generator, val_crop_generator):
-    dpmodel = DeepProfilerModel(config, dataset, crop_generator, val_crop_generator)
+def test_init(config, dataset, gpu, crop_generator, val_crop_generator):
+    dpmodel = DeepProfilerModel(config, dataset, gpu, crop_generator, val_crop_generator)
     assert dpmodel.feature_model is None
     assert dpmodel.config == config
     assert dpmodel.dset == dataset

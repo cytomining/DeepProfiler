@@ -11,7 +11,7 @@ from deepprofiler.dataset.utils import tic, toc
 
 class Profile(object):
     
-    def __init__(self, config, dset):
+    def __init__(self, config, dset, gpu):
         self.config = config
         self.dset = dset
         self.num_channels = len(self.config["dataset"]["images"]["channels"])
@@ -23,7 +23,6 @@ class Profile(object):
         self.dpmodel = importlib.import_module("plugins.models.{}".format(config["train"]["model"]["name"]))\
             .ModelClass(config, dset, gpu, self.crop_generator, self.profile_crop_generator)
         self.profile_crop_generator = self.profile_crop_generator(config, dset)
-
 
     def configure(self):        
         # Main session configuration
@@ -44,7 +43,6 @@ class Profile(object):
         self.feat_extractor = keras.Model(self.dpmodel.feature_model.inputs, self.dpmodel.feature_model.get_layer(
             self.config["profile"]["feature_layer"]).output)
         self.feat_extractor.summary()
-
 
     def check(self, meta):
         output_folder = self.config["paths"]["features"]
