@@ -1,5 +1,5 @@
+import keras
 from keras.metrics import top_k_categorical_accuracy
-
 from deepprofiler.learning.metric import Metric
 
 class MetricClass(Metric):
@@ -11,4 +11,5 @@ class MetricClass(Metric):
         self.f = metric_func
         
     def metric(self, y_true, y_pred):
-      return top_k_categorical_accuracy(y_true, y_pred, k=self.config["train"]["validation"]["top_k"])
+      top_k = top_k_categorical_accuracy(y_true, y_pred, k=self.config["train"]["validation"]["top_k"])
+      return keras.backend.mean(top_k)
