@@ -53,10 +53,7 @@ def cli(context, root, config, exp, cores, gpu):
         "features": root+"/outputs/" + exp + "/features/"
     }
 
-    context.obj["config"] = {}
-    context.obj["config"]["paths"] = {}
-    context.obj["config"]["paths"]["config"] = root+"/inputs/config/" + config
-
+    config = dirs["config"] + "/" + config
     context.obj["cores"] = cores
     context.obj["gpu"] = gpu
 
