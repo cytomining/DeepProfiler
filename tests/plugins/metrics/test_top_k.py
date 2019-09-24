@@ -8,6 +8,10 @@ import numpy as np
 import tensorflow as tf
 import json
 
+cpu_config = tf.ConfigProto(
+    device_count = {'GPU': 0}
+)
+
 def is_method(obj, name):
     return hasattr(obj, name) and inspect.ismethod(getattr(obj, name))
 
@@ -40,13 +44,14 @@ def test_create_metric(config, make_struct):
 
 
 def test_metric(config, make_struct):
-    sess = tf.InteractiveSession()
-    name = "Dog"
-    metric = plugins.metrics.top_k.MetricClass(config, name)
-    y_true = np.array([[0,1],[1,0]])
-    y_pred = np.array([[0,1],[0,1]])
-    expected_output = 0.5
-    output = metric.metric(y_true, y_pred).eval()
-    print(output)
-    assert output == expected_output
-    assert is_method(metric, "metric")
+    with tf.Session(config=cpu_config) as sess:
+        name = "Dog"
+        metric = plugins.metrics.top_k.MetricClass(config, name)
+        y_true = np.array([[0,1],[1,0]])
+        y_pred = np.array([[0,1],[0,1]])
+        expected_output = 0.5
+        output = metric.metric(y_true, y_pred).eval()
+        print(output)
+        assert output == expected_output
+        assert is_method(metric, "metric")
+
