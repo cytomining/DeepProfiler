@@ -24,7 +24,6 @@ class Profile(object):
             .ModelClass(config, dset, gpu, self.crop_generator, self.profile_crop_generator)
         self.profile_crop_generator = self.profile_crop_generator(config, dset)
 
-
     def configure(self):        
         # Main session configuration
         configuration = tf.ConfigProto()
@@ -44,7 +43,6 @@ class Profile(object):
         self.feat_extractor = keras.Model(self.dpmodel.feature_model.inputs, self.dpmodel.feature_model.get_layer(
             self.config["profile"]["feature_layer"]).output)
         self.feat_extractor.summary()
-
 
     def check(self, meta):
         output_folder = self.config["paths"]["features"]
