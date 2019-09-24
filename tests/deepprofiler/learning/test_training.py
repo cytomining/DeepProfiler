@@ -98,13 +98,14 @@ def locations(out_dir, metadata, config, make_struct):
 def test_learn_model(config, dataset, data, locations, out_dir, make_struct):
     epoch = 1
     verbose = 1
-    deepprofiler.learning.training.learn_model(config, dataset, epoch, verbose=verbose)
+    gpu = '0'
+    deepprofiler.learning.training.learn_model(config, dataset, gpu, epoch, verbose=verbose)
     assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0001.hdf5"))
     assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0002.hdf5"))
     assert os.path.exists(os.path.join(config["paths"]["logs"], "log.csv"))
     epoch = 3
     config["train"]["model"]["epochs"] = 4
-    deepprofiler.learning.training.learn_model(config, dataset, epoch, verbose=verbose)
+    deepprofiler.learning.training.learn_model(config, dataset, gpu, epoch, verbose=verbose)
     assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0003.hdf5"))
     assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0004.hdf5"))
     assert os.path.exists(os.path.join(config["paths"]["logs"], "log.csv"))
