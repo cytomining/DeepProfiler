@@ -188,6 +188,7 @@ def test_crop_generator_generate(prepared_crop_generator):
 
 def test_crop_generator_stop(prepared_crop_generator):
     with tf.Session(config=cpu_config) as sess:
+        prepared_crop_generator.start(sess)
         assert not prepared_crop_generator.coord.joined
         prepared_crop_generator.stop(sess)
         assert prepared_crop_generator.coord.joined

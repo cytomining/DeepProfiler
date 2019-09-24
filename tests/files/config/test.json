@@ -75,7 +75,7 @@
           "validation": {
               "top_k": 1,
               "batch_size": 2,
-              "sample_first_crops" : false
+              "sample_first_crops" : true
           }
     },
     "profile": {

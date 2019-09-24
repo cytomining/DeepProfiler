@@ -100,7 +100,7 @@ def locations(out_dir, metadata, config, make_struct):
 
 @pytest.fixture(scope="function")
 def session():
-    configuration = tf.ConfigProto()
+    configuration = tf.ConfigProto(device_count = {'GPU': 0})
     configuration.gpu_options.visible_device_list = "0"
     session = tf.Session(config = configuration)
     return session
