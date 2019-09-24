@@ -11,7 +11,7 @@ from deepprofiler.dataset.utils import tic, toc
 
 class Profile(object):
     
-    def __init__(self, config, dset):
+    def __init__(self, config, dset, gpu):
         self.config = config
         self.dset = dset
         self.num_channels = len(self.config["dataset"]["images"]["channels"])
