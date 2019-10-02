@@ -37,23 +37,27 @@ import deepprofiler.download.normalize_bbbc021_metadata
 def cli(context, root, config, exp, cores, gpu):
     dirs = {
         "root": root,
-        "locations": root+"/inputs/locations/",  # TODO: use os.path.join()
-        "config": root+"/inputs/config/",
-        "images": root+"/inputs/images/",
-        "metadata": root+"/inputs/metadata/",
-        "preprocessed": root+"/inputs/preprocessed/",
-        "pretrained": root+"/inputs/pretrained/",
-        "intensities": root+"/outputs/intensities/",
-        "compressed_images": root+"/outputs/compressed/images/",
-        "compressed_metadata": root+"/outputs/compressed/metadata/",
-        "results": root+"/outputs/" + exp + "/",
-        "checkpoints": root+"/outputs/" + exp + "/checkpoint/",
-        "logs": root+"/outputs/" + exp + "/logs/",
-        "summaries": root+"/outputs/" + exp + "/summaries/",
-        "features": root+"/outputs/" + exp + "/features/"
+        "locations": root + "/inputs/locations/",  # TODO: use os.path.join()
+        "config": root + "/inputs/config/",
+        "images": root + "/inputs/images/",
+        "metadata": root + "/inputs/metadata/",
+        "preprocessed": root + "/inputs/preprocessed/",
+        "pretrained": root + "/inputs/pretrained/",
+        "intensities": root + "/outputs/intensities/",
+        "compressed_images": root + "/outputs/compressed/images/",
+        "compressed_metadata": root + "/outputs/compressed/metadata/",
+        "results": root + "/outputs/" + exp + "/",
+        "checkpoints": root + "/outputs/" + exp + "/checkpoint/",
+        "logs": root + "/outputs/" + exp + "/logs/",
+        "summaries": root + "/outputs/" + exp + "/summaries/",
+        "features": root + "/outputs/" + exp + "/features/"
     }
 
-    config = dirs["config"] + "/" + config
+    context.obj["config"] = {}
+    context.obj["config"]["paths"] = {}	
+    context.obj["config"]["paths"]["config"] = root + "/inputs/config/" + config
+
+
     context.obj["cores"] = cores
     context.obj["gpu"] = gpu
 
