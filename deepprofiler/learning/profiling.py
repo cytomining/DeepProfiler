@@ -80,7 +80,6 @@ class Profile(object):
         # Extract features
         crops = next(self.profile_crop_generator.generate(self.sess))[0]  # single image crop generator yields one batch
         feats = self.feat_extractor.predict(crops, batch_size=batch_size)
-        print(feats.shape)
         if repeats:
             feats = np.reshape(feats, (self.num_channels, total_crops, num_features))
             feats = np.concatenate(feats, axis=-1)

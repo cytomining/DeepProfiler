@@ -9,10 +9,10 @@ import tensorflow as tf
 from deepprofiler.learning.model import DeepProfilerModel
 
 
-def define_model(config, dset):
+def define_model(config, dset, gpu):
     # Set session
     configuration = tf.ConfigProto()
-    configuration.gpu_options.visible_device_list = config["train"]["gpus"]
+    configuration.gpu_options.visible_device_list = gpu
     configuration.gpu_options.allow_growth = True
     sess = tf.Session(config=configuration)
     K.set_session(sess)
@@ -20,11 +20,7 @@ def define_model(config, dset):
     # Load InceptionResnetV2 base architecture
     if config["profile"]["pretrained"]:
         weights = None
-        input_tensor = Input((
-            config["train"]["sampling"]["box_size"],  # height
-            config["train"]["sampling"]["box_size"],  # width
-            config["dataset"]["images"]["channel_repeats"]  # channels
-        ), name="input")
+        input_tensor = Input((299, 299, 3), name="input")
         base = inception_resnet_v2.InceptionResNetV2(
             include_top=True,
             input_tensor=input_tensor
@@ -65,6 +61,6 @@ def define_model(config, dset):
 
 
 class ModelClass(DeepProfilerModel):
-    def __init__(self, config, dset, generator, val_generator):
-        super(ModelClass, self).__init__(config, dset, generator, val_generator)
-        self.feature_model, self.optimizer, self.loss = define_model(config, dset)
+    def __init__(self, config, dset, gpu, generator, val_generator):
+        super(ModelClass, self).__init__(config, dset, gpu, generator, val_generator)
+        self.feature_model, self.optimizer, self.loss = define_model(config, dset, gpu)
