@@ -8,7 +8,7 @@ def repeat_channels(crops):
     reordered_channels = tf.transpose(resized_crops, [3, 0, 1, 2])
     reshaped_data = tf.reshape(reordered_channels, shape=[-1, 299, 299, 1])
     rgb_data = tf.image.grayscale_to_rgb(reshaped_data)
-    return inception_resnet_v2.preprocess_input(rgb_data)
+    return rgb_data
 
 
 class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
