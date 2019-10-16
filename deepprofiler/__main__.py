@@ -76,11 +76,6 @@ def cli(context, root, config, exp, cores, gpu):
         else:
             params["paths"] = dirs
 
-        # Rename results directory if a key is provided
-        if "results_key" in params.keys():
-            for k in ["results", "checkpoints", "logs", "summaries", "features"]:
-                dirs[k] = dirs[k].replace("results", params["results_key"])
-            params["paths"] = dirs
         if os.path.isdir(dirs["images"]):
             for k in ["results", "checkpoints", "logs", "summaries", "features"]:
                 os.makedirs(dirs[k], exist_ok=True)
