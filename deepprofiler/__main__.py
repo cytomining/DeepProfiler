@@ -53,16 +53,16 @@ def cli(context, root, config, exp, cores, gpu):
         "features": root + "/outputs/" + exp + "/features/"
     }
 
-    context.obj["config"] = {}
-    context.obj["config"]["paths"] = {}	
-    context.obj["config"]["paths"]["config"] = root + "/inputs/config/" + config
+    #context.obj["config"] = {}
+    #context.obj["config"]["paths"] = {}	
+    #context.obj["config"]["paths"]["config"] = root + "/inputs/config/" + config
 
 
     context.obj["cores"] = cores
     context.obj["gpu"] = gpu
 
     # Load configuration file
-    if os.path.isfile(config):
+    if config is not None and os.path.isfile(config):
         with open(config, "r") as f:
             params = json.load(f)
 
