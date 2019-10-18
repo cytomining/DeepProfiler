@@ -53,6 +53,7 @@ def cli(context, root, config, exp, cores, gpu):
         "features": root + "/outputs/" + exp + "/features/"
     }
 
+
     config = dirs["config"] + "/" + config
     context.obj["cores"] = cores
     context.obj["gpu"] = gpu
@@ -79,8 +80,9 @@ def cli(context, root, config, exp, cores, gpu):
         # Update references
         params["paths"]["index"] = params["paths"]["metadata"] + "/index.csv"
         context.obj["config"] = params
+    else:
+        raise Exception("Config does not exists; make sure that the file exists in /inputs/config/")
 
-    
     context.obj["dirs"] = dirs
 
 
