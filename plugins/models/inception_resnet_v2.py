@@ -9,10 +9,9 @@ import tensorflow as tf
 from deepprofiler.learning.model import DeepProfilerModel
 
 
-def define_model(config, dset, gpu):
+def define_model(config, dset):
     # Set session
     configuration = tf.ConfigProto()
-    configuration.gpu_options.visible_device_list = gpu
     configuration.gpu_options.allow_growth = True
     sess = tf.Session(config=configuration)
     K.set_session(sess)
@@ -61,6 +60,6 @@ def define_model(config, dset, gpu):
 
 
 class ModelClass(DeepProfilerModel):
-    def __init__(self, config, dset, gpu, generator, val_generator):
-        super(ModelClass, self).__init__(config, dset, gpu, generator, val_generator)
-        self.feature_model, self.optimizer, self.loss = define_model(config, dset, gpu)
+    def __init__(self, config, dset, generator, val_generator):
+        super(ModelClass, self).__init__(config, dset, generator, val_generator)
+        self.feature_model, self.optimizer, self.loss = define_model(config, dset)

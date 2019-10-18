@@ -11,10 +11,9 @@ from deepprofiler.dataset.utils import tic, toc
 
 class Profile(object):
     
-    def __init__(self, config, dset, gpu):
+    def __init__(self, config, dset):
         self.config = config
         self.dset = dset
-        self.gpu = gpu
         self.num_channels = len(self.config["dataset"]["images"]["channels"])
         self.crop_generator = importlib.import_module("plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"]))\
             .GeneratorClass
@@ -22,13 +21,12 @@ class Profile(object):
             "plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"])) \
             .SingleImageGeneratorClass
         self.dpmodel = importlib.import_module("plugins.models.{}".format(config["train"]["model"]["name"]))\
-            .ModelClass(config, dset, gpu, self.crop_generator, self.profile_crop_generator)
+            .ModelClass(config, dset, self.crop_generator, self.profile_crop_generator)
         self.profile_crop_generator = self.profile_crop_generator(config, dset)
 
     def configure(self):        
         # Main session configuration
         configuration = tf.ConfigProto()
-        configuration.gpu_options.visible_device_list = self.gpu
         configuration.gpu_options.allow_growth = True
         self.sess = tf.Session(config=configuration)
         self.profile_crop_generator.start(self.sess)
@@ -92,8 +90,8 @@ class Profile(object):
         toc(image_key + " (" + str(total_crops) + " cells)", start)
 
         
-def profile(config, dset, gpu):
-    profile = Profile(config, dset, gpu)
+def profile(config, dset):
+    profile = Profile(config, dset)
     profile.configure()
     dset.scan(profile.extract_features, frame="all", check=profile.check)
     print("Profiling: done")

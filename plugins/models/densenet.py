@@ -47,7 +47,7 @@ def define_model(config, dset):
     return model, optimizer, loss_func
 
 class ModelClass(DeepProfilerModel):
-    def __init__(self, config, dset, gpu, generator, val_generator):
-        super(ModelClass, self).__init__(config, dset, gpu, generator, val_generator)
+    def __init__(self, config, dset, generator, val_generator):
+        super(ModelClass, self).__init__(config, dset, generator, val_generator)
         self.feature_model, self.optimizer, self.loss = define_model(config, dset)
 
