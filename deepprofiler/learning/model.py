@@ -1,8 +1,7 @@
+import abc
 import gc
 import os
 import random
-import abc
-
 
 import comet_ml
 import keras
@@ -12,6 +11,7 @@ import tensorflow as tf
 import deepprofiler.dataset.utils
 import deepprofiler.imaging.cropping
 import deepprofiler.learning.validation
+
 
 ##################################################
 # This class should be used as an abstract base
@@ -67,7 +67,7 @@ class DeepProfilerModel(abc.ABC):
             callbacks = None
         # Create params (epochs, steps, log model params to comet ml)
 
-        #keras.backend.get_session().run(tf.initialize_all_variables())
+        # keras.backend.get_session().run(tf.initialize_all_variables())
         # Train model
         self.feature_model.fit_generator(
             generator=self.train_crop_generator.generate(crop_session),
@@ -77,8 +77,8 @@ class DeepProfilerModel(abc.ABC):
             verbose=verbose,
             initial_epoch=epoch - 1,
             validation_data=(x_validation, y_validation)
-        ) 
-            
+        )
+
         # Stop threads and close sessions
         close(self, crop_session)
         # Return the feature model and validation data
@@ -106,8 +106,8 @@ def setup_comet_ml(dpmodel):
 def start_crop_session(dpmodel, configuration):
     crop_graph = tf.Graph()
     with crop_graph.as_default():
-#         cpu_config = tf.ConfigProto(device_count={"CPU": 1, "GPU": 0})
-#         cpu_config.gpu_options.visible_device_list = ""
+        #         cpu_config = tf.ConfigProto(device_count={"CPU": 1, "GPU": 0})
+        #         cpu_config.gpu_options.visible_device_list = ""
         crop_session = tf.Session(config=configuration)
         dpmodel.train_crop_generator.start(crop_session)
     gc.collect()
@@ -167,6 +167,7 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr):
             return lr_schedule_lr[lr_schedule_epochs.index(epoch)]
         else:
             return lr
+
     if lr_schedule_epochs:
         callback_lr_schedule = keras.callbacks.LearningRateScheduler(lr_schedule, verbose=1)
         callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule]

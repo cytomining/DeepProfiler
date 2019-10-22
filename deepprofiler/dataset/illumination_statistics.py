@@ -1,9 +1,11 @@
-import deepprofiler.dataset.utils as utils
-import deepprofiler.dataset.image_dataset
-import skimage.transform
-import numpy as np
 import os
 import pickle as pickle
+
+import numpy as np
+import skimage.transform
+
+import deepprofiler.dataset.image_dataset
+import deepprofiler.dataset.utils as utils
 from .illumination_correction import IlluminationCorrection
 
 
@@ -136,9 +138,7 @@ def calculate_statistics(args):
     # Retrieve and store results
     stats = hist.computeStats()
 
-
     utils.check_path(outfile)
 
     with open(outfile, "wb") as output:
         pickle.dump(stats, output)
-

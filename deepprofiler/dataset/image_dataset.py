@@ -1,20 +1,20 @@
 import numpy as np
 import pandas as pd
 
-import deepprofiler.dataset.pixels
-import deepprofiler.dataset.utils
 import deepprofiler.dataset.metadata
+import deepprofiler.dataset.pixels
 import deepprofiler.dataset.target
+import deepprofiler.dataset.utils
 
 
 class ImageDataset():
 
     def __init__(self, metadata, sampling_field, channels, dataRoot, keyGen):
-        self.meta = metadata      # Metadata object with a valid dataframe
+        self.meta = metadata  # Metadata object with a valid dataframe
         self.channels = channels  # List of column names corresponding to each channel file
-        self.root = dataRoot      # Path to the directory of images
-        self.keyGen = keyGen      # Function that returns the image key given its record in the metadata
-        self.sampling_field = sampling_field # Field in the metadata used to sample images evenly
+        self.root = dataRoot  # Path to the directory of images
+        self.keyGen = keyGen  # Function that returns the image key given its record in the metadata
+        self.sampling_field = sampling_field  # Field in the metadata used to sample images evenly
         self.sampling_values = metadata.data[sampling_field].unique()
         self.targets = []
         self.outlines = None
@@ -44,7 +44,7 @@ class ImageDataset():
         return keys, images, targets, outlines
 
     def getTrainBatch(self, N):
-        #s = deepprofiler.dataset.utils.tic()
+        # s = deepprofiler.dataset.utils.tic()
         # Batch size is N
         values = self.sampling_values.copy()
         # 1. Sample categories
@@ -71,9 +71,9 @@ class ImageDataset():
         for i in range(len(images)):
             image_array = deepprofiler.dataset.pixels.openImage(images[i], outlines[i])
             # TODO: Implement pixel normalization using control statistics
-            #image_array -= 128.0
+            # image_array -= 128.0
             batch["images"].append(image_array)
-        #dataset.utils.toc("Loading batch", s)
+        # dataset.utils.toc("Loading batch", s)
 
         return batch
 
@@ -107,6 +107,7 @@ class ImageDataset():
 
     def add_target(self, new_target):
         self.targets.append(new_target)
+
 
 def read_dataset(config):
     # Read metadata and split dataset in training and validation
@@ -147,5 +148,3 @@ def read_dataset(config):
         dset.outlines = outlines
 
     return dset
-
-

@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+
 #################################################
 ## CROPPING AND TRANSFORMATION OPERATIONS
 #################################################
@@ -8,7 +9,7 @@ def augment(crop):
     with tf.variable_scope("augmentation"):
         # Vertical and horizontal shifts:
         # Offsets is the amount of pixels to move the crop, sides is the direction of movement 
-        offsets = tf.random_uniform([2], minval=0, maxval=int(crop.shape[0].value*0.3), dtype=tf.int32)
+        offsets = tf.random_uniform([2], minval=0, maxval=int(crop.shape[0].value * 0.3), dtype=tf.int32)
         sides = tf.random_uniform([2], minval=0, maxval=2, dtype=tf.int32)
 
         # Extract crop window
@@ -33,14 +34,14 @@ def augment(crop):
         augmented = tf.image.rot90(augmented, angle[0])
 
         # 360 degree rotations
-        #angle = tf.random_uniform([1], minval=0.0, maxval=2*deepprofiler.dataset.utils.PI, dtype=tf.float32)
-        #augmented = tf.contrib.image.rotate(augmented, angle[0], interpolation="BILINEAR")
+        # angle = tf.random_uniform([1], minval=0.0, maxval=2*deepprofiler.dataset.utils.PI, dtype=tf.float32)
+        # augmented = tf.contrib.image.rotate(augmented, angle[0], interpolation="BILINEAR")
 
         # Illumination changes
         illum_s = tf.random_uniform([1], minval=0.8, maxval=1.2, dtype=tf.float32)
-        #illum_t = tf.random_uniform([1], minval=-0.2, maxval=0.2, dtype=tf.float32)
+        # illum_t = tf.random_uniform([1], minval=-0.2, maxval=0.2, dtype=tf.float32)
         augmented = augmented * illum_s
-        #augmented = augmented + illum_t
+        # augmented = augmented + illum_t
 
     return augmented
 
@@ -48,4 +49,3 @@ def augment(crop):
 def augment_multiple(crops, parallel=10):
     with tf.variable_scope("augmentation"):
         return tf.map_fn(augment, crops, parallel_iterations=parallel, dtype=tf.float32)
-

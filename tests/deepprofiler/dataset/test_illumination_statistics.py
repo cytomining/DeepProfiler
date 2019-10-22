@@ -1,8 +1,9 @@
-import deepprofiler.dataset.illumination_statistics
 import numpy
-import numpy.testing
 import numpy.random
+import numpy.testing
 import pytest
+
+import deepprofiler.dataset.illumination_statistics
 
 
 @pytest.fixture(scope="function")
@@ -17,7 +18,7 @@ def illumination_stats():
 
 
 def test_init(illumination_stats):
-    histogram = numpy.zeros((3, 2**16), dtype=numpy.float64)
+    histogram = numpy.zeros((3, 2 ** 16), dtype=numpy.float64)
 
     assert illumination_stats.depth == 2 ** 16
     assert illumination_stats.channels == ["DNA", "ER", "Mito"]
@@ -41,7 +42,7 @@ def test_add_to_mean_no_scaling(illumination_stats):
     assert illumination_stats.mean_image.shape == (16, 16, 3)
     # This method rescales the input image and normalizes pixels according to
     # the data type. We restore the values in this test to match the input for comparison.
-    result_mean = illumination_stats.mean_image #* (2 ** 16)
+    result_mean = illumination_stats.mean_image  # * (2 ** 16)
     numpy.testing.assert_array_equal(numpy.round(result_mean).astype(numpy.uint16), image)
 
 
@@ -54,8 +55,7 @@ def test_add_to_mean_with_scaling(illumination_stats):
     assert illumination_stats.mean_image.shape == (8, 8, 3)
     result_mean = illumination_stats.mean_image
     assert result_mean.sum() > 0
-    #numpy.testing.assert_array_equal(result_mean.astype(numpy.uint16), image)
-
+    # numpy.testing.assert_array_equal(result_mean.astype(numpy.uint16), image)
 
 
 def test_process_image(illumination_stats):
@@ -88,4 +88,4 @@ def test_compute_stats(illumination_stats):
             "original_size", "illum_correction_function"}
     result = set(stats.keys())
 
-    assert len( result.difference(keys) ) == 0
+    assert len(result.difference(keys)) == 0

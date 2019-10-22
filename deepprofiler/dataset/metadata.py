@@ -11,22 +11,25 @@ def parse_delimiter(delimiter):
     else:
         return ","
 
-#TODO: This function is only useful for the LUAD dataset
+
+# TODO: This function is only useful for the LUAD dataset
 def conditionalWellName(row):
     if row["Metadata_Plate"] in ["52650", "52661"]:
         return row["Metadata_Well"]
     else:
         return row["Metadata_Well"].upper()
 
+
 ## Generator of plates. Reads metadata and yields plates
 def read_plates(metaFile):
     metadata = Metadata(metaFile)
     plates = metadata.data["Metadata_Plate"].unique()
     deepprofiler.dataset.utils.logger.info("Total plates: {}".format(len(plates)))
-    for i in range(len(plates)):  #  & (df.Metadata_Well == "a01")
+    for i in range(len(plates)):  # & (df.Metadata_Well == "a01")
         plate = metadata.filterRecords(lambda df: (df.Metadata_Plate == plates[i]), copy=True)
         yield plate
     return
+
 
 class Metadata():
 
@@ -50,9 +53,9 @@ class Metadata():
         delimiter = parse_delimiter(delim)
         with open(filename, "r") as filelist:
             for line in filelist:
-                csvPath = line.replace("\n","")
+                csvPath = line.replace("\n", "")
                 print("Reading from", csvPath)
-                frames.append( pd.read_csv(csvPath, delimiter, dtype=dtype, keep_default_na=False) )
+                frames.append(pd.read_csv(csvPath, delimiter, dtype=dtype, keep_default_na=False))
         self.data = pd.concat(frames)
         print("Multiple CSV files loaded")
 

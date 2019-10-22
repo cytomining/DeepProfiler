@@ -1,10 +1,11 @@
 import os
 import random
 
-import deepprofiler.dataset.metadata
 import numpy as np
 import pandas as pd
 import pytest
+
+import deepprofiler.dataset.metadata
 
 
 def __rand_array():

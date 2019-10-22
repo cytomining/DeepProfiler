@@ -2,13 +2,14 @@ import json
 import os
 import random
 
-import deepprofiler.dataset.image_dataset
-import deepprofiler.dataset.metadata
-import deepprofiler.dataset.target
 import numpy as np
 import pandas as pd
 import pytest
 import skimage.io
+
+import deepprofiler.dataset.image_dataset
+import deepprofiler.dataset.metadata
+import deepprofiler.dataset.target
 
 
 def __rand_array():
@@ -19,6 +20,7 @@ def __rand_array():
 def out_dir(tmpdir):
     return os.path.abspath(tmpdir.mkdir("test"))
 
+
 @pytest.fixture(scope="function")
 def config(out_dir):
     with open("tests/files/config/test.json", "r") as f:
@@ -28,11 +30,12 @@ def config(out_dir):
     config["paths"]["root_dir"] = out_dir
     return config
 
+
 @pytest.fixture(scope="function")
 def make_struct(config):
     for key, path in config["paths"].items():
         if key not in ["index", "config_file", "root_dir"]:
-            os.makedirs(path+"/")
+            os.makedirs(path + "/")
     return
 
 
@@ -61,7 +64,8 @@ def metadata(out_dir, make_struct, config):
 @pytest.fixture(scope="function")
 def dataset(metadata, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    return deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen)
+    return deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"],
+                                                           config["paths"]["root_dir"], keygen)
 
 
 def test_init(metadata, out_dir, dataset, config, make_struct):
@@ -152,7 +156,8 @@ def test_add_target(metadata, out_dir, dataset, config, make_struct):
 
 def test_read_dataset(metadata, out_dir, dataset, config, make_struct):
     dset = deepprofiler.dataset.image_dataset.read_dataset(config)
-    pd.testing.assert_frame_equal(dset.meta.data, deepprofiler.dataset.metadata.Metadata(config["paths"]["index"], dtype=None).data)
+    pd.testing.assert_frame_equal(dset.meta.data,
+                                  deepprofiler.dataset.metadata.Metadata(config["paths"]["index"], dtype=None).data)
     assert dset.channels == config["dataset"]["images"]["channels"]
     assert dset.root == config["paths"]["images"]
     assert dset.sampling_field == config["train"]["sampling"]["field"]
