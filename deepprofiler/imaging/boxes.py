@@ -4,9 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-#################################################
-## BOUNDING BOX HANDLING
-#################################################
+# BOUNDING BOX HANDLING
 
 def get_locations(image_key, config, randomize=True, seed=None):
     keys = image_key.split("/")
@@ -30,23 +28,23 @@ def get_locations(image_key, config, randomize=True, seed=None):
 
 
 def load_batch(dataset, config):
-    batch = dataset.getTrainBatch(config["train"]["sampling"]["images"])
+    batch = dataset.get_train_batch(config["train"]["sampling"]["images"])
     batch["locations"] = [get_locations(x, config) for x in batch["keys"]]
     return batch
 
 
 def prepare_boxes(batch, config):
-    locationsBatch = batch["locations"]
+    locations_batch = batch["locations"]
     image_targets = batch["targets"]
     images = batch["images"]
     all_boxes = []
     all_indices = []
-    all_targets = [[] for i in range(len(image_targets[0]))]
+    all_targets = [[] for _ in range(len(image_targets[0]))]
     all_masks = []
     index = 0
     y_key = config["train"]["sampling"]["locations_field"] + "_Location_Center_Y"
     x_key = config["train"]["sampling"]["locations_field"] + "_Location_Center_X"
-    for locations in locationsBatch:
+    for locations in locations_batch:
         # Collect and normalize boxes between 0 and 1
         boxes = np.zeros((len(locations), 4), np.float32)
         boxes[:, 0] = locations[y_key] - config["train"]["sampling"]["box_size"] / 2

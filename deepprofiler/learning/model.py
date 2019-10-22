@@ -20,7 +20,6 @@ import deepprofiler.learning.validation
 
 
 class DeepProfilerModel(abc.ABC):
-
     def __init__(self, config, dset, crop_generator, val_crop_generator):
         self.feature_model = None
         self.loss = None
@@ -39,7 +38,10 @@ class DeepProfilerModel(abc.ABC):
         np.random.seed(seed)
         tf.set_random_seed(seed)
 
-    def train(self, epoch=1, metrics=["accuracy"], verbose=1):
+    def train(self, epoch=1, metrics=None, verbose=1):
+        if metrics is None:
+            metrics = ["accuracy"]
+
         # Raise ValueError if feature model isn't properly defined
         check_feature_model(self)
         # Print model summary
@@ -50,7 +52,7 @@ class DeepProfilerModel(abc.ABC):
         # Create comet ml experiment
         experiment = setup_comet_ml(self)
         # Create tf configuration
-        configuration = tf_configure(self)
+        configuration = tf_configure()
         # Start train crop generator
         crop_session = start_crop_session(self, configuration)
         # Start val crop generator
@@ -114,7 +116,7 @@ def start_crop_session(dpmodel, configuration):
     return crop_session
 
 
-def tf_configure(dpmodel):
+def tf_configure():
     configuration = tf.ConfigProto()
     configuration.gpu_options.allow_growth = True
     return configuration

@@ -112,7 +112,7 @@ def download_bbbc021(context):
 @click.pass_context
 def prepare(context):
     metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["paths"]["index"])
-    process = deepprofiler.dataset.utils.Parallel(context.obj["config"], numProcs=context.obj["cores"])
+    process = deepprofiler.dataset.utils.Parallel(context.obj["config"], num_procs=context.obj["cores"])
     process.compute(deepprofiler.dataset.illumination_statistics.calculate_statistics, metadata)
     print("Illumination complete!")
     metadata = deepprofiler.dataset.metadata.read_plates(

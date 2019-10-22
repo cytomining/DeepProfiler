@@ -13,7 +13,7 @@ def write_compression_index(config):
     new_index.to_csv(config["paths"]["compressed_metadata"] + "/compressed.csv")
 
 
-## Split a metadata file in a number of parts
+# Split a metadata file in a number of parts
 def split_index(config, parts):
     index = pd.read_csv(config["paths"]["metadata"] + "/index.csv")
     plate_wells = index.groupby(["Metadata_Plate", "Metadata_Well"]).count()["Metadata_Site"]

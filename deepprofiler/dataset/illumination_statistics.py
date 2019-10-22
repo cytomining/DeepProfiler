@@ -19,12 +19,10 @@ def percentile(prob, p):
     return np.argmax(pos)
 
 
-#################################################
-## COMPUTATION OF ILLUMINATION STATISTICS
-#################################################
+# COMPUTATION OF ILLUMINATION STATISTICS
 
 # Build pixel histogram for each channel
-class IlluminationStatistics():
+class IlluminationStatistics:
     def __init__(self, bits, channels, down_scale_factor, median_filter_size, name=""):
         self.depth = 2 ** bits
         self.channels = channels
@@ -37,8 +35,8 @@ class IlluminationStatistics():
         self.mean_image = None
         self.original_image_size = None
 
-    def processImage(self, index, img, meta):
-        self.addToMean(img)
+    def process_image(self, index, img, meta):
+        self.add_to_mean(img)
         self.count += 1
         utils.logger.info("Plate {} Image {} of {} ({:4.2f}%)".format(self.name,
                                                                       self.count, self.expected,
@@ -48,7 +46,7 @@ class IlluminationStatistics():
             self.hist[i] += counts.astype(np.float64)
 
     # Accumulate the mean image. Useful for illumination correction purposes
-    def addToMean(self, img):
+    def add_to_mean(self, img):
         # Check image size (we assume all images have the same size)
         if self.original_image_size is None:
             self.original_image_size = img.shape
@@ -66,7 +64,7 @@ class IlluminationStatistics():
         return
 
     # Compute global statistics on pixels. 
-    def computeStats(self):
+    def compute_stats(self):
         # Initialize counters
         bins = np.linspace(0, self.depth - 1, self.depth)
         mean = np.zeros((len(self.channels)))
@@ -93,32 +91,30 @@ class IlluminationStatistics():
         return stats
 
 
-#################################################
-## COMPUTE INTENSITY STATISTICS IN A SINGLE PLATE
-#################################################
+# COMPUTE INTENSITY STATISTICS IN A SINGLE PLATE
 
 # TODO: try def calculate_stats(plate, config) DOES IT WORK???? I DUNNO
 def calculate_statistics(args):
     # Load input parameters
     plate, config = args
 
-    plateName = plate.data["Metadata_Plate"].iloc[0]
+    plate_name = plate.data["Metadata_Plate"].iloc[0]
 
-    outfile = illum_stats_filename(config["paths"]["intensities"], plateName)
+    outfile = illum_stats_filename(config["paths"]["intensities"], plate_name)
 
     if os.path.isfile(outfile):
         print(outfile, "exists")
         return
 
     # Create Dataset object
-    keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
+    key_gen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
 
     dset = deepprofiler.dataset.image_dataset.ImageDataset(
         plate,
         config["dataset"]["metadata"]["label_field"],
         config["dataset"]["images"]["channels"],
         config["paths"]["images"],
-        keyGen
+        key_gen
     )
 
     # Prepare ImageStatistics object
@@ -127,16 +123,16 @@ def calculate_statistics(args):
         config["dataset"]["images"]["channels"],
         config["prepare"]["illumination_correction"]["down_scale_factor"],
         config["prepare"]["illumination_correction"]["median_filter_size"],
-        name=plateName
+        name=plate_name
     )
 
     hist.expected = dset.number_of_records("all")
 
     # Run the intensity computation
-    dset.scan(hist.processImage, frame="all")
+    dset.scan(hist.process_image, frame="all")
 
     # Retrieve and store results
-    stats = hist.computeStats()
+    stats = hist.compute_stats()
 
     utils.check_path(outfile)
 

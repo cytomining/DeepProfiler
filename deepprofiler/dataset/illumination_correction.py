@@ -5,9 +5,7 @@ import skimage.morphology
 import skimage.transform
 
 
-#################################################
-## ILLUMINATION CORRECTION FUNCTION
-#################################################
+# ILLUMINATION CORRECTION FUNCTION
 
 
 class IlluminationCorrection(object):

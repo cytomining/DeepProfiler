@@ -105,14 +105,14 @@ def test_init():
     parallel = deepprofiler.dataset.utils.Parallel([])
     assert parallel.fixed_args == []
     assert parallel.pool._processes == cpus
-    parallel = deepprofiler.dataset.utils.Parallel([1, 2, 3], numProcs=0)
+    parallel = deepprofiler.dataset.utils.Parallel([1, 2, 3], num_procs=0)
     assert parallel.fixed_args == [1, 2, 3]
     assert parallel.pool._processes == cpus
-    parallel = deepprofiler.dataset.utils.Parallel([1, 2, 3], numProcs=cpus + 1)
+    parallel = deepprofiler.dataset.utils.Parallel([1, 2, 3], num_procs=cpus + 1)
     assert parallel.fixed_args == [1, 2, 3]
     assert parallel.pool._processes == cpus
     if cpus > 1:
-        parallel = deepprofiler.dataset.utils.Parallel([1, 2, 3], numProcs=cpus - 1)
+        parallel = deepprofiler.dataset.utils.Parallel([1, 2, 3], num_procs=cpus - 1)
         assert parallel.fixed_args == [1, 2, 3]
         assert parallel.pool._processes == cpus - 1
 

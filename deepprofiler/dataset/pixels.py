@@ -3,12 +3,10 @@ import skimage.io
 import skimage.measure
 
 
-#################################################
-## COMMON IMAGE HANDLING OPPERATIONS
-#################################################
+# COMMON IMAGE HANDLING OPPERATIONS
 
 # Main image reading function. Images are treated as 3D tensors: (height, width, channels)
-def openImage(paths, outlines):
+def open_image(paths, outlines):
     channels = [skimage.io.imread(p) for p in paths]
     img = np.zeros((channels[0].shape[0], channels[0].shape[1], len(channels)))
     for c in range(len(channels)):

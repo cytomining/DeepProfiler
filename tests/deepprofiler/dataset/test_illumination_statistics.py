@@ -37,7 +37,7 @@ def test_add_to_mean_no_scaling(illumination_stats):
     image = numpy.random.randint(256, size=(16, 16, 3), dtype=numpy.uint16)
 
     illumination_stats.down_scale_factor = 1
-    illumination_stats.addToMean(image)
+    illumination_stats.add_to_mean(image)
 
     assert illumination_stats.mean_image.shape == (16, 16, 3)
     # This method rescales the input image and normalizes pixels according to
@@ -50,7 +50,7 @@ def test_add_to_mean_with_scaling(illumination_stats):
     numpy.random.seed(8)
     image = numpy.random.randint(256, size=(16, 16, 3), dtype=numpy.uint16)
 
-    illumination_stats.addToMean(image)
+    illumination_stats.add_to_mean(image)
 
     assert illumination_stats.mean_image.shape == (8, 8, 3)
     result_mean = illumination_stats.mean_image
@@ -62,7 +62,7 @@ def test_process_image(illumination_stats):
     numpy.random.seed(8)
     image = numpy.random.randint(256, size=(16, 16, 3), dtype=numpy.uint16)
 
-    illumination_stats.processImage(0, image, None)
+    illumination_stats.process_image(0, image, None)
 
     histogram1 = numpy.histogram(image[:, :, 0], bins=2 ** 16, range=(0, 2 ** 16))[0]
     histogram2 = numpy.histogram(image[:, :, 1], bins=2 ** 16, range=(0, 2 ** 16))[0]
@@ -79,10 +79,10 @@ def test_compute_stats(illumination_stats):
     image1 = numpy.random.randint(256, size=(16, 16, 3), dtype=numpy.uint16)
     image2 = numpy.random.randint(256, size=(16, 16, 3), dtype=numpy.uint16)
 
-    illumination_stats.processImage(0, image1, None)
-    illumination_stats.processImage(1, image2, None)
+    illumination_stats.process_image(0, image1, None)
+    illumination_stats.process_image(1, image2, None)
 
-    stats = illumination_stats.computeStats()
+    stats = illumination_stats.compute_stats()
 
     keys = {"mean_values", "upper_percentiles", "lower_percentiles", "histogram", "mean_image", "channels",
             "original_size", "illum_correction_function"}

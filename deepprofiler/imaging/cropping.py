@@ -33,9 +33,7 @@ class CropGenerator(object):
         self.dset = dset
         # TODO: add self.mode = mode
 
-    #################################################
-    ## INPUT GRAPH DEFINITION
-    #################################################
+    # INPUT GRAPH DEFINITION
 
     def build_input_graph(self):
         # Identify number of channels
@@ -93,9 +91,7 @@ class CropGenerator(object):
             },
         }
 
-    #################################################
-    ## AUGMENTATION GRAPH DEFINITION
-    #################################################
+    # AUGMENTATION GRAPH DEFINITION
 
     def build_augmentation_graph(self):
         num_targets = len(self.dset.targets)
@@ -116,9 +112,7 @@ class CropGenerator(object):
             tgt = self.dset.targets[i]
             self.train_variables[tname] = tf.one_hot(train_inputs[i + 1], tgt.shape[1])
 
-    #################################################
-    ## START TRAINING QUEUES
-    #################################################
+    # START TRAINING QUEUES
 
     def training_queues(self, sess):
         coord = tf.train.Coordinator()
@@ -140,9 +134,9 @@ class CropGenerator(object):
                         self.input_variables["box_ind_ph"]: box_ind,
                         self.input_variables["mask_ind_ph"]: masks
                     }
-                    for i in range(len(targets)):
-                        tname = "target_" + str(i)
-                        feed_dict[self.input_variables["targets_phs"][tname]] = targets[i]
+                    for target_index in range(len(targets)):
+                        tname = "target_" + str(target_index)
+                        feed_dict[self.input_variables["targets_phs"][tname]] = targets[target_index]
 
                     output = sess.run(self.train_variables, feed_dict)
 
@@ -244,9 +238,8 @@ class CropGenerator(object):
         gc.collect()
 
 
-#######################################################
-## SUB CLASS TO GENERATE ALL CROPS IN A SINGLE IMAGE
-#######################################################
+# SUB CLASS TO GENERATE ALL CROPS IN A SINGLE IMAGE
+
 # Useful for validation, predictions and profiling.
 # Important differences to the above class:
 # * No randomization is performed for crop generation
@@ -275,7 +268,7 @@ class SingleImageCropGenerator(CropGenerator):
 
         num_targets = len(self.dset.targets)
         self.batch_size = self.config["train"]["validation"]["batch_size"]
-        image_key, image_names, outlines = self.dset.getImagePaths(meta)
+        image_key, image_names, outlines = self.dset.get_image_paths(meta)
 
         batch = {"images": [], "locations": [], "targets": [[] for i in range(num_targets)]}
         batch["images"].append(image_array)

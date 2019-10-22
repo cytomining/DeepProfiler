@@ -58,7 +58,7 @@ def metadata(out_dir, make_struct):
     meta = deepprofiler.dataset.metadata.Metadata(filename)
     train_rule = lambda data: data["Split"].astype(int) == 0
     val_rule = lambda data: data["Split"].astype(int) == 1
-    meta.splitMetadata(train_rule, val_rule)
+    meta.split_metadata(train_rule, val_rule)
     return meta
 
 

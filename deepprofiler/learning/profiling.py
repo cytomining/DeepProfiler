@@ -2,9 +2,10 @@ import importlib
 import os
 
 import keras
-import numpy as np
-import tensorflow as tf
-from keras import backend as K
+import numpy
+import tensorflow
+import keras.backend
+import keras.models
 
 from deepprofiler.dataset.utils import tic, toc
 
@@ -27,11 +28,11 @@ class Profile(object):
 
     def configure(self):
         # Main session configuration
-        configuration = tf.ConfigProto()
+        configuration = tensorflow.ConfigProto()
         configuration.gpu_options.allow_growth = True
-        self.sess = tf.Session(config=configuration)
+        self.sess = tensorflow.Session(config=configuration)
         self.profile_crop_generator.start(self.sess)
-        K.set_session(self.sess)
+        keras.backend.set_session(self.sess)
 
         # Create feature extractor
         if self.config["profile"]["pretrained"]:
@@ -45,7 +46,6 @@ class Profile(object):
         self.feat_extractor.summary()
 
     def check(self, meta):
-        output_folder = self.config["paths"]["features"]
         output_file = self.config["paths"]["features"] + "/{}_{}_{}.npz"
         output_file = output_file.format(meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
 
@@ -63,7 +63,7 @@ class Profile(object):
         output_file = output_file.format(meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
 
         batch_size = self.config["profile"]["batch_size"]
-        image_key, image_names, outlines = self.dset.getImagePaths(meta)
+        image_key, image_names, outlines = self.dset.get_image_paths(meta)
         total_crops = self.profile_crop_generator.prepare_image(
             self.sess,
             image_array,
@@ -80,14 +80,14 @@ class Profile(object):
         crops = next(self.profile_crop_generator.generate(self.sess))[0]  # single image crop generator yields one batch
         feats = self.feat_extractor.predict(crops, batch_size=batch_size)
         if repeats:
-            feats = np.reshape(feats, (self.num_channels, total_crops, num_features))
-            feats = np.concatenate(feats, axis=-1)
+            feats = numpy.reshape(feats, (self.num_channels, total_crops, num_features))
+            feats = numpy.concatenate(feats, axis=-1)
 
         # Save features
         while len(feats.shape) > 2:  # 2D mean spatial pooling
-            feats = np.mean(feats, axis=1)
+            feats = numpy.mean(feats, axis=1)
 
-        np.savez_compressed(output_file, f=feats)
+        numpy.savez_compressed(output_file, f=feats)
         toc(image_key + " (" + str(total_crops) + " cells)", start)
 
 

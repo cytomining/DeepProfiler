@@ -150,7 +150,7 @@ class ModelClass(DeepProfilerModel):
         model.check_feature_model(self)
         self.gan.combined.summary()
         experiment = model.setup_comet_ml(self)  # TODO: comet ml doesn't currently work with this model
-        configuration = model.tf_configure(self)
+        configuration = model.tf_configure()
         crop_session = model.start_crop_session(self, configuration)
         # TODO: no validation
         main_session = model.start_main_session(configuration)

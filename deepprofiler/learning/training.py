@@ -1,9 +1,7 @@
 import importlib
 
 
-#################################################
-## MAIN TRAINING ROUTINE
-#################################################
+# MAIN TRAINING ROUTINE
 
 
 def learn_model(config, dset, epoch=1, seed=None, verbose=1):

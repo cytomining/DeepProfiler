@@ -1,9 +1,8 @@
 import tensorflow as tf
 
 
-#################################################
-## CROPPING AND TRANSFORMATION OPERATIONS
-#################################################
+# CROPPING AND TRANSFORMATION OPERATIONS
+
 
 def augment(crop):
     with tf.variable_scope("augmentation"):

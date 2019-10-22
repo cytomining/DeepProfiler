@@ -16,11 +16,10 @@ def png_dir(output_dir, plate_name):
     return os.path.join(output_dir, plate_name)
 
 
-#################################################
-## COMPRESSION OF TIFF IMAGES INTO PNGs
-#################################################
+# COMPRESSION OF TIFF IMAGES INTO PNGs
 
-class Compress():
+
+class Compress:
     def __init__(self, stats, channels, out_dir):
         self.stats = stats
         self.channels = channels
@@ -64,8 +63,8 @@ class Compress():
         self.output_shape[0] = int(factor * self.stats["original_size"][0])
         self.output_shape[1] = int(factor * self.stats["original_size"][1])
 
-    def target_path(self, origPath):
-        image_name = origPath.split("/")[-1]
+    def target_path(self, orig_path):
+        image_name = orig_path.split("/")[-1]
         image_name = image_name.replace(self.source_format, self.target_format)
         filename = os.path.join(self.out_dir, image_name)
         deepprofiler.dataset.utils.check_path(filename)
@@ -98,14 +97,12 @@ class Compress():
             skimage.io.imsave(self.target_path(meta[self.channels[c]]), image)
         return
 
-    def getUpdatedStats(self):
+    def get_updated_stats(self):
         self.stats["controls_distribution"] = self.controls_distribution
         return self.stats
 
 
-#################################################
-## COMPRESS IMAGES IN A PLATE
-#################################################
+# COMPRESS IMAGES IN A PLATE
 
 def compress_plate(args):
     # Load parameters
@@ -116,13 +113,13 @@ def compress_plate(args):
     statsfile = deepprofiler.dataset.illumination_statistics.illum_stats_filename(config["paths"]["intensities"],
                                                                                   plate_name)
     stats = pickle.load(open(statsfile, "rb"))
-    keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
+    key_gen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     dset = deepprofiler.dataset.image_dataset.ImageDataset(
         plate,
         config["dataset"]["metadata"]["label_field"],
         config["dataset"]["images"]["channels"],
         config["paths"]["images"],
-        keyGen
+        key_gen
     )
 
     # Configure compression object
@@ -147,6 +144,6 @@ def compress_plate(args):
     dset.scan(compress.process_image, frame="all")
 
     # Retrieve and store results
-    new_stats = compress.getUpdatedStats()
+    new_stats = compress.get_updated_stats()
     with open(statsfile, "wb") as output:
         pickle.dump(new_stats, output)

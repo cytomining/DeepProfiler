@@ -21,10 +21,10 @@ def print_progress(iteration, total, prefix="Progress", suffix="Complete", decim
         barLength   - Optional  : character length of bar (Int)
     """
     if all(t >= 0 for t in [iteration, total, barLength]) and iteration <= total:
-        formatStr = "{0:." + str(decimals) + "f}"
-        percents = formatStr.format(100 * (iteration / float(total)))
-        filledLength = int(round(barLength * iteration / float(total)))
-        bar = "#" * filledLength + "-" * (barLength - filledLength)
+        format_str = "{0:." + str(decimals) + "f}"
+        percents = format_str.format(100 * (iteration / float(total)))
+        filled_length = int(round(barLength * iteration / float(total)))
+        bar = "#" * filled_length + "-" * (barLength - filled_length)
         sys.stdout.write("\r%s |%s| %s%s %s" % (prefix, bar, percents, "%", suffix)),
         sys.stdout.flush()
         if iteration == total:
@@ -48,18 +48,14 @@ def print_progress(iteration, total, prefix="Progress", suffix="Complete", decim
         sys.stdout.flush()
 
 
-################################################################################
-## Make sure directory exist for storing a file
-################################################################################
+# Make sure directory exist for storing a file
 
 def check_path(filename):
     path = "/".join(filename.split("/")[0:-1])
     os.system("mkdir -p " + path)
 
 
-################################################################################
-## Timing utilities
-################################################################################
+# Timing utilities
 
 def tic():
     return time.time()
@@ -72,18 +68,16 @@ def toc(msg, beginning):
     return end
 
 
-################################################################################
-## Parallel utilities using multiprocessing
-################################################################################
+# Parallel utilities using multiprocessing
 
-class Parallel():
+class Parallel:
 
-    def __init__(self, fixed_args, numProcs=None):
+    def __init__(self, fixed_args, num_procs=None):
         self.fixed_args = fixed_args
         cpus = multiprocessing.cpu_count()
-        if numProcs is None or numProcs > cpus or numProcs < 1:
-            numProcs = cpus
-        self.pool = multiprocessing.Pool(numProcs)
+        if num_procs is None or num_procs > cpus or num_procs < 1:
+            num_procs = cpus
+        self.pool = multiprocessing.Pool(num_procs)
 
     def compute(self, operation, data):
         iterable = [[d, self.fixed_args] for d in data]
@@ -91,11 +85,9 @@ class Parallel():
         return
 
 
-################################################################################
-## Logging utilities
-################################################################################
+# Logging utilities
 
-class Logger():
+class Logger:
 
     def __init__(self):
         self.root = logging.getLogger()
