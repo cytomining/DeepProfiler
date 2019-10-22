@@ -5,8 +5,8 @@ import random
 
 import comet_ml
 import keras
-import numpy as np
-import tensorflow as tf
+import numpy
+import tensorflow
 
 import deepprofiler.dataset.utils
 import deepprofiler.imaging.cropping
@@ -35,8 +35,8 @@ class DeepProfilerModel(abc.ABC):
     def seed(self, seed):
         self.random_seed = seed
         random.seed(seed)
-        np.random.seed(seed)
-        tf.set_random_seed(seed)
+        numpy.random.seed(seed)
+        tensorflow.set_random_seed(seed)
 
     def train(self, epoch=1, metrics=None, verbose=1):
         if metrics is None:
@@ -106,26 +106,26 @@ def setup_comet_ml(dpmodel):
 
 
 def start_crop_session(dpmodel, configuration):
-    crop_graph = tf.Graph()
+    crop_graph = tensorflow.Graph()
     with crop_graph.as_default():
         #         cpu_config = tf.ConfigProto(device_count={"CPU": 1, "GPU": 0})
         #         cpu_config.gpu_options.visible_device_list = ""
-        crop_session = tf.Session(config=configuration)
+        crop_session = tensorflow.Session(config=configuration)
         dpmodel.train_crop_generator.start(crop_session)
     gc.collect()
     return crop_session
 
 
 def tf_configure():
-    configuration = tf.ConfigProto()
+    configuration = tensorflow.ConfigProto()
     configuration.gpu_options.allow_growth = True
     return configuration
 
 
 def start_val_session(dpmodel, configuration):
-    crop_graph = tf.Graph()
+    crop_graph = tensorflow.Graph()
     with crop_graph.as_default():
-        val_session = tf.Session(config=configuration)
+        val_session = tensorflow.Session(config=configuration)
         keras.backend.set_session(val_session)
         dpmodel.val_crop_generator.start(val_session)
         x_validation, y_validation = deepprofiler.learning.validation.load_validation_data(
@@ -138,7 +138,7 @@ def start_val_session(dpmodel, configuration):
 
 
 def start_main_session(configuration):
-    main_session = tf.Session(config=configuration)
+    main_session = tensorflow.Session(config=configuration)
     keras.backend.set_session(main_session)
     return main_session
 
@@ -151,7 +151,7 @@ def load_weights(dpmodel, epoch):
         print("Weights from previous model loaded:", previous_model)
     else:
         # Initialize all tf variables to avoid tf bug
-        keras.backend.get_session().run(tf.global_variables_initializer())
+        keras.backend.get_session().run(tensorflow.global_variables_initializer())
 
 
 def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr):

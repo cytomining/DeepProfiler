@@ -124,18 +124,18 @@ def read_dataset(config):
 
     # Split training data
     split_field = config["train"]["partition"]["split_field"]
-    training_filter = lambda df: df[split_field].isin(config["train"]["partition"]["training_values"])
-    validation_filter = lambda df: df[split_field].isin(config["train"]["partition"]["validation_values"])
-    metadata.split_metadata(training_filter, validation_filter)
+    metadata.split_metadata(
+        lambda df: df[split_field].isin(config["train"]["partition"]["training_values"]),
+        lambda df: df[split_field].isin(config["train"]["partition"]["validation_values"])
+    )
 
     # Create a dataset
-    key_gen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     dset = ImageDataset(
         metadata,
         config["train"]["sampling"]["field"],
         config["dataset"]["images"]["channels"],
         config["paths"]["images"],
-        key_gen
+        lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     )
 
     # Add training targets

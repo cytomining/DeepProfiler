@@ -4,6 +4,7 @@ import pickle as pickle
 import numpy
 import scipy.stats
 import skimage
+import skimage.exposure
 import skimage.io
 import skimage.transform
 
@@ -113,13 +114,12 @@ def compress_plate(args):
     statsfile = deepprofiler.dataset.illumination_statistics.illum_stats_filename(config["paths"]["intensities"],
                                                                                   plate_name)
     stats = pickle.load(open(statsfile, "rb"))
-    key_gen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     dset = deepprofiler.dataset.image_dataset.ImageDataset(
         plate,
         config["dataset"]["metadata"]["label_field"],
         config["dataset"]["images"]["channels"],
         config["paths"]["images"],
-        key_gen
+        lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     )
 
     # Configure compression object
@@ -136,9 +136,7 @@ def compress_plate(args):
     compress.expected = dset.number_of_records("all")
 
     # Setup control samples filter (for computing control illumination statistics)
-    filter_func = lambda x: x[config["dataset"]["metadata"]["label_field"]] == config["dataset"]["metadata"][
-        "control_id"]
-    compress.set_control_samples_filter(filter_func)
+    compress.set_control_samples_filter(lambda x: x[config["dataset"]["metadata"]["label_field"]] == config["dataset"]["metadata"]["control_id"])
 
     # Run compression
     dset.scan(compress.process_image, frame="all")

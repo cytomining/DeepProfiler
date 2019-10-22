@@ -107,14 +107,12 @@ def calculate_statistics(args):
         return
 
     # Create Dataset object
-    key_gen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-
     dset = deepprofiler.dataset.image_dataset.ImageDataset(
         plate,
         config["dataset"]["metadata"]["label_field"],
         config["dataset"]["images"]["channels"],
         config["paths"]["images"],
-        key_gen
+        lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     )
 
     # Prepare ImageStatistics object
