@@ -53,14 +53,10 @@ def cli(context, root, config, exp, cores, gpu):
         "features": root + "/outputs/" + exp + "/features/"
     }
 
-    #context.obj["config"] = {}
-    #context.obj["config"]["paths"] = {}	
-    #context.obj["config"]["paths"]["config"] = root + "/inputs/config/" + config
-
-
+    config = dirs["config"] + "/" + config
     context.obj["cores"] = cores
     context.obj["gpu"] = gpu
-
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu
     # Load configuration file
     if config is not None and os.path.isfile(config):
         with open(config, "r") as f:
@@ -83,8 +79,9 @@ def cli(context, root, config, exp, cores, gpu):
         # Update references
         params["paths"]["index"] = params["paths"]["metadata"] + "/index.csv"
         context.obj["config"] = params
+    elif context.invoked_subcommand != 'setup':
+        raise Exception("Config does not exists; make sure that the file exists in /inputs/config/")
 
-    
     context.obj["dirs"] = dirs
 
 
@@ -136,7 +133,7 @@ def train(context, epoch, seed):
         context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
-    deepprofiler.learning.training.learn_model(context.obj["config"], metadata,  context.obj["gpu"], epoch, seed)
+    deepprofiler.learning.training.learn_model(context.obj["config"], metadata, epoch, seed)
 
 
 # Third tool: Profile cells and extract features
@@ -155,7 +152,7 @@ def profile(context, part):
         partfile = "index-{0:03d}.csv".format(part)
         config["paths"]["index"] = context.obj["config"]["paths"]["index"].replace("index.csv", partfile)
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
-    deepprofiler.learning.profiling.profile(context.obj["config"], metadata, context.obj["gpu"])
+    deepprofiler.learning.profiling.profile(context.obj["config"], metadata)
     
 ""
 # Auxiliary tool: Split index in multiple parts

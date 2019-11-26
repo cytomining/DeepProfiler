@@ -100,11 +100,6 @@ def locations(out_dir, metadata, config, make_struct):
 
 
 @pytest.fixture(scope="function")
-def gpu():
-    return '0'
-
-
-@pytest.fixture(scope="function")
 def checkpoint(config, dataset):
     crop_generator = importlib.import_module(
         "plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"])) \
@@ -113,7 +108,7 @@ def checkpoint(config, dataset):
         "plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"])) \
         .SingleImageGeneratorClass
     dpmodel = importlib.import_module("plugins.models.{}".format(config["train"]["model"]["name"])) \
-        .ModelClass(config, dataset, gpu, crop_generator, profile_crop_generator)
+        .ModelClass(config, dataset, crop_generator, profile_crop_generator)
     dpmodel.feature_model.compile(dpmodel.optimizer, dpmodel.loss)
     filename = os.path.join(config["paths"]["checkpoints"], config["profile"]["checkpoint"])
     dpmodel.feature_model.save_weights(filename)
@@ -121,12 +116,12 @@ def checkpoint(config, dataset):
 
 
 @pytest.fixture(scope="function")
-def profile(config, dataset, gpu):
-    return deepprofiler.learning.profiling.Profile(config, dataset, gpu)
+def profile(config, dataset):
+    return deepprofiler.learning.profiling.Profile(config, dataset)
 
 
-def test_init(config, dataset, gpu):
-    prof = deepprofiler.learning.profiling.Profile(config, dataset, gpu)
+def test_init(config, dataset):
+    prof = deepprofiler.learning.profiling.Profile(config, dataset)
     test_num_channels = len(config["dataset"]["images"]["channels"])
     assert prof.config == config
     assert prof.dset == dataset
@@ -158,8 +153,8 @@ def test_extract_features(profile, metadata, locations, checkpoint):
     assert os.path.isfile(output_file)
 
 
-def test_profile(config, dataset, data, locations, checkpoint, gpu):
-    deepprofiler.learning.profiling.profile(config, dataset, gpu)
+def test_profile(config, dataset, data, locations, checkpoint):
+    deepprofiler.learning.profiling.profile(config, dataset)
     for index, row in dataset.meta.data.iterrows():
         output_file = config["paths"]["features"] + "/{}_{}_{}.npz" \
             .format(row["Metadata_Plate"], row["Metadata_Well"], row["Metadata_Site"])
