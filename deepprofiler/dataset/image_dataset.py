@@ -34,7 +34,8 @@ class ImageDataset():
         outlines = []
         for c in sampling_values:
             mask = self.meta.train[self.sampling_field] == c
-            rec = self.meta.train[mask].sample(n=nImgCat, replace=True)
+            available = self.meta.train[mask].shape[0]
+            rec = self.meta.train[mask].sample(n=nImgCat, replace=available < nImgCat)
             for i, r in rec.iterrows():
                 key, image, outl = self.getImagePaths(r)
                 keys.append(key)
@@ -71,7 +72,6 @@ class ImageDataset():
         for i in range(len(images)):
             image_array = deepprofiler.dataset.pixels.openImage(images[i], outlines[i])
             # TODO: Implement pixel normalization using control statistics
-            #image_array -= 128.0
             batch["images"].append(image_array)
         #dataset.utils.toc("Loading batch", s)
 
