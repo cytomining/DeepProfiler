@@ -62,7 +62,7 @@ class DeepProfilerModel(abc.ABC):
             # Load weights
             load_weights(self, epoch)
             # Create callbacks
-            callbacks = setup_callbacks(self, lr_schedule_epochs, lr_schedule_lr)
+            callbacks = setup_callbacks(self, lr_schedule_epochs, lr_schedule_lr, self.dset)
         else:
             callbacks = None
         # Create params (epochs, steps, log model params to comet ml)
@@ -152,26 +152,38 @@ def load_weights(dpmodel, epoch):
         keras.backend.get_session().run(tf.global_variables_initializer())
 
 
-def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr):
+def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset):
+    # Checkpoints
     output_file = dpmodel.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
     callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
         filepath=output_file,
         save_weights_only=True,
         save_best_only=False
     )
+    
+    # CSV Log
     csv_output = dpmodel.config["paths"]["logs"] + "/log.csv"
     callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
 
+    # Queue stats
+    qstats = keras.callbacks.LambdaCallback(
+        on_train_begin=lambda logs: dset.show_setup(),
+        on_epoch_end=lambda epoch, logs: dset.show_stats(epoch)
+    )
+
+    # Learning rate schedule
     def lr_schedule(epoch, lr):
         if epoch in lr_schedule_epochs:
             return lr_schedule_lr[lr_schedule_epochs.index(epoch)]
         else:
             return lr
+
+    # Collect all callbacks
     if lr_schedule_epochs:
         callback_lr_schedule = keras.callbacks.LearningRateScheduler(lr_schedule, verbose=1)
-        callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule]
+        callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule, qstats]
     else:
-        callbacks = [callback_model_checkpoint, callback_csv]
+        callbacks = [callback_model_checkpoint, callback_csv, qstats]
     return callbacks
 
 

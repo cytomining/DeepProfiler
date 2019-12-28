@@ -71,26 +71,39 @@ class ImageDataset():
         locations = image_loc.load_locations(self.config)
 
         locations = pd.concat(locations)
-        locations.to_csv("here.csv", index=False)
         self.training_images = locations.groupby(["ImageKey", "Target"])["ID"].count().reset_index()
 
-        print(" || => Total single cells:",len(locations))
+        self.total_single_cells = len(locations)
         self.sample_images = int(np.median(self.training_images.groupby("Target").count()["ID"]))
-        print(" || => Median # of images per class:", self.sample_images)
         targets = len(self.training_images["Target"].unique())
-        print(" || => Number of classes:", targets)
-        self.sample_locations = int(np.median(self.training_images["ID"])/4.0)
-        print(" || => Median # of cells per image:", self.sample_locations)
-        cells_per_epoch = int(targets * self.sample_images * self.sample_locations)
-        print(" || => Sampling", cells_per_epoch, "single cells per epoch")
+        self.sample_locations = int(np.median(self.training_images["ID"]))
+        self.cells_per_epoch = int(targets * self.sample_images * self.sample_locations)
         self.images_per_worker = int(self.config["train"]["model"]["params"]["batch_size"] / self.config["train"]["sampling"]["workers"])
-        print(" || => Sampling", self.images_per_worker, "images per worker")
-        queue_coverage = 100*(self.config["train"]["sampling"]["queue_size"]/cells_per_epoch)
-        print(" || => Queue data coverage", int(queue_coverage),"%")
-        self.steps_per_epoch = int(cells_per_epoch/self.config["train"]["model"]["params"]["batch_size"])
-        print(" || => Steps per epoch:", self.steps_per_epoch)
+        self.queue_coverage = 100*(self.config["train"]["sampling"]["queue_size"]/self.cells_per_epoch)
+        self.steps_per_epoch = int(self.cells_per_epoch/self.config["train"]["model"]["params"]["batch_size"])
+        self.sample_locations = int(self.sample_locations / 4.0)
 
+        self.pointer_rotation = 0
         self.shuffle_training_images()
+
+
+    def show_setup(self):
+        print(" || => Total single cells:", self.total_single_cells)
+        print(" || => Median # of images per class:", self.sample_images)
+        print(" || => Number of classes:", len(self.training_images["Target"].unique()))
+        print(" || => Median # of cells per image:", 4*self.sample_locations)
+        print(" || => Single cells sampled per epoch:", self.cells_per_epoch)
+        print(" || => Images sampled per worker:", self.images_per_worker)
+        print(" || => Queue data coverage {}%".format(int(self.queue_coverage)))
+        print(" || => Steps per epoch:", self.steps_per_epoch)
+ 
+
+    def show_stats(self, epoch):
+        print("Data rotation at epoch {}: {}%".format(
+                  epoch + 1, 
+                  int(self.pointer_rotation*self.queue_coverage)),
+              "(queue usage and worker efficiency)")
+        self.pointer_rotation = 0
 
     def shuffle_training_images(self):
         sample = []
@@ -103,6 +116,7 @@ class ImageDataset():
         self.training_sample = pd.concat(sample)
         self.training_sample = self.training_sample.sample(frac=1.0).reset_index(drop=True)
         self.batch_pointer = 0
+        self.pointer_rotation += 1
 
     def get_train_batch(self, lock):
         lock.acquire()
