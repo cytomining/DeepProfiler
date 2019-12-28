@@ -82,7 +82,6 @@ class ImageDataset():
         self.images_per_worker = int(self.config["train"]["model"]["params"]["batch_size"] / self.config["train"]["sampling"]["workers"])
         self.queue_coverage = 100*(self.config["train"]["sampling"]["queue_size"]/self.cells_per_epoch)
         self.steps_per_epoch = int(self.cells_per_epoch/self.config["train"]["model"]["params"]["batch_size"])
-        self.sample_locations = int(self.sample_locations * self.sampling_factor)
 
         self.pointer_rotation = 0
         self.queue_sweeps = 0
@@ -93,15 +92,15 @@ class ImageDataset():
         print(" || => Total single cells:", self.total_single_cells)
         print(" || => Median # of images per class:", self.sample_images)
         print(" || => Number of classes:", len(self.training_images["Target"].unique()))
-        print(" || => Median # of cells per image:", self.sample_locations / self.sampling_factor)
+        print(" || => Median # of cells per image:", self.sample_locations)
         print(" || => Single cells sampled per epoch:", self.cells_per_epoch)
         print(" || => Images sampled per worker:", self.images_per_worker)
-        print(" || => Queue data coverage {}%".format(int(self.queue_coverage)))
+        print(" || => Queue data coverage: {}%".format(int(self.queue_coverage)))
         print(" || => Steps per epoch:", self.steps_per_epoch)
  
 
     def show_stats(self, epoch):
-        print("Training set coverage: {}% (worker efficiency). Data rotation {}% (queue usage)".format(
+        print("Training set coverage: {}% (worker efficiency). Data rotation: {}% (queue usage).".format(
                   100*int(self.pointer_rotation * self.sampling_factor),
                   int(self.queue_sweeps * self.queue_coverage))
         )
@@ -130,12 +129,13 @@ class ImageDataset():
         lock.release()
 
         batch = {"keys": [], "images": [], "targets": [], "locations": []}
+        sample = max(1, int(self.sample_locations * self.sampling_factor))
         for k, r in df.iterrows():
             key, image, outl = self.get_image_paths(r)
             batch["keys"].append(key)
             batch["targets"].append([t.get_values(r) for t in self.targets])
             batch["images"].append(deepprofiler.dataset.pixels.openImage(image, outl))
-            batch["locations"].append(deepprofiler.imaging.boxes.get_locations(key, self.config, random_sample=self.sample_locations))
+            batch["locations"].append(deepprofiler.imaging.boxes.get_locations(key, self.config, random_sample=sample))
 
         return batch
 
