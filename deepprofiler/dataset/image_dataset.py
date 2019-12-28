@@ -87,6 +87,8 @@ class ImageDataset():
         print(" || => Sampling", self.images_per_worker, "images per worker")
         queue_coverage = 100*(self.config["train"]["sampling"]["queue_size"]/cells_per_epoch)
         print(" || => Queue data coverage", int(queue_coverage),"%")
+        self.steps_per_epoch = int(cells_per_epoch/self.config["train"]["model"]["params"]["batch_size"])
+        print(" || => Steps per epoch:", self.steps_per_epoch)
 
         self.shuffle_training_images()
 

@@ -177,7 +177,7 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr):
 
 def setup_params(dpmodel, experiment):
     epochs = dpmodel.config["train"]["model"]["epochs"]
-    steps = dpmodel.config["train"]["model"]["steps"]
+    steps = dpmodel.dset.steps_per_epoch
     lr_schedule_epochs = None
     lr_schedule_lr = None
     if dpmodel.config["train"]["comet_ml"]["track"]:
