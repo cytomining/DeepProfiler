@@ -165,6 +165,7 @@ class CropGenerator(object):
                         last = self.image_pool.shape[0]
                         records = last - first
                         self.pool_pointer = 0
+                        self.dset.queue_sweeps += 1
                         self.ready_to_sample = True
 
                     # Replace block (TODO:order of targets and keys may be wrong)

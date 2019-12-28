@@ -57,6 +57,7 @@ class ImageDataset():
         self.targets = []
         self.outlines = None
         self.config = config
+        self.sampling_factor = 0.25
 
     def get_image_paths(self, r):
         key = self.keyGen(r)
@@ -81,9 +82,10 @@ class ImageDataset():
         self.images_per_worker = int(self.config["train"]["model"]["params"]["batch_size"] / self.config["train"]["sampling"]["workers"])
         self.queue_coverage = 100*(self.config["train"]["sampling"]["queue_size"]/self.cells_per_epoch)
         self.steps_per_epoch = int(self.cells_per_epoch/self.config["train"]["model"]["params"]["batch_size"])
-        self.sample_locations = int(self.sample_locations / 4.0)
+        self.sample_locations = int(self.sample_locations * self.sampling_factor)
 
         self.pointer_rotation = 0
+        self.queue_sweeps = 0
         self.shuffle_training_images()
 
 
@@ -91,7 +93,7 @@ class ImageDataset():
         print(" || => Total single cells:", self.total_single_cells)
         print(" || => Median # of images per class:", self.sample_images)
         print(" || => Number of classes:", len(self.training_images["Target"].unique()))
-        print(" || => Median # of cells per image:", 4*self.sample_locations)
+        print(" || => Median # of cells per image:", self.sample_locations / self.sampling_factor)
         print(" || => Single cells sampled per epoch:", self.cells_per_epoch)
         print(" || => Images sampled per worker:", self.images_per_worker)
         print(" || => Queue data coverage {}%".format(int(self.queue_coverage)))
@@ -99,11 +101,12 @@ class ImageDataset():
  
 
     def show_stats(self, epoch):
-        print("Data rotation at epoch {}: {}%".format(
-                  epoch + 1, 
-                  int(self.pointer_rotation*self.queue_coverage)),
-              "(queue usage and worker efficiency)")
+        print("Training set coverage: {}% (worker efficiency). Data rotation {}% (queue usage)".format(
+                  100*int(self.pointer_rotation * self.sampling_factor),
+                  int(self.queue_sweeps * self.queue_coverage))
+        )
         self.pointer_rotation = 0
+        self.queue_sweeps = 0
 
     def shuffle_training_images(self):
         sample = []
