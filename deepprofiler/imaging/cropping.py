@@ -132,7 +132,7 @@ class CropGenerator(object):
             while not coord.should_stop():
                 try:
                     # Load images and cell boxes
-                    batch = deepprofiler.imaging.boxes.load_batch(self.dset, self.config) #TODO
+                    batch = self.dset.get_train_batch(lock) #TODO
                     images = np.reshape(batch["images"], self.input_variables["shapes"]["batch"])
                     boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
                     feed_dict = {
@@ -185,7 +185,7 @@ class CropGenerator(object):
         # ^^^ End of thread function ^^^
         
         load_threads = []
-        for i in range(self.config["train"]["queueing"]["loading_workers"]):
+        for i in range(self.config["train"]["sampling"]["workers"]):
             lt = threading.Thread(target=data_loading_thread)
             load_threads.append(lt)
             lt.isDaemon()
@@ -200,8 +200,8 @@ class CropGenerator(object):
             self.build_augmentation_graph()
             targets = [self.train_variables[t] for t in self.train_variables.keys() if t.startswith("target_")]
 
-            self.image_pool = np.zeros([self.config["train"]["queueing"]["queue_size"]] + list(self.input_variables["shapes"]["crops"][0]))
-            self.label_pool = [np.zeros([self.config["train"]["queueing"]["queue_size"], t.shape[1]]) for t in targets]
+            self.image_pool = np.zeros([self.config["train"]["sampling"]["queue_size"]] + list(self.input_variables["shapes"]["crops"][0]))
+            self.label_pool = [np.zeros([self.config["train"]["sampling"]["queue_size"], t.shape[1]]) for t in targets]
             self.pool_pointer = 0
             self.ready_to_sample = False
             print("Waiting for data", self.image_pool.shape, [l.shape for l in self.label_pool])
@@ -277,11 +277,11 @@ class SingleImageCropGenerator(CropGenerator):
 
         num_targets = len(self.dset.targets)
         self.batch_size = self.config["train"]["validation"]["batch_size"]
-        image_key, image_names, outlines = self.dset.getImagePaths(meta)
+        image_key, image_names, outlines = self.dset.get_image_paths(meta)
 
         batch = {"images": [], "locations": [], "targets": [[] for i in range(num_targets)]}
         batch["images"].append(image_array)
-        batch["locations"].append(deepprofiler.imaging.boxes.get_locations(image_key, self.config, randomize=False))
+        batch["locations"].append(deepprofiler.imaging.boxes.get_locations(image_key, self.config, random_sample=None))
         for i in range(num_targets):
             tgt = self.dset.targets[i]
             batch["targets"][i].append(tgt.get_values(meta))

@@ -81,8 +81,11 @@ class Parallel():
 
     def compute(self, operation, data):
         iterable = [ [d, self.fixed_args] for d in data ]
-        self.pool.map(operation, iterable)
-        return
+        return self.pool.map(operation, iterable)
+
+    def close(self):
+        self.pool.close()
+        self.pool.join()
     
 ################################################################################
 ## Logging utilities
