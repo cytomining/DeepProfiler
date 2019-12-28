@@ -57,7 +57,7 @@ class ImageDataset():
         self.targets = []
         self.outlines = None
         self.config = config
-        self.sampling_factor = 0.25
+        self.load_factor = 0.25
 
     def get_image_paths(self, r):
         key = self.keyGen(r)
@@ -74,14 +74,19 @@ class ImageDataset():
         locations = pd.concat(locations)
         self.training_images = locations.groupby(["ImageKey", "Target"])["ID"].count().reset_index()
 
+        workers = self.config["train"]["sampling"]["workers"]
+        batch_size = self.config["train"]["model"]["params"]["batch_size"]
+        queue_size = self.config["train"]["sampling"]["queue_size"]
+        self.sampling_factor = self.config["train"]["sampling"]["factor"]
+
         self.total_single_cells = len(locations)
         self.sample_images = int(np.median(self.training_images.groupby("Target").count()["ID"]))
         targets = len(self.training_images["Target"].unique())
         self.sample_locations = int(np.median(self.training_images["ID"]))
         self.cells_per_epoch = int(targets * self.sample_images * self.sample_locations)
-        self.images_per_worker = int(self.config["train"]["model"]["params"]["batch_size"] / self.config["train"]["sampling"]["workers"])
-        self.queue_coverage = 100*(self.config["train"]["sampling"]["queue_size"]/self.cells_per_epoch)
-        self.steps_per_epoch = int(self.cells_per_epoch/self.config["train"]["model"]["params"]["batch_size"])
+        self.images_per_worker = int(batch_size / workers)
+        self.queue_coverage = 100*(queue_size / self.cells_per_epoch)
+        self.steps_per_epoch = int((self.cells_per_epoch / batch_size)*self.sampling_factor)
 
         self.image_rotation = 0
         self.queue_records = 0
@@ -99,11 +104,11 @@ class ImageDataset():
         print(" || => Steps per epoch:", self.steps_per_epoch)
  
 
-    def show_stats(self, epoch):
-        if self.sample_locations * self.sampling_factor < 1.0:
+    def show_stats(self):
+        if (self.sample_locations * self.load_factor * self.sampling_factor) < 1.0:
             factor = 1
         else:
-            factor = self.sampling_factor
+            factor = self.load_factor * self.sampling_factor
         print("Training set coverage: {}% (worker efficiency). Data rotation: {}% (queue usage).".format(
                   int(100 * (self.image_rotation / self.training_sample.shape[0]) * factor),
                   int(100 * self.queue_records / self.cells_per_epoch))
@@ -133,7 +138,7 @@ class ImageDataset():
         lock.release()
 
         batch = {"keys": [], "images": [], "targets": [], "locations": []}
-        sample = max(1, int(self.sample_locations * self.sampling_factor))
+        sample = max(1, int(self.sample_locations * self.load_factor * self.sampling_factor))
         for k, r in df.iterrows():
             key, image, outl = self.get_image_paths(r)
             batch["keys"].append(key)
