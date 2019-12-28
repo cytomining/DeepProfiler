@@ -132,7 +132,8 @@ class CropGenerator(object):
             while not coord.should_stop():
                 try:
                     # Load images and cell boxes
-                    batch = self.dset.get_train_batch(lock) #TODO
+                    batch = self.dset.get_train_batch(lock)
+                    if len(batch["images"]) == 0: continue
                     images = np.reshape(batch["images"], self.input_variables["shapes"]["batch"])
                     boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
                     feed_dict = {
