@@ -83,7 +83,7 @@ class ImageDataset():
         self.sample_images = int(np.median(self.training_images.groupby("Target").count()["ID"]))
         targets = len(self.training_images["Target"].unique())
         self.sample_locations = int(np.median(self.training_images["ID"]))
-        self.cells_per_epoch = int(targets * self.sample_images * self.sample_locations)
+        self.cells_per_epoch = int(targets * self.sample_images * self.sample_locations * self.sampling_factor)
         self.images_per_worker = int(batch_size / workers)
         self.queue_coverage = 100*(queue_size / self.cells_per_epoch)
         self.steps_per_epoch = int((self.cells_per_epoch / batch_size)*self.sampling_factor)
