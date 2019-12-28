@@ -83,8 +83,8 @@ class ImageDataset():
         self.queue_coverage = 100*(self.config["train"]["sampling"]["queue_size"]/self.cells_per_epoch)
         self.steps_per_epoch = int(self.cells_per_epoch/self.config["train"]["model"]["params"]["batch_size"])
 
-        self.pointer_rotation = 0
-        self.queue_sweeps = 0
+        self.image_rotation = 0
+        self.queue_records = 0
         self.shuffle_training_images()
 
 
@@ -100,12 +100,16 @@ class ImageDataset():
  
 
     def show_stats(self, epoch):
+        if self.sample_locations * self.sampling_factor < 1.0:
+            factor = 1
+        else:
+            factor = self.sampling_factor
         print("Training set coverage: {}% (worker efficiency). Data rotation: {}% (queue usage).".format(
-                  100*int(self.pointer_rotation * self.sampling_factor),
-                  int(self.queue_sweeps * self.queue_coverage))
+                  int(100 * (self.image_rotation / self.training_sample.shape[0]) * factor),
+                  int(100 * self.queue_records / self.cells_per_epoch))
         )
-        self.pointer_rotation = 0
-        self.queue_sweeps = 0
+        self.image_rotation = 0
+        self.queue_records = 0
 
     def shuffle_training_images(self):
         sample = []
@@ -118,12 +122,12 @@ class ImageDataset():
         self.training_sample = pd.concat(sample)
         self.training_sample = self.training_sample.sample(frac=1.0).reset_index(drop=True)
         self.batch_pointer = 0
-        self.pointer_rotation += 1
 
     def get_train_batch(self, lock):
         lock.acquire()
         df = self.training_sample[self.batch_pointer:self.batch_pointer + self.images_per_worker].copy()
         self.batch_pointer += self.images_per_worker
+        self.image_rotation += self.images_per_worker
         if self.batch_pointer > self.training_sample.shape[0]:
             self.shuffle_training_images()
         lock.release()
