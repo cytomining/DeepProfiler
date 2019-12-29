@@ -108,7 +108,7 @@ class ImageDataset():
         if (self.sample_locations * self.load_factor * self.sampling_factor) < 1.0:
             factor = 1
         else:
-            factor = self.load_factor * self.sampling_factor
+            factor = self.load_factor
         print("Training set coverage: {}% (worker efficiency). Data rotation: {}% (queue usage).".format(
                   int(100 * (self.image_rotation / self.training_sample.shape[0]) * factor),
                   int(100 * self.queue_records / self.cells_per_epoch))
