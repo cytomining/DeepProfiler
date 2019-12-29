@@ -86,7 +86,7 @@ class ImageDataset():
         self.cells_per_epoch = int(targets * self.sample_images * self.sample_locations * self.sampling_factor)
         self.images_per_worker = int(batch_size / workers)
         self.queue_coverage = 100*(queue_size / self.cells_per_epoch)
-        self.steps_per_epoch = int((self.cells_per_epoch / batch_size)*self.sampling_factor)
+        self.steps_per_epoch = int(self.cells_per_epoch / batch_size)
 
         self.image_rotation = 0
         self.queue_records = 0
