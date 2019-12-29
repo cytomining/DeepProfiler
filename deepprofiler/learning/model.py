@@ -96,8 +96,9 @@ def setup_comet_ml(dpmodel):
             api_key=dpmodel.config["train"]["comet_ml"]["api_key"],
             project_name=dpmodel.config["train"]["comet_ml"]["project_name"]
         )
-        if "experiment_name" in dpmodel.config["train"]["comet_ml"].keys():
-            experiment.set_name(dpmodel.config["train"]["comet_ml"]["experiment_name"])
+        if dpmodel.config["experiment_name"] != "results":
+            experiment.set_name(dpmodel.config["experiment_name"])
+        experiment.log_others(dpmodel.config)
     else:
         experiment = None
     return experiment
@@ -194,7 +195,7 @@ def setup_params(dpmodel, experiment):
     lr_schedule_lr = None
     if dpmodel.config["train"]["comet_ml"]["track"]:
         params = dpmodel.config["train"]["model"]["params"]
-        experiment.log_multiple_params(params)
+        experiment.log_others(params)
     if "lr_schedule" in dpmodel.config["train"]["model"]:
         assert len(dpmodel.config["train"]["model"]["lr_schedule"]["epoch"]) == \
                len(dpmodel.config["train"]["model"]["lr_schedule"]["lr"]), "Make sure that the length of " \
