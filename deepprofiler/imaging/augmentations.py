@@ -1,5 +1,6 @@
 import tensorflow as tf
-PI = 3.141526539 
+import numpy as np
+
 #################################################
 ## CROPPING AND TRANSFORMATION OPERATIONS
 #################################################
@@ -7,22 +8,23 @@ PI = 3.141526539
 def augment(crop):
     with tf.variable_scope("augmentation"):
 
-        offsets = tf.random_uniform([2],
-                minval=-int(crop.shape[0].value*0.2),
-                maxval=int(crop.shape[0].value*0.2)
-        )
-        augmented = tf.contrib.image.translate(crop, translations=offsets)
-
         # Horizontal flips
-        augmented = tf.image.random_flip_left_right(augmented)
+        augmented = tf.image.random_flip_left_right(crop)
 
         # 90 degree rotations
         #angle = tf.random_uniform([1], minval=0, maxval=4, dtype=tf.int32)
         #augmented = tf.image.rot90(augmented, angle[0])
 
         # 360 degree rotations
-        angle = tf.random_uniform([1], minval=0.0, maxval=2*PI, dtype=tf.float32)
+        angle = tf.random_uniform([1], minval=0.0, maxval=2*np.pi, dtype=tf.float32)
         augmented = tf.contrib.image.rotate(augmented, angle[0], interpolation="BILINEAR")
+
+        # Translations
+        offsets = tf.random_uniform([2],
+                minval=-int(crop.shape[0].value*0.2),
+                maxval=int(crop.shape[0].value*0.2)
+        )
+        augmented = tf.contrib.image.translate(augmented, translations=offsets)
 
         # Illumination changes
         illum_s = tf.random_uniform([1], minval=0.8, maxval=1.2, dtype=tf.float32)

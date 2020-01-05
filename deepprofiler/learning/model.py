@@ -191,19 +191,27 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset):
 def setup_params(dpmodel, experiment):
     epochs = dpmodel.config["train"]["model"]["epochs"]
     steps = dpmodel.dset.steps_per_epoch
-    lr_schedule_epochs = None
-    lr_schedule_lr = None
+    lr_schedule_epochs = []
+    lr_schedule_lr = []
     if dpmodel.config["train"]["comet_ml"]["track"]:
         params = dpmodel.config["train"]["model"]["params"]
         experiment.log_others(params)
     if "lr_schedule" in dpmodel.config["train"]["model"]:
-        assert len(dpmodel.config["train"]["model"]["lr_schedule"]["epoch"]) == \
-               len(dpmodel.config["train"]["model"]["lr_schedule"]["lr"]), "Make sure that the length of " \
-                                                                           "lr_schedule->epoch equals the length of " \
-                                                                           "lr_schedule->lr in the config file."
+        if dpmodel.config["train"]["model"]["lr_schedule"] == "cosine":
+            lr_schedule_epochs = [x for x in range(epochs)]
+            init_lr = dpmodel.config["train"]["model"]["params"]["learning_rate"]
+            # Linear warm up
+            lr_schedule_lr = [init_lr/(5-t) for t in range(5)]
+            # Cosine decay
+            lr_schedule_lr += [0.5 * (1 + np.cos((np.pi * t) / epochs)) * init_lr for t in range(5, epochs)]
+        else:
+            assert len(dpmodel.config["train"]["model"]["lr_schedule"]["epoch"]) == \
+                   len(dpmodel.config["train"]["model"]["lr_schedule"]["lr"]), "Make sure that the length of " \
+                                                                               "lr_schedule->epoch equals the length of " \
+                                                                               "lr_schedule->lr in the config file."
 
-        lr_schedule_epochs = dpmodel.config["train"]["model"]["lr_schedule"]["epoch"]
-        lr_schedule_lr = dpmodel.config["train"]["model"]["lr_schedule"]["lr"]
+            lr_schedule_epochs = dpmodel.config["train"]["model"]["lr_schedule"]["epoch"]
+            lr_schedule_lr = dpmodel.config["train"]["model"]["lr_schedule"]["lr"]
 
     return epochs, steps, lr_schedule_epochs, lr_schedule_lr
 
