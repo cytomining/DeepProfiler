@@ -79,7 +79,7 @@ def test_init(metadata, out_dir, dataset, config, make_struct):
 
 def test_get_image_paths(metadata, out_dir, dataset, config, make_struct):
     for idx, row in dataset.meta.data.iterrows():
-        key, image, outlines = dataset.getImagePaths(row)
+        key, image, outlines = dataset.get_image_paths(row)
         testKey = dataset.keyGen(row)
         testImage = [dataset.root + "/" + row[ch] for ch in dataset.channels]
         testOutlines = dataset.outlines
@@ -105,7 +105,7 @@ def test_get_train_batch(metadata, out_dir, dataset, config, make_struct):
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["G"][i // 3]), images[:, :, i + 1])
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["B"][i // 3]), images[:, :, i + 2])
     batch_size = 3
-    batch = dataset.getTrainBatch(batch_size)
+    batch = dataset.get_train_batch(batch_size)
     assert len(batch) == batch_size
     for image in batch["images"]:
         assert image.shape == (128, 128, 3)

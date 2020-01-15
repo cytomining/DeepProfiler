@@ -62,7 +62,7 @@ class Profile(object):
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
 
         batch_size = self.config["profile"]["batch_size"]
-        image_key, image_names, outlines = self.dset.getImagePaths(meta)
+        image_key, image_names, outlines = self.dset.get_image_paths(meta)
         total_crops = self.profile_crop_generator.prepare_image(
                                    self.sess,
                                    image_array,

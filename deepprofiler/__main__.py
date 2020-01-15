@@ -77,6 +77,7 @@ def cli(context, root, config, exp, cores, gpu):
                 os.makedirs(dirs[k], exist_ok=True)
 
         # Update references
+        params["experiment_name"] = exp
         params["paths"]["index"] = params["paths"]["metadata"] + "/index.csv"
         context.obj["config"] = params
     elif context.invoked_subcommand != 'setup':

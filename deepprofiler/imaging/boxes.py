@@ -8,30 +8,24 @@ import pandas as pd
 ## BOUNDING BOX HANDLING
 #################################################
 
-def get_locations(image_key, config, randomize=True, seed=None):
+def get_locations(image_key, config, random_sample=None, seed=None):
     keys = image_key.split("/")
     locations_file = "{}/{}-{}.csv".format(
         keys[0],
         keys[1],
-        config["train"]["sampling"]["locations_field"]
+        "Nuclei"
     )
     locations_path = os.path.join(config["paths"]["locations"], locations_file)
     if os.path.exists(locations_path):
         locations = pd.read_csv(locations_path)
-        random_sample = config["train"]["sampling"]["locations"]
-        if randomize and random_sample is not None and random_sample < len(locations):
+        if random_sample is not None and random_sample < len(locations):
             return locations.sample(random_sample, random_state=seed)
         else:
             return locations
     else:
-        y_key = config["train"]["sampling"]["locations_field"] + "_Location_Center_Y"
-        x_key = config["train"]["sampling"]["locations_field"] + "_Location_Center_X"
+        y_key = "Nuclei_Location_Center_Y"
+        x_key = "Nuclei_Location_Center_X"
         return pd.DataFrame(columns=[x_key, y_key])
-
-def load_batch(dataset, config):
-    batch = dataset.getTrainBatch(config["train"]["sampling"]["images"])
-    batch["locations"] = [ get_locations(x, config) for x in batch["keys"] ]
-    return batch
 
 def prepare_boxes(batch, config):
     locationsBatch = batch["locations"]
@@ -42,8 +36,8 @@ def prepare_boxes(batch, config):
     all_targets = [[] for i in range(len(image_targets[0]))]
     all_masks = []
     index = 0
-    y_key = config["train"]["sampling"]["locations_field"] + "_Location_Center_Y"
-    x_key = config["train"]["sampling"]["locations_field"] + "_Location_Center_X"
+    y_key = "Nuclei_Location_Center_Y"
+    x_key = "Nuclei_Location_Center_X"
     for locations in locationsBatch:
         # Collect and normalize boxes between 0 and 1
         boxes = np.zeros((len(locations), 4), np.float32)

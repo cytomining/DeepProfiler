@@ -62,7 +62,7 @@ class DeepProfilerModel(abc.ABC):
             # Load weights
             load_weights(self, epoch)
             # Create callbacks
-            callbacks = setup_callbacks(self, lr_schedule_epochs, lr_schedule_lr)
+            callbacks = setup_callbacks(self, lr_schedule_epochs, lr_schedule_lr, self.dset)
         else:
             callbacks = None
         # Create params (epochs, steps, log model params to comet ml)
@@ -96,8 +96,9 @@ def setup_comet_ml(dpmodel):
             api_key=dpmodel.config["train"]["comet_ml"]["api_key"],
             project_name=dpmodel.config["train"]["comet_ml"]["project_name"]
         )
-        if "experiment_name" in dpmodel.config["train"]["comet_ml"].keys():
-            experiment.set_name(dpmodel.config["train"]["comet_ml"]["experiment_name"])
+        if dpmodel.config["experiment_name"] != "results":
+            experiment.set_name(dpmodel.config["experiment_name"])
+        experiment.log_others(dpmodel.config)
     else:
         experiment = None
     return experiment
@@ -152,45 +153,65 @@ def load_weights(dpmodel, epoch):
         keras.backend.get_session().run(tf.global_variables_initializer())
 
 
-def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr):
+def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset):
+    # Checkpoints
     output_file = dpmodel.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
     callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
         filepath=output_file,
         save_weights_only=True,
         save_best_only=False
     )
+    
+    # CSV Log
     csv_output = dpmodel.config["paths"]["logs"] + "/log.csv"
     callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
 
+    # Queue stats
+    qstats = keras.callbacks.LambdaCallback(
+        on_train_begin=lambda logs: dset.show_setup(),
+        on_epoch_end=lambda epoch, logs: dset.show_stats()
+    )
+
+    # Learning rate schedule
     def lr_schedule(epoch, lr):
         if epoch in lr_schedule_epochs:
             return lr_schedule_lr[lr_schedule_epochs.index(epoch)]
         else:
             return lr
+
+    # Collect all callbacks
     if lr_schedule_epochs:
         callback_lr_schedule = keras.callbacks.LearningRateScheduler(lr_schedule, verbose=1)
-        callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule]
+        callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule, qstats]
     else:
-        callbacks = [callback_model_checkpoint, callback_csv]
+        callbacks = [callback_model_checkpoint, callback_csv, qstats]
     return callbacks
 
 
 def setup_params(dpmodel, experiment):
     epochs = dpmodel.config["train"]["model"]["epochs"]
-    steps = dpmodel.config["train"]["model"]["steps"]
-    lr_schedule_epochs = None
-    lr_schedule_lr = None
+    steps = dpmodel.dset.steps_per_epoch
+    lr_schedule_epochs = []
+    lr_schedule_lr = []
     if dpmodel.config["train"]["comet_ml"]["track"]:
         params = dpmodel.config["train"]["model"]["params"]
-        experiment.log_multiple_params(params)
+        experiment.log_others(params)
     if "lr_schedule" in dpmodel.config["train"]["model"]:
-        assert len(dpmodel.config["train"]["model"]["lr_schedule"]["epoch"]) == \
-               len(dpmodel.config["train"]["model"]["lr_schedule"]["lr"]), "Make sure that the length of " \
-                                                                           "lr_schedule->epoch equals the length of " \
-                                                                           "lr_schedule->lr in the config file."
+        if dpmodel.config["train"]["model"]["lr_schedule"] == "cosine":
+            lr_schedule_epochs = [x for x in range(epochs)]
+            init_lr = dpmodel.config["train"]["model"]["params"]["learning_rate"]
+            # Linear warm up
+            lr_schedule_lr = [init_lr/(5-t) for t in range(5)]
+            # Cosine decay
+            lr_schedule_lr += [0.5 * (1 + np.cos((np.pi * t) / epochs)) * init_lr for t in range(5, epochs)]
+        else:
+            assert len(dpmodel.config["train"]["model"]["lr_schedule"]["epoch"]) == \
+                   len(dpmodel.config["train"]["model"]["lr_schedule"]["lr"]), "Make sure that the length of " \
+                                                                               "lr_schedule->epoch equals the length of " \
+                                                                               "lr_schedule->lr in the config file."
 
-        lr_schedule_epochs = dpmodel.config["train"]["model"]["lr_schedule"]["epoch"]
-        lr_schedule_lr = dpmodel.config["train"]["model"]["lr_schedule"]["lr"]
+            lr_schedule_epochs = dpmodel.config["train"]["model"]["lr_schedule"]["epoch"]
+            lr_schedule_lr = dpmodel.config["train"]["model"]["lr_schedule"]["lr"]
 
     return epochs, steps, lr_schedule_epochs, lr_schedule_lr
 
