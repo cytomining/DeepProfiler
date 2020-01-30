@@ -59,7 +59,7 @@
             "box_size": 16,
             "mask_objects": false,
             "queue_size": 10,
-            "workers": 1,
+            "workers": 2,
             "alpha": 0.2
         },
         "comet_ml": {

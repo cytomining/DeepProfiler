@@ -73,8 +73,7 @@ def dataset(metadata, config, make_struct):
 
     meta = dset.meta.data.iloc[0]
     path = os.path.abspath(os.path.join(config["paths"]["locations"], meta["Metadata_Plate"]))
-    if not os.path.exists(path):
-        os.makedirs(path)
+    os.makedirs(path, exist_ok=True)
     path = os.path.join(path,
                         "{}-{}-{}.csv".format(meta["Metadata_Well"],
                                               meta["Metadata_Site"],
@@ -235,8 +234,7 @@ def test_single_image_crop_generator_prepare_image(single_image_crop_generator, 
     image = np.random.randint(0, 256, (128, 128, 3), dtype=np.uint8)
     meta = single_image_crop_generator.dset.meta.data.iloc[0]
     path = os.path.abspath(os.path.join(config["paths"]["locations"], meta["Metadata_Plate"]))
-    if not os.path.exists(path):
-        os.makedirs(path)
+    os.makedirs(path, exist_ok=True)
     path = os.path.join(path,
         "{}-{}-{}.csv".format(meta["Metadata_Well"],
         meta["Metadata_Site"],
@@ -265,8 +263,7 @@ def test_single_image_crop_generator_generate(single_image_crop_generator, make_
     image = np.random.randint(0, 256, (128, 128, 3), dtype=np.uint8)
     meta = single_image_crop_generator.dset.meta.data.iloc[0]
     path = os.path.abspath(os.path.join(config["paths"]["locations"], meta["Metadata_Plate"]))
-    if not os.path.exists(path):
-        os.makedirs(path)
+    os.makedirs(path, exist_ok=True)
     path = os.path.join(path,
                         "{}-{}-{}.csv".format(meta["Metadata_Well"],
                                               meta["Metadata_Site"],

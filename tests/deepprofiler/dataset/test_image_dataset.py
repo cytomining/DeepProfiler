@@ -67,16 +67,18 @@ def dataset(metadata, config, make_struct):
 
     meta = dataset.meta.data.iloc[0]
     path = os.path.abspath(os.path.join(config["paths"]["locations"], meta["Metadata_Plate"]))
-    os.makedirs(path)
+os.makedirs(path, exist_ok=True)
     path = os.path.join(path,
-                        "{}-{}-{}.csv".format(meta["Metadata_Well"],
-                                              meta["Metadata_Site"],
-                                              "Nuclei"))
+        "{}-{}-{}.csv".format(meta["Metadata_Well"],
+        meta["Metadata_Site"],
+        "Nuclei"))
     locations = pd.DataFrame({
         "Nuclei_Location_Center_X": np.random.randint(0, 128, 10),
         "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
     })
     locations.to_csv(path, index=False)
+    target = deepprofiler.dataset.target.MetadataColumnTarget("Class", metadata.data["Class"].unique())
+    dataset.add_target(target)
     dataset.prepare_training_locations()
     return dataset
 
@@ -174,5 +176,5 @@ def test_read_dataset(metadata, out_dir, dataset, config, make_struct):
     pd.testing.assert_frame_equal(dset.meta.data, deepprofiler.dataset.metadata.Metadata(config["paths"]["index"], dtype=None).data)
     assert dset.channels == config["dataset"]["images"]["channels"]
     assert dset.root == config["paths"]["images"]
-    assert dset.sampling_field == config["train"]["sampling"]["field"]
+    assert dset.sampling_field == config["dataset"]["metadata"]["label_field"]
     np.testing.assert_array_equal(dset.sampling_values, dset.meta.data[dset.sampling_field].unique())
