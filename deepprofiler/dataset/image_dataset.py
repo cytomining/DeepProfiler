@@ -15,7 +15,6 @@ class ImageLocations(object):
         self.images = []
         self.targets = []
         self.outlines = []
-
         for i, r in metadata_training.iterrows():
             key, image, outl = getImagePaths(r)
             self.keys.append(key)
@@ -29,17 +28,25 @@ class ImageLocations(object):
         # Load cell locations for one image
         i, config = params
         loc = deepprofiler.imaging.boxes.get_locations(self.keys[i], config)
+        print('locations', loc)
         loc["ID"] = loc.index
         loc["ImageKey"] = self.keys[i]
         loc["ImagePaths"] = "#".join(self.images[i])
         loc["Target"] = self.targets[i][0]
         loc["Outlines"] = self.outlines[i]
         print("Image", i, ":", len(loc), "cells", end="\r")
+        print('locations', loc)
         return loc
 
 
     def load_locations(self, config):
         process = deepprofiler.dataset.utils.Parallel(config, numProcs=config["train"]["sampling"]["workers"])
+        print(self.keys)
+        print('images', len(self.images))
+        print('outlines', len(self.outlines))
+        print('targets', len(self.targets))
+        for i in range(len(self.keys)):
+            print(deepprofiler.imaging.boxes.get_locations(self.keys[i], config))
         data = process.compute(self.load_loc, [x for x in range(len(self.keys))])
         process.close()
         return data
@@ -59,6 +66,7 @@ class ImageDataset():
         self.config = config
         self.load_factor = 0.25
 
+
     def get_image_paths(self, r):
         key = self.keyGen(r)
         image = [self.root + "/" + r[ch] for ch in self.channels]
@@ -72,8 +80,9 @@ class ImageDataset():
         locations = image_loc.load_locations(self.config)
 
         locations = pd.concat(locations)
+        #print('locations', image_loc.load_loc())
         self.training_images = locations.groupby(["ImageKey", "Target"])["ID"].count().reset_index()
-        print('training images',locations)
+        print('training images', locations)
 
         workers = self.config["train"]["sampling"]["workers"]
         batch_size = self.config["train"]["model"]["params"]["batch_size"]

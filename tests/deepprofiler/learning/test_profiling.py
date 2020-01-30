@@ -121,7 +121,8 @@ def profile(config, dataset):
 
 
 def test_init(config, dataset):
-    prof = deepprofiler.learning.profiling.Profile(config, dataset)
+    metadata = deepprofiler.dataset.image_dataset.read_dataset(config)
+    prof = deepprofiler.learning.profiling.Profile(config, metadata)
     test_num_channels = len(config["dataset"]["images"]["channels"])
     assert prof.config == config
     assert prof.dset == dataset

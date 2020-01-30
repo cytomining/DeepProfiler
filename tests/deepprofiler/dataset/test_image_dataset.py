@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import threading
 
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.metadata
@@ -47,7 +48,7 @@ def metadata(out_dir, make_struct, config):
         "G": [str(x) + ".png" for x in __rand_array()],
         "B": [str(x) + ".png" for x in __rand_array()],
         "Class": ["0", "1", "2", "3", "0", "1", "2", "3", "0", "1", "2", "3"],
-        "Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+        #"Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
         "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
     }, dtype=int)
     df.to_csv(filename, index=False)
@@ -61,7 +62,23 @@ def metadata(out_dir, make_struct, config):
 @pytest.fixture(scope="function")
 def dataset(metadata, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    return deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
+    dataset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Class", ["R", "G", "B"], config["paths"]["root_dir"],
+                                                    keygen, config)
+
+    meta = dataset.meta.data.iloc[0]
+    path = os.path.abspath(os.path.join(config["paths"]["locations"], meta["Metadata_Plate"]))
+    os.makedirs(path)
+    path = os.path.join(path,
+                        "{}-{}-{}.csv".format(meta["Metadata_Well"],
+                                              meta["Metadata_Site"],
+                                              "Nuclei"))
+    locations = pd.DataFrame({
+        "Nuclei_Location_Center_X": np.random.randint(0, 128, 10),
+        "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
+    })
+    locations.to_csv(path, index=False)
+    dataset.prepare_training_locations()
+    return dataset
 
 
 def test_init(metadata, out_dir, dataset, config, make_struct):
@@ -71,7 +88,7 @@ def test_init(metadata, out_dir, dataset, config, make_struct):
     dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, sampling_field, channels, config["paths"]["root_dir"], keygen, config)
     assert dset.meta == metadata
     assert dset.sampling_field == sampling_field
-    np.testing.assert_array_equal(dset.sampling_values, metadata.data["Sampling"].unique())
+    np.testing.assert_array_equal(dset.sampling_values, metadata.data["Class"].unique())
     assert dset.channels == channels
     assert dset.root == out_dir
     assert dset.keyGen == keygen
@@ -87,7 +104,7 @@ def test_get_image_paths(metadata, out_dir, dataset, config, make_struct):
         assert image == testImage
         assert outlines == testOutlines
 
-
+'''
 def test_sample_images(metadata, out_dir, dataset, config, make_struct):
     n = 3
     keys, images, targets, outlines = dataset.sampleImages(dataset.sampling_values, n)
@@ -96,7 +113,7 @@ def test_sample_images(metadata, out_dir, dataset, config, make_struct):
     assert len(images) == 2 * n
     assert len(targets) == 2 * n
     assert len(outlines) == 2 * n
-
+'''
 
 def test_get_train_batch(metadata, out_dir, dataset, config, make_struct):
     images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
@@ -104,12 +121,14 @@ def test_get_train_batch(metadata, out_dir, dataset, config, make_struct):
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["R"][i // 3]), images[:, :, i])
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["G"][i // 3]), images[:, :, i + 1])
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["B"][i // 3]), images[:, :, i + 2])
-    batch_size = 3
-    batch = dataset.get_train_batch(batch_size)
-    assert len(batch) == batch_size
+    #batch_size = 3
+    lock = threading.Lock()
+    batch = dataset.get_train_batch(lock)
+
+    assert len(batch) == config['train']['model']['params']['batch_size']
     for image in batch["images"]:
-        assert image.shape == (128, 128, 3)
-        for i in range(3):
+        assert image.shape == (128, 128, config['train']['model']['params']['batch_size'])
+        for i in range(config['train']['model']['params']['batch_size']):
             assert image[:, :, i] in np.rollaxis(images, -1)
 
 

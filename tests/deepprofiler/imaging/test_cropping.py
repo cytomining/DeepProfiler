@@ -52,7 +52,7 @@ def metadata(config, make_struct):
         "R": [str(x) + ".png" for x in __rand_array()],
         "G": [str(x) + ".png" for x in __rand_array()],
         "B": [str(x) + ".png" for x in __rand_array()],
-        "Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+        #"Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
         "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
         "Target": [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
     }, dtype=int)
@@ -67,9 +67,26 @@ def metadata(config, make_struct):
 @pytest.fixture(scope="function")
 def dataset(metadata, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Target", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
     target = deepprofiler.dataset.target.MetadataColumnTarget("Target", metadata.data["Target"].unique())
     dset.add_target(target)
+
+    meta = dset.meta.data.iloc[0]
+    path = os.path.abspath(os.path.join(config["paths"]["locations"], meta["Metadata_Plate"]))
+    if not os.path.exists(path):
+        os.makedirs(path)
+    path = os.path.join(path,
+                        "{}-{}-{}.csv".format(meta["Metadata_Well"],
+                                              meta["Metadata_Site"],
+                                              "Nuclei"))
+    locations = pd.DataFrame({
+        "Nuclei_Location_Center_X": np.random.randint(0, 128, 10),
+        "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
+    })
+    locations.to_csv(path, index=False)
+    print('path', path)
+    dset.prepare_training_locations()
+
     return dset
 
 @pytest.fixture(scope="function")
@@ -149,7 +166,7 @@ def test_crop_generator_start(prepared_crop_generator):  # includes test for tra
         prepared_crop_generator.start(sess)
         assert not prepared_crop_generator.coord.joined
         assert not prepared_crop_generator.exception_occurred
-        assert len(prepared_crop_generator.queue_threads) == prepared_crop_generator.config["train"]["queueing"]["loading_workers"]
+        assert len(prepared_crop_generator.queue_threads) == prepared_crop_generator.config["train"]["sampling"]["workers"]
         prepared_crop_generator.stop(sess)
 
 
@@ -218,7 +235,8 @@ def test_single_image_crop_generator_prepare_image(single_image_crop_generator, 
     image = np.random.randint(0, 256, (128, 128, 3), dtype=np.uint8)
     meta = single_image_crop_generator.dset.meta.data.iloc[0]
     path = os.path.abspath(os.path.join(config["paths"]["locations"], meta["Metadata_Plate"]))
-    os.makedirs(path)
+    if not os.path.exists(path):
+        os.makedirs(path)
     path = os.path.join(path,
         "{}-{}-{}.csv".format(meta["Metadata_Well"],
         meta["Metadata_Site"],
@@ -228,6 +246,7 @@ def test_single_image_crop_generator_prepare_image(single_image_crop_generator, 
         "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
     })
     locations.to_csv(path, index=False)
+    print('path', path)
     assert os.path.exists(path)
     with tf.Session(config=cpu_config) as sess:
         single_image_crop_generator.start(sess)
@@ -246,7 +265,8 @@ def test_single_image_crop_generator_generate(single_image_crop_generator, make_
     image = np.random.randint(0, 256, (128, 128, 3), dtype=np.uint8)
     meta = single_image_crop_generator.dset.meta.data.iloc[0]
     path = os.path.abspath(os.path.join(config["paths"]["locations"], meta["Metadata_Plate"]))
-    os.makedirs(path)
+    if not os.path.exists(path):
+        os.makedirs(path)
     path = os.path.join(path,
                         "{}-{}-{}.csv".format(meta["Metadata_Well"],
                                               meta["Metadata_Site"],
@@ -255,6 +275,7 @@ def test_single_image_crop_generator_generate(single_image_crop_generator, make_
         "Nuclei_Location_Center_X": np.random.randint(0, 128, 10),
         "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
     })
+    print('path', path)
     locations.to_csv(path, index=False)
     assert os.path.exists(path)
     with tf.Session(config=cpu_config) as sess:
