@@ -29,7 +29,7 @@ setuptools.setup(
         "scikit-image>=0.14.0",
         "scikit-learn>=0.19.0",
         "scipy>=1.1",
-        "tensorflow==2.1.*"
+#        "tensorflow-gpu==1.12.2"
     ],
     extras_require={
         "test": [

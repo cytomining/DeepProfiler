@@ -6,8 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import skimage.io
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+import tensorflow as tf
 
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.metadata

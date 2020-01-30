@@ -14,8 +14,7 @@ from comet_ml import Experiment
 
 import keras
 import keras.applications
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+import tensorflow as tf
 
 from deepprofiler.learning.model import DeepProfilerModel
 
