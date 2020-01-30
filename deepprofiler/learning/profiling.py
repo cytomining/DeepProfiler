@@ -3,7 +3,8 @@ import os
 
 import keras
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 from keras import backend as K
 
 from deepprofiler.dataset.utils import tic, toc
