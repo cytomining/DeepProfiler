@@ -73,6 +73,7 @@ class ImageDataset():
 
         locations = pd.concat(locations)
         self.training_images = locations.groupby(["ImageKey", "Target"])["ID"].count().reset_index()
+        print('training images',locations)
 
         workers = self.config["train"]["sampling"]["workers"]
         batch_size = self.config["train"]["model"]["params"]["batch_size"]

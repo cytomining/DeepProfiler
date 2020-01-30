@@ -1,7 +1,7 @@
 {
     "dataset": {
         "metadata": {
-            "label_field": "Compound_Concentration",
+            "label_field": "Class",
             "control_id": "17"
         },
         "images": {
@@ -55,17 +55,11 @@
             }
         },
         "sampling": {
-            "images": 12,
-            "locations": 10,
-            "locations_field": "R",
+            "factor": 1.0,
             "box_size": 16,
-            "field": "Sampling",
             "mask_objects": false,
-            "alpha": 0.2
-        },
-          "queueing": {
-            "queue_size": 6,
-            "loading_workers": 1
+            "queue_size": 10,
+            "workers": 4
         },
         "comet_ml": {
             "track": false,

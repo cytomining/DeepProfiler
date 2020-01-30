@@ -59,7 +59,7 @@ def metadata(config, make_struct):
 @pytest.fixture(scope="function")
 def dataset(metadata, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    return deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["images"], keygen)
+    return deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"],  config["paths"]["images"], keygen, config)
 
 
 def test_write_compression_index(config, metadata, dataset, make_struct):

@@ -66,7 +66,7 @@ def metadata(out_dir, make_struct):
 @pytest.fixture(scope="function")
 def dataset(metadata, out_dir, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen)
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
     target = deepprofiler.dataset.target.MetadataColumnTarget("Class", metadata.data["Class"].unique())
     dset.add_target(target)
     return dset
@@ -106,10 +106,10 @@ def test_single_image_generator_class_generate(config, dataset, tmpdir):
     path = os.path.join(path,
                         "{}-{}-{}.csv".format(meta["Metadata_Well"],
                                               meta["Metadata_Site"],
-                                              crop_generator.config["train"]["sampling"]["locations_field"]))
+                                              "Nuclei"))
     locations = pd.DataFrame({
-        "R_Location_Center_X": np.random.randint(0, 128, (crop_generator.config["train"]["sampling"]["locations"])),
-        "R_Location_Center_Y": np.random.randint(0, 128, (crop_generator.config["train"]["sampling"]["locations"]))
+        "R_Location_Center_X": np.random.randint(0, 128, 10),
+        "R_Location_Center_Y": np.random.randint(0, 128, 10)
     })
     locations.to_csv(path, index=False)
     assert os.path.exists(path)

@@ -61,14 +61,14 @@ def metadata(out_dir, make_struct, config):
 @pytest.fixture(scope="function")
 def dataset(metadata, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    return deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen)
+    return deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
 
 
 def test_init(metadata, out_dir, dataset, config, make_struct):
-    sampling_field = config["train"]["sampling"]["field"]
+    sampling_field = config["dataset"]["metadata"]["label_field"]
     channels = config["dataset"]["images"]["channels"]
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, sampling_field, channels, out_dir, keygen)
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, sampling_field, channels, config["paths"]["root_dir"], keygen, config)
     assert dset.meta == metadata
     assert dset.sampling_field == sampling_field
     np.testing.assert_array_equal(dset.sampling_values, metadata.data["Sampling"].unique())

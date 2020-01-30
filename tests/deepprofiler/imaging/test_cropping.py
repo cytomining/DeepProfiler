@@ -67,7 +67,7 @@ def metadata(config, make_struct):
 @pytest.fixture(scope="function")
 def dataset(metadata, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen)
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
     target = deepprofiler.dataset.target.MetadataColumnTarget("Target", metadata.data["Target"].unique())
     dset.add_target(target)
     return dset
@@ -222,23 +222,23 @@ def test_single_image_crop_generator_prepare_image(single_image_crop_generator, 
     path = os.path.join(path,
         "{}-{}-{}.csv".format(meta["Metadata_Well"],
         meta["Metadata_Site"],
-        single_image_crop_generator.config["train"]["sampling"]["locations_field"]))
+        "Nuclei"))
     locations = pd.DataFrame({
-        "R_Location_Center_X": np.random.randint(0, 128, (single_image_crop_generator.config["train"]["sampling"]["locations"])),
-        "R_Location_Center_Y": np.random.randint(0, 128, (single_image_crop_generator.config["train"]["sampling"]["locations"]))
+        "Nuclei_Location_Center_X": np.random.randint(0, 128, 10),
+        "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
     })
     locations.to_csv(path, index=False)
     assert os.path.exists(path)
     with tf.Session(config=cpu_config) as sess:
         single_image_crop_generator.start(sess)
         num_crops = single_image_crop_generator.prepare_image(sess, image, meta)
-        assert num_crops == single_image_crop_generator.config["train"]["sampling"]["locations"]
+        assert num_crops == 10
         assert single_image_crop_generator.batch_size == single_image_crop_generator.config["train"]["validation"]["batch_size"]
-        assert np.array(single_image_crop_generator.image_pool).shape == (single_image_crop_generator.config["train"]["sampling"]["locations"],
+        assert np.array(single_image_crop_generator.image_pool).shape == (10,
                                                                       single_image_crop_generator.config["train"]["sampling"]["box_size"],
                                                                       single_image_crop_generator.config["train"]["sampling"]["box_size"],
                                                                       len(single_image_crop_generator.config["dataset"]["images"]["channels"]))
-        assert np.array(single_image_crop_generator.label_pool).shape == (single_image_crop_generator.config["train"]["sampling"]["locations"], num_classes)
+        assert np.array(single_image_crop_generator.label_pool).shape == (10, num_classes)
 
 
 def test_single_image_crop_generator_generate(single_image_crop_generator, make_struct, out_dir, config):
@@ -250,10 +250,10 @@ def test_single_image_crop_generator_generate(single_image_crop_generator, make_
     path = os.path.join(path,
                         "{}-{}-{}.csv".format(meta["Metadata_Well"],
                                               meta["Metadata_Site"],
-                                              single_image_crop_generator.config["train"]["sampling"]["locations_field"]))
+                                              "Nuclei"))
     locations = pd.DataFrame({
-        "R_Location_Center_X": np.random.randint(0, 128, (single_image_crop_generator.config["train"]["sampling"]["locations"])),
-        "R_Location_Center_Y": np.random.randint(0, 128, (single_image_crop_generator.config["train"]["sampling"]["locations"]))
+        "Nuclei_Location_Center_X": np.random.randint(0, 128, 10),
+        "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
     })
     locations.to_csv(path, index=False)
     assert os.path.exists(path)
@@ -261,10 +261,10 @@ def test_single_image_crop_generator_generate(single_image_crop_generator, make_
         single_image_crop_generator.start(sess)
         num_crops = single_image_crop_generator.prepare_image(sess, image, meta)
         for i, item in enumerate(single_image_crop_generator.generate(sess)):
-            assert np.array(item[0]).shape == (single_image_crop_generator.config["train"]["sampling"]["locations"],
+            assert np.array(item[0]).shape == (10,
                                            single_image_crop_generator.config["train"]["sampling"]["box_size"],
                                            single_image_crop_generator.config["train"]["sampling"]["box_size"],
                                            len(single_image_crop_generator.config["dataset"]["images"]["channels"]))
-            assert np.array(item[1]).shape == (single_image_crop_generator.config["train"]["sampling"]["locations"], num_classes)
+            assert np.array(item[1]).shape == (10, num_classes)
             assert i == 0
 
