@@ -4,8 +4,7 @@ from keras.models import Model
 from keras.layers import Input, Dense
 from keras.optimizers import Adam
 from keras import backend as K
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+import tensorflow as tf
 
 from deepprofiler.learning.model import DeepProfilerModel
 
