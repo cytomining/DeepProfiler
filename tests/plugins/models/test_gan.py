@@ -52,7 +52,7 @@ def metadata(out_dir, make_struct):
         "G": [str(x) + ".png" for x in __rand_array()],
         "B": [str(x) + ".png" for x in __rand_array()],
         "Class": ["0", "1", "2", "3", "0", "1", "2", "3", "0", "1", "2", "3"],
-        "Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+        #"Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
         "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
     }, dtype=int)
     df.to_csv(filename, index=False)
@@ -61,25 +61,6 @@ def metadata(out_dir, make_struct):
     val_rule = lambda data: data["Split"].astype(int) == 1
     meta.splitMetadata(train_rule, val_rule)
     return meta
-
-
-@pytest.fixture(scope="function")
-def dataset(metadata, out_dir, config, make_struct):
-    keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
-    target = deepprofiler.dataset.target.MetadataColumnTarget("Class", metadata.data["Class"].unique())
-    dset.add_target(target)
-    return dset
-
-
-@pytest.fixture(scope="function")
-def data(metadata, out_dir, config, make_struct):
-    images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
-    for i in range(0, 36, 3):
-        skimage.io.imsave(os.path.join(config["paths"]["root_dir"], metadata.data["R"][i // 3]), images[:, :, i])
-        skimage.io.imsave(os.path.join(config["paths"]["root_dir"], metadata.data["G"][i // 3]), images[:, :, i + 1])
-        skimage.io.imsave(os.path.join(config["paths"]["root_dir"], metadata.data["B"][i // 3]), images[:, :, i + 2])
-
 
 @pytest.fixture(scope="function")
 def locations(out_dir, metadata, config, make_struct):
@@ -95,6 +76,24 @@ def locations(out_dir, metadata, config, make_struct):
             "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
         })
         locs.to_csv(path, index=False)
+
+@pytest.fixture(scope="function")
+def dataset(metadata, out_dir, config, make_struct, locations):
+    keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Class", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
+    target = deepprofiler.dataset.target.MetadataColumnTarget("Class", metadata.data["Class"].unique())
+    dset.add_target(target)
+    dset.prepare_training_locations()
+    return dset
+
+
+@pytest.fixture(scope="function")
+def data(metadata, out_dir, config, make_struct):
+    images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
+    for i in range(0, 36, 3):
+        skimage.io.imsave(os.path.join(config["paths"]["root_dir"], metadata.data["R"][i // 3]), images[:, :, i])
+        skimage.io.imsave(os.path.join(config["paths"]["root_dir"], metadata.data["G"][i // 3]), images[:, :, i + 1])
+        skimage.io.imsave(os.path.join(config["paths"]["root_dir"], metadata.data["B"][i // 3]), images[:, :, i + 2])
 
 
 @pytest.fixture(scope="function")

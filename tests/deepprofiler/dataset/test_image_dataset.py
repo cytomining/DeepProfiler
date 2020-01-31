@@ -58,16 +58,11 @@ def metadata(out_dir, make_struct, config):
     meta.splitMetadata(train_rule, val_rule)
     return meta
 
-
 @pytest.fixture(scope="function")
-def dataset(metadata, config, make_struct):
-    keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dataset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Class", ["R", "G", "B"], config["paths"]["root_dir"],
-                                                    keygen, config)
-
-    meta = dataset.meta.data.iloc[0]
+def locations(out_dir, metadata, config, make_struct):
+    meta = metadata.data.iloc[0]
     path = os.path.abspath(os.path.join(config["paths"]["locations"], meta["Metadata_Plate"]))
-os.makedirs(path, exist_ok=True)
+    os.makedirs(path, exist_ok=True)
     path = os.path.join(path,
         "{}-{}-{}.csv".format(meta["Metadata_Well"],
         meta["Metadata_Site"],
@@ -77,6 +72,12 @@ os.makedirs(path, exist_ok=True)
         "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
     })
     locations.to_csv(path, index=False)
+
+@pytest.fixture(scope="function")
+def dataset(metadata, config, make_struct, locations):
+    keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
+    dataset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Class", ["R", "G", "B"], config["paths"]["root_dir"],
+                                                    keygen, config)
     target = deepprofiler.dataset.target.MetadataColumnTarget("Class", metadata.data["Class"].unique())
     dataset.add_target(target)
     dataset.prepare_training_locations()
