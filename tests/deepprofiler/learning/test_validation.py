@@ -53,7 +53,6 @@ def metadata(out_dir, make_struct):
         "G": [str(x) + ".png" for x in __rand_array()],
         "B": [str(x) + ".png" for x in __rand_array()],
         "Class": ["0", "1", "2", "3", "0", "1", "2", "3", "0", "1", "2", "3"],
-        "Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
         "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
     }, dtype=int)
     df.to_csv(filename, index=False)
@@ -67,7 +66,7 @@ def metadata(out_dir, make_struct):
 @pytest.fixture(scope="function")
 def dataset(metadata, out_dir, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Class", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
     target = deepprofiler.dataset.target.MetadataColumnTarget("Class", metadata.data["Class"].unique())
     dset.add_target(target)
     return dset

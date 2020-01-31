@@ -45,7 +45,7 @@ def metadata(config, make_struct):
         "R": [str(x) + ".png" for x in __rand_array()],
         "G": [str(x) + ".png" for x in __rand_array()],
         "B": [str(x) + ".png" for x in __rand_array()],
-        "Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+        "Class": ["0", "1", "2", "3", "0", "1", "2", "3", "0", "1", "2", "3"],
         "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
     }, dtype=int)
     df.to_csv(filename, index=False)
@@ -59,7 +59,7 @@ def metadata(config, make_struct):
 @pytest.fixture(scope="function")
 def dataset(metadata, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    return deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"],  config["paths"]["images"], keygen, config)
+    return deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Class", ["R", "G", "B"],  config["paths"]["images"], keygen, config)
 
 
 def test_write_compression_index(config, metadata, dataset, make_struct):
@@ -80,9 +80,6 @@ def test_split_index(config, metadata, dataset):
     test_outputs = [pd.read_csv(config["paths"]["metadata"]+"/index-000.csv"),
                     pd.read_csv(config["paths"]["metadata"]+"/index-001.csv"),
                     pd.read_csv(config["paths"]["metadata"]+"/index-002.csv")]
-    print(test_outputs[0])
-    print(test_outputs[1])
-    print(test_outputs[2])
     assert test_outputs[0].shape == (4,8)
     assert test_outputs[1].shape == (4,8)
     assert test_outputs[2].shape == (4,8)

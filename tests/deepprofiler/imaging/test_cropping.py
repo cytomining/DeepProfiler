@@ -52,7 +52,6 @@ def metadata(config, make_struct):
         "R": [str(x) + ".png" for x in __rand_array()],
         "G": [str(x) + ".png" for x in __rand_array()],
         "B": [str(x) + ".png" for x in __rand_array()],
-        #"Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
         "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
         "Target": [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
     }, dtype=int)
@@ -83,7 +82,6 @@ def dataset(metadata, config, make_struct):
         "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
     })
     locations.to_csv(path, index=False)
-    print('path', path)
     dset.prepare_training_locations()
 
     return dset
@@ -244,7 +242,6 @@ def test_single_image_crop_generator_prepare_image(single_image_crop_generator, 
         "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
     })
     locations.to_csv(path, index=False)
-    print('path', path)
     assert os.path.exists(path)
     with tf.Session(config=cpu_config) as sess:
         single_image_crop_generator.start(sess)
@@ -272,7 +269,6 @@ def test_single_image_crop_generator_generate(single_image_crop_generator, make_
         "Nuclei_Location_Center_X": np.random.randint(0, 128, 10),
         "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
     })
-    print('path', path)
     locations.to_csv(path, index=False)
     assert os.path.exists(path)
     with tf.Session(config=cpu_config) as sess:

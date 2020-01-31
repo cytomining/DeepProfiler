@@ -44,8 +44,8 @@ def make_struct(config):
     return
 
 @pytest.fixture(scope="function")
-def metadata(out_dir, make_struct):
-    filename = os.path.join(out_dir, "index.csv")
+def metadata(out_dir, make_struct, config):
+    filename = os.path.join(config["paths"]["metadata"], "index.csv")
     df = pd.DataFrame({
         "Metadata_Plate": __rand_array(),
         "Metadata_Well": __rand_array(),
@@ -54,7 +54,6 @@ def metadata(out_dir, make_struct):
         "G": [str(x) + ".png" for x in __rand_array()],
         "B": [str(x) + ".png" for x in __rand_array()],
         "Class": ["0", "1", "2", "3", "0", "1", "2", "3", "0", "1", "2", "3"],
-        #"Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
         "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
     }, dtype=int)
     df.to_csv(filename, index=False)
@@ -66,11 +65,12 @@ def metadata(out_dir, make_struct):
 
 
 @pytest.fixture(scope="function")
-def dataset(metadata, out_dir, config, make_struct):
+def dataset(metadata, out_dir, config, make_struct, locations):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Class", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
     target = deepprofiler.dataset.target.MetadataColumnTarget("Class", metadata.data["Class"].unique())
     dset.add_target(target)
+    dset.prepare_training_locations()
     return dset
 
 
@@ -120,12 +120,12 @@ def profile(config, dataset):
     return deepprofiler.learning.profiling.Profile(config, dataset)
 
 
-def test_init(config, dataset):
+def test_init(config, dataset, locations):
     metadata = deepprofiler.dataset.image_dataset.read_dataset(config)
     prof = deepprofiler.learning.profiling.Profile(config, metadata)
     test_num_channels = len(config["dataset"]["images"]["channels"])
     assert prof.config == config
-    assert prof.dset == dataset
+    #assert prof.dset == dataset
     assert prof.num_channels == test_num_channels
     assert prof.crop_generator == importlib.import_module(
         "plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"])).GeneratorClass

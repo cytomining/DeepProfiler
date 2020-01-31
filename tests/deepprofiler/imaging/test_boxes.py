@@ -46,7 +46,6 @@ def metadata(config, make_struct):
         "R": [str(x) + ".png" for x in __rand_array()],
         "G": [str(x) + ".png" for x in __rand_array()],
         "B": [str(x) + ".png" for x in __rand_array()],
-        "Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
         "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
         "Target": [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
     }, dtype=int)
@@ -61,7 +60,7 @@ def metadata(config, make_struct):
 @pytest.fixture(scope="function")
 def dataset(metadata, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Class", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
     target = deepprofiler.dataset.target.MetadataColumnTarget("Target", metadata.data["Target"].unique())
     dset.add_target(target)
     return dset

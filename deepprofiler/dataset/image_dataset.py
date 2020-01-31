@@ -41,12 +41,6 @@ class ImageLocations(object):
 
     def load_locations(self, config):
         process = deepprofiler.dataset.utils.Parallel(config, numProcs=config["train"]["sampling"]["workers"])
-        print(self.keys)
-        print('images', len(self.images))
-        print('outlines', len(self.outlines))
-        print('targets', len(self.targets))
-        for i in range(len(self.keys)):
-            print(deepprofiler.imaging.boxes.get_locations(self.keys[i], config))
         data = process.compute(self.load_loc, [x for x in range(len(self.keys))])
         process.close()
         return data
@@ -80,9 +74,7 @@ class ImageDataset():
         locations = image_loc.load_locations(self.config)
 
         locations = pd.concat(locations)
-        #print('locations', image_loc.load_loc())
         self.training_images = locations.groupby(["ImageKey", "Target"])["ID"].count().reset_index()
-        print('training images', locations)
 
         workers = self.config["train"]["sampling"]["workers"]
         batch_size = self.config["train"]["model"]["params"]["batch_size"]

@@ -50,7 +50,6 @@ def metadata(out_dir, make_struct):
         "G": [str(x) + ".png" for x in __rand_array()],
         "B": [str(x) + ".png" for x in __rand_array()],
         "Class": ["0", "1", "2", "3", "0", "1", "2", "3", "0", "1", "2", "3"],
-        "Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
         "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
     }, dtype=int)
     df.to_csv(filename, index=False)
@@ -60,13 +59,28 @@ def metadata(out_dir, make_struct):
     meta.splitMetadata(train_rule, val_rule)
     return meta
 
+@pytest.fixture(scope="function")
+def locations(out_dir, metadata, config, make_struct):
+    meta = metadata.data.iloc[0]
+    path = os.path.abspath(os.path.join(config["paths"]["locations"], meta["Metadata_Plate"]))
+    os.makedirs(path, exist_ok=True)
+    path = os.path.join(path,
+        "{}-{}-{}.csv".format(meta["Metadata_Well"],
+        meta["Metadata_Site"],
+        "Nuclei"))
+    locations = pd.DataFrame({
+        "Nuclei_Location_Center_X": np.random.randint(0, 128, 10),
+        "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
+    })
+    locations.to_csv(path, index=False)
 
 @pytest.fixture(scope="function")
-def dataset(metadata, out_dir, config, make_struct):
+def dataset(metadata, out_dir, config, locations):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Class", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
     target = deepprofiler.dataset.target.MetadataColumnTarget("Class", metadata.data["Class"].unique())
     dset.add_target(target)
+    dset.prepare_training_locations()
     return dset
 
 

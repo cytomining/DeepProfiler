@@ -10,6 +10,9 @@ import skimage
 
 import plugins.crop_generators.mixup_crop_generator
 import deepprofiler.imaging.cropping
+import deepprofiler.dataset.image_dataset
+import deepprofiler.dataset.metadata
+import deepprofiler.dataset.target
 
 def __rand_array():
     return np.array(random.sample(range(100), 12))
@@ -45,9 +48,8 @@ def metadata(config, make_struct):
         "R": [str(x) + ".png" for x in __rand_array()],
         "G": [str(x) + ".png" for x in __rand_array()],
         "B": [str(x) + ".png" for x in __rand_array()],
-        "Sampling": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
         "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
-        "Target": [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
+        "Class": [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
     }, dtype=int)
     df.to_csv(filename, index=False)
     meta = deepprofiler.dataset.metadata.Metadata(filename)
@@ -56,13 +58,28 @@ def metadata(config, make_struct):
     meta.splitMetadata(train_rule, val_rule)
     return meta
 
+@pytest.fixture(scope="function")
+def locations(out_dir, metadata, config, make_struct):
+    meta = metadata.data.iloc[0]
+    path = os.path.abspath(os.path.join(config["paths"]["locations"], meta["Metadata_Plate"]))
+    os.makedirs(path, exist_ok=True)
+    path = os.path.join(path,
+        "{}-{}-{}.csv".format(meta["Metadata_Well"],
+        meta["Metadata_Site"],
+        "Nuclei"))
+    locations = pd.DataFrame({
+        "Nuclei_Location_Center_X": np.random.randint(0, 128, 10),
+        "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
+    })
+    locations.to_csv(path, index=False)
 
 @pytest.fixture(scope="function")
-def dataset(metadata, config, make_struct):
+def dataset(metadata, config, make_struct, locations):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Sampling", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
-    target = deepprofiler.dataset.target.MetadataColumnTarget("Target", metadata.data["Target"].unique())
+    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Class", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
+    target = deepprofiler.dataset.target.MetadataColumnTarget("Class", metadata.data["Class"].unique())
     dset.add_target(target)
+    dset.prepare_training_locations()
     return dset
 
 @pytest.fixture(scope="function")
@@ -175,7 +192,7 @@ def test_start(prepared_crop_generator):  # includes test for training queues
     prepared_crop_generator.start(sess)
     assert not prepared_crop_generator.coord.joined
     assert not prepared_crop_generator.exception_occurred
-    assert len(prepared_crop_generator.queue_threads) == prepared_crop_generator.config["train"]["queueing"]["loading_workers"]
+    assert len(prepared_crop_generator.queue_threads) == prepared_crop_generator.config["train"]["sampling"]["workers"]
     assert prepared_crop_generator.batch_size == prepared_crop_generator.config["train"]["model"]["params"]["batch_size"]
     assert prepared_crop_generator.target_sizes[0] == 3
     assert isinstance(prepared_crop_generator.mixer, plugins.crop_generators.mixup_crop_generator.Mixup)
