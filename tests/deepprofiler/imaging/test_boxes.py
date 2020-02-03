@@ -47,7 +47,7 @@ def metadata(config, make_struct):
         "G": [str(x) + ".png" for x in __rand_array()],
         "B": [str(x) + ".png" for x in __rand_array()],
         "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
-        "Target": [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
+        "Class": [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
     }, dtype=int)
     df.to_csv(filename, index=False)
     meta = deepprofiler.dataset.metadata.Metadata(filename)
@@ -61,7 +61,7 @@ def metadata(config, make_struct):
 def dataset(metadata, config, make_struct):
     keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Class", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
-    target = deepprofiler.dataset.target.MetadataColumnTarget("Target", metadata.data["Target"].unique())
+    target = deepprofiler.dataset.target.MetadataColumnTarget("Class", metadata.data["Class"].unique())
     dset.add_target(target)
     return dset
 
@@ -105,13 +105,6 @@ def test_get_locations(config, make_struct):
     test_output = deepprofiler.imaging.boxes.get_locations(test_image_key, config, random_sample=10, seed=1414)
     assert test_output.equals(expected_output)
 
-'''
-def test_load_batch(loadbatch):
-    test_batch = loadbatch
-    expected_batch_locations = 12*[pd.DataFrame(columns=["Nuclei_Location_Center_X", "Nuclei_Location_Center_Y"])]
-    for i in range(12):
-       assert test_batch["locations"][i].equals(expected_batch_locations[i])
-'''
 
 def test_prepare_boxes(config):
     test_batch = {"images": [np.random.randint(256, size=(64, 64), dtype=np.uint16)], "targets": [[1]], "locations": [pd.DataFrame(data=[[32,32]],columns=["Nuclei_Location_Center_X", "Nuclei_Location_Center_Y"])]}

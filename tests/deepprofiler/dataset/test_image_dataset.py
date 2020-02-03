@@ -106,16 +106,6 @@ def test_get_image_paths(metadata, out_dir, dataset, config, make_struct):
         assert image == testImage
         assert outlines == testOutlines
 
-'''
-def test_sample_images(metadata, out_dir, dataset, config, make_struct):
-    n = 3
-    keys, images, targets, outlines = dataset.sampleImages(dataset.sampling_values, n)
-    print(keys, images, targets, outlines)
-    assert len(keys) == 2 * n
-    assert len(images) == 2 * n
-    assert len(targets) == 2 * n
-    assert len(outlines) == 2 * n
-'''
 
 def test_get_train_batch(metadata, out_dir, dataset, config, make_struct):
     images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
