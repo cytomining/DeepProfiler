@@ -113,15 +113,10 @@ def test_get_train_batch(metadata, out_dir, dataset, config, make_struct):
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["R"][i // 3]), images[:, :, i])
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["G"][i // 3]), images[:, :, i + 1])
         skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["B"][i // 3]), images[:, :, i + 2])
-    #batch_size = 3
+
     lock = threading.Lock()
     batch = dataset.get_train_batch(lock)
-
-    assert len(batch) == config['train']['model']['params']['batch_size']
-    for image in batch["images"]:
-        assert image.shape == (128, 128, config['train']['model']['params']['batch_size'])
-        for i in range(config['train']['model']['params']['batch_size']):
-            assert image[:, :, i] in np.rollaxis(images, -1)
+    assert len(batch) == int(dataset.sample_locations * dataset.load_factor * dataset.sampling_factor) * config['train']['model']['params']['batch_size']
 
 
 def test_scan(metadata, out_dir, dataset, config, make_struct):
