@@ -125,7 +125,7 @@ def test_init(config, dataset, locations):
     prof = deepprofiler.learning.profiling.Profile(config, metadata)
     test_num_channels = len(config["dataset"]["images"]["channels"])
     assert prof.config == config
-    assert prof.dset.config == config
+    assert prof.dset.config == dataset.config
     assert prof.num_channels == test_num_channels
     assert prof.crop_generator == importlib.import_module(
         "plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"])).GeneratorClass

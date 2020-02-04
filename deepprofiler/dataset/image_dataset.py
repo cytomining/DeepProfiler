@@ -28,14 +28,12 @@ class ImageLocations(object):
         # Load cell locations for one image
         i, config = params
         loc = deepprofiler.imaging.boxes.get_locations(self.keys[i], config)
-        print('locations', loc)
         loc["ID"] = loc.index
         loc["ImageKey"] = self.keys[i]
         loc["ImagePaths"] = "#".join(self.images[i])
         loc["Target"] = self.targets[i][0]
         loc["Outlines"] = self.outlines[i]
         print("Image", i, ":", len(loc), "cells", end="\r")
-        print('locations', loc)
         return loc
 
 

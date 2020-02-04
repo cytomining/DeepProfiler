@@ -60,18 +60,19 @@ def metadata(config, make_struct):
 
 @pytest.fixture(scope="function")
 def locations(out_dir, metadata, config, make_struct):
-    meta = metadata.data.iloc[0]
-    path = os.path.abspath(os.path.join(config["paths"]["locations"], meta["Metadata_Plate"]))
-    os.makedirs(path, exist_ok=True)
-    path = os.path.join(path,
-        "{}-{}-{}.csv".format(meta["Metadata_Well"],
-        meta["Metadata_Site"],
-        "Nuclei"))
-    locations = pd.DataFrame({
-        "Nuclei_Location_Center_X": np.random.randint(0, 128, 10),
-        "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
-    })
-    locations.to_csv(path, index=False)
+    for i in range(len(metadata.data.index)):
+        meta = metadata.data.iloc[i]
+        path = os.path.abspath(os.path.join(config["paths"]["locations"], meta["Metadata_Plate"]))
+        os.makedirs(path, exist_ok=True)
+        path = os.path.abspath(os.path.join(path, "{}-{}-{}.csv".format(meta["Metadata_Well"],
+                                                  meta["Metadata_Site"],
+                                                  "Nuclei")))
+        locs = pd.DataFrame({
+            "Nuclei_Location_Center_X": np.random.randint(0, 128, 10),
+            "Nuclei_Location_Center_Y": np.random.randint(0, 128, 10)
+        })
+        locs.to_csv(path, index=False)
+
 
 @pytest.fixture(scope="function")
 def dataset(metadata, config, make_struct, locations):
