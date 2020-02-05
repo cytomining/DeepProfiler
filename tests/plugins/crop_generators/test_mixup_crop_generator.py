@@ -125,6 +125,7 @@ def test_start(prepared_crop_generator):  # includes test for training queues
     assert not prepared_crop_generator.exception_occurred
     assert len(prepared_crop_generator.queue_threads) == prepared_crop_generator.config["train"]["sampling"]["workers"]
     assert prepared_crop_generator.batch_size == prepared_crop_generator.config["train"]["model"]["params"]["batch_size"]
+    # TODO check this number next line, used to be 3, test is passed atm
     assert prepared_crop_generator.target_sizes[0] == 4
     assert isinstance(prepared_crop_generator.mixer, plugins.crop_generators.mixup_crop_generator.Mixup)
     prepared_crop_generator.stop(sess)
