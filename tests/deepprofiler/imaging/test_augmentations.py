@@ -26,5 +26,4 @@ def test_augment_multiple():
     augmented = deepprofiler.imaging.augmentations.augment_multiple(crops)
     with tf.Session(config=config) as sess:
         augmented = augmented.eval()
-    print(augmented.shape, crops.shape)
     assert augmented.shape == crops.shape

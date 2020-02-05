@@ -51,7 +51,6 @@ def test_metric(config, make_struct):
         y_pred = np.array([[0,1],[0,1]])
         expected_output = 0.5
         output = metric.metric(y_true, y_pred).eval()
-        print(output)
         assert output == expected_output
         assert is_method(metric, "metric")
 

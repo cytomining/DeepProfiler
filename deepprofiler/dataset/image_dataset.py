@@ -15,7 +15,6 @@ class ImageLocations(object):
         self.images = []
         self.targets = []
         self.outlines = []
-
         for i, r in metadata_training.iterrows():
             key, image, outl = getImagePaths(r)
             self.keys.append(key)
@@ -58,6 +57,7 @@ class ImageDataset():
         self.outlines = None
         self.config = config
         self.load_factor = 0.25
+
 
     def get_image_paths(self, r):
         key = self.keyGen(r)
