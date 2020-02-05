@@ -1,79 +1,11 @@
 import numpy as np
-import pytest
 import pandas as pd
 import os
-import shutil
-import json
-import random
-import skimage.io
 
 import deepprofiler.imaging.boxes
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.metadata
 
-def __rand_array():
-    return np.array(random.sample(range(100), 12))
-
-
-@pytest.fixture(scope="function")
-def out_dir(tmpdir):
-    return os.path.abspath(tmpdir.mkdir("test"))
-
-@pytest.fixture(scope="function")
-def config(out_dir):
-    with open("tests/files/config/test.json", "r") as f:
-        config = json.load(f)
-    for path in config["paths"]:
-        config["paths"][path] = out_dir + config["paths"].get(path)
-    config["paths"]["root_dir"] = out_dir
-    return config
-
-@pytest.fixture(scope="function")
-def make_struct(config):
-    for key, path in config["paths"].items():
-        if key not in ["index", "config_file", "root_dir"]:
-            os.makedirs(path+"/")
-    return
-
-
-@pytest.fixture(scope="function")
-def metadata(config, make_struct):
-    filename = os.path.join(config["paths"]["metadata"], "index.csv")
-    df = pd.DataFrame({
-        "Metadata_Plate": __rand_array(),
-        "Metadata_Well": __rand_array(),
-        "Metadata_Site": __rand_array(),
-        "R": [str(x) + ".png" for x in __rand_array()],
-        "G": [str(x) + ".png" for x in __rand_array()],
-        "B": [str(x) + ".png" for x in __rand_array()],
-        "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
-        "Class": [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
-    }, dtype=int)
-    df.to_csv(filename, index=False)
-    meta = deepprofiler.dataset.metadata.Metadata(filename)
-    train_rule = lambda data: data["Split"].astype(int) == 0
-    val_rule = lambda data: data["Split"].astype(int) == 1
-    meta.splitMetadata(train_rule, val_rule)
-    return meta
-
-
-@pytest.fixture(scope="function")
-def dataset(metadata, config, make_struct):
-    keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
-    dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Class", ["R", "G", "B"], config["paths"]["root_dir"], keygen, config)
-    target = deepprofiler.dataset.target.MetadataColumnTarget("Class", metadata.data["Class"].unique())
-    dset.add_target(target)
-    return dset
-
-@pytest.fixture(scope="function")
-def loadbatch(dataset, metadata, out_dir, config, make_struct):
-    images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
-    for i in range(0, 36, 3):
-        skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["R"][i // 3]), images[:, :, i])
-        skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["G"][i // 3]), images[:, :, i + 1])
-        skimage.io.imsave(os.path.join(out_dir, dataset.meta.data["B"][i // 3]), images[:, :, i + 2])
-    result = deepprofiler.imaging.boxes.load_batch(dataset, config)
-    return result
 
 def test_get_locations(config, make_struct):
     test_image_key = "dog/cat"

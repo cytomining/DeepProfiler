@@ -3,8 +3,6 @@ import numpy
 import numpy.testing
 import numpy.random
 import pytest
-import skimage.exposure
-import skimage.util
 
 
 @pytest.fixture(scope="function")
