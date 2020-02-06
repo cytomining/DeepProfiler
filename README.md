@@ -22,7 +22,7 @@ pip install -e .
 When running DeepProfiler you usually need to specify a root directory where your data is stored and a command that you want to run. 
 For instance, to initialize your project, you can use:
 <pre>
-python deepprofiler --root=/home/ubuntu/project setup
+python deepprofiler --root=/home/ubuntu/project --config=config.json --gpu 0 setup
 </pre>
 In the created directories, you will need to organize your input files, including metadata, images and single-cell locations. 
 See more details about the [project structure here](https://github.com/broadinstitute/DeepProfiler/wiki/2.-Project-structure).
@@ -30,13 +30,13 @@ See more details about the [project structure here](https://github.com/broadinst
 Next, if you want to train a model, as specified in the [configuration file](https://github.com/broadinstitute/DeepProfiler/wiki/3.-The-configuration-file), you can then run the following command:
 
 <pre>
-python deepprofiler --root=/home/ubuntu/project/ train
+python deepprofiler --root=/home/ubuntu/project/ --config filename.json --gpu 0 train
 </pre>
 
 And to extract single-cell embeddings, use:
 
 <pre>
-python deepprofiler --root=/home/ubuntu/project/ profile
+python deepprofiler --root=/home/ubuntu/project/ --config filename.json --gpu 0 profile
 </pre>
 
 Find more information in the [training and profiling](https://github.com/broadinstitute/DeepProfiler/wiki/4.-Training-and-Profiling) section of our wiki.
