@@ -109,12 +109,16 @@ class ImageDataset():
             factor = 1
         else:
             factor = self.load_factor
+
+        worker_efficiency = int(100 * (self.image_rotation / self.training_sample.shape[0]) * factor)
+        queue_usage = int(100 * self.queue_records / self.cells_per_epoch)
         print("Training set coverage: {}% (worker efficiency). Data rotation: {}% (queue usage).".format(
-                  int(100 * (self.image_rotation / self.training_sample.shape[0]) * factor),
-                  int(100 * self.queue_records / self.cells_per_epoch))
+                  worker_efficiency,
+                  queue_usage)
         )
         self.image_rotation = 0
         self.queue_records = 0
+        return {'worker_efficiency': worker_efficiency, 'queue_usage': queue_usage }
 
     def shuffle_training_images(self):
         sample = []

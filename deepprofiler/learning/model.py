@@ -62,7 +62,7 @@ class DeepProfilerModel(abc.ABC):
             # Load weights
             load_weights(self, epoch)
             # Create callbacks
-            callbacks = setup_callbacks(self, lr_schedule_epochs, lr_schedule_lr, self.dset)
+            callbacks = setup_callbacks(self, lr_schedule_epochs, lr_schedule_lr, self.dset, experiment)
         else:
             callbacks = None
         # Create params (epochs, steps, log model params to comet ml)
@@ -153,7 +153,7 @@ def load_weights(dpmodel, epoch):
         keras.backend.get_session().run(tf.global_variables_initializer())
 
 
-def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset):
+def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experiment):
     # Checkpoints
     output_file = dpmodel.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
     callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
@@ -169,7 +169,7 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset):
     # Queue stats
     qstats = keras.callbacks.LambdaCallback(
         on_train_begin=lambda logs: dset.show_setup(),
-        on_epoch_end=lambda epoch, logs: dset.show_stats()
+        on_epoch_end=lambda epoch, logs: experiment.log_metrics(dset.show_stats())
     )
 
     # Learning rate schedule
