@@ -169,7 +169,7 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
     # Queue stats
     qstats = keras.callbacks.LambdaCallback(
         on_train_begin=lambda logs: dset.show_setup(),
-        on_epoch_end=lambda epoch, logs: experiment.log_metrics(dset.show_stats())
+        on_epoch_end=lambda epoch, logs: experiment.log_metrics(dset.show_stats()) if experiment else dset.show_stats()
     )
 
     # Learning rate schedule
