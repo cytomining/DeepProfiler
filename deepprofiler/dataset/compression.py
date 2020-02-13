@@ -6,6 +6,7 @@ import skimage.transform
 import os.path
 import skimage
 import skimage.io
+import skimage.exposure
 
 import deepprofiler.dataset.utils
 import deepprofiler.dataset.illumination_statistics
@@ -92,7 +93,7 @@ class Compress():
             image = skimage.exposure.rescale_intensity(image)
             image = skimage.img_as_ubyte(image)
             if self.metadata_control_filter(meta):
-                self.controls_distribution[c] += numpy.histogram(image)[0]
+                self.controls_distribution[c] += numpy.histogram(image, bins=256)[0]
             skimage.io.imsave(self.target_path(meta[self.channels[c]]), image)
         return
 
@@ -118,7 +119,8 @@ def compress_plate(args):
         config["dataset"]["metadata"]["label_field"],
         config["dataset"]["images"]["channels"],
         config["paths"]["images"],
-        keyGen
+        keyGen,
+        config
     )
 
     # Configure compression object
@@ -135,7 +137,7 @@ def compress_plate(args):
     compress.expected = dset.number_of_records("all")
 
     # Setup control samples filter (for computing control illumination statistics)
-    filter_func = lambda x: x[config["dataset"]["metadata"]["label_field"]] == config["dataset"]["metadata"]["control_id"]
+    filter_func = lambda x: x[config["dataset"]["metadata"]["label_field"]] == config["dataset"]["metadata"]["control_value"]
     compress.set_control_samples_filter(filter_func)
 
     # Run compression

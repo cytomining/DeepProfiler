@@ -99,7 +99,6 @@ class IlluminationStatistics():
 def calculate_statistics(args):
     # Load input parameters
     plate, config = args
-
     plateName = plate.data["Metadata_Plate"].iloc[0]
 
     outfile = illum_stats_filename(config["paths"]["intensities"], plateName)
@@ -116,7 +115,8 @@ def calculate_statistics(args):
         config["dataset"]["metadata"]["label_field"],
         config["dataset"]["images"]["channels"],
         config["paths"]["images"],
-        keyGen
+        keyGen,
+        config
     )
 
     # Prepare ImageStatistics object
