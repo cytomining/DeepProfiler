@@ -73,13 +73,13 @@ class Profile(object):
             print("No cells to profile:", output_file)
             return
         num_features = self.config["train"]["model"]["params"]["feature_dim"]
-        repeats = "channel_repeats" in self.config["dataset"]["images"].keys()
+        repeats = self.config["train"]["model"]["crop_generator"] == "repeat_channel_crop_generator"
         
         # Extract features
         crops = next(self.profile_crop_generator.generate(self.sess))[0]  # single image crop generator yields one batch
         feats = self.feat_extractor.predict(crops, batch_size=batch_size)
         if repeats:
-            feats = np.reshape(feats, (self.num_channels, total_crops, num_features))
+            feats = np.reshape(feats, (self.num_channels, total_crops, -1))
             feats = np.concatenate(feats, axis=-1)
             
         # Save features
