@@ -79,7 +79,7 @@ class DeepProfilerModel(abc.ABC):
             verbose=verbose,
             initial_epoch=epoch - 1,
             validation_data=(x_validation, y_validation),
-            validation_freq=freq
+            #validation_freq=freq
         ) 
             
         # Stop threads and close sessions
