@@ -82,17 +82,14 @@ class Compress():
             image = skimage.transform.resize(image, self.output_shape, mode="reflect", anti_aliasing=True)
 
             # Clip illumination values (remove 0.1% of the illumination distribution)
-            pmin, pmax = self.stats["lower_percentiles"][c], self.stats["upper_percentiles"][c]
-            vmin, vmax = scipy.stats.scoreatpercentile(image, (0.05, 99.95))
             # Compare the 99.95 percentile of the image with the 99.99 percentile of the plate
             # Keep the smallest to compensate for saturated pixels before compression
-            if vmax > pmax: 
-                vmax = pmax
-            image[image < vmin] = vmin
-            image[image > vmax] = vmax
+            pmin, pmax = self.stats["lower_percentiles"][c], self.stats["upper_percentiles"][c]
+            vmin, vmax = scipy.stats.scoreatpercentile(image, (0.05, 99.95))
+            vmax = min(vmax, pmax)
+            image = skimage.exposure.rescale_intensity(image, in_range=(vmin, vmax))
 
             # Save resulting image in 8-bits PNG format
-            image = skimage.exposure.rescale_intensity(image)
             image = skimage.img_as_ubyte(image)
             if self.metadata_control_filter(meta):
                 self.controls_distribution[c] += numpy.histogram(image, bins=256)[0]
