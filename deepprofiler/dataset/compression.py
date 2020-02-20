@@ -76,21 +76,20 @@ class Compress():
         deepprofiler.dataset.utils.print_progress(self.count, self.expected)
         for c in range(len(self.channels)):
             # Illumination correction
-            # TODO: Can this operation be applied at once in all channels?
             image = img[:, :, c] / self.stats["illum_correction_function"][:, :, c]
+
             # Downscale
             image = skimage.transform.resize(image, self.output_shape, mode="reflect", anti_aliasing=True)
-            # Clip illumination values
-            plate_stats = False
-            if plate_stats:
-                vmin, vmax = self.stats["lower_percentiles"][c], self.stats["upper_percentiles"][c]
-            else:
-                vmin, vmax = scipy.stats.scoreatpercentile(image, (0.1, 99.1))
-            image[image < vmin] = vmin
-            image[image > vmax] = vmax
+
+            # Clip illumination values (remove 0.1% of the illumination distribution)
+            # Compare the 99.95 percentile of the image with the 99.99 percentile of the plate
+            # Keep the smallest to compensate for saturated pixels before compression
+            pmin, pmax = self.stats["lower_percentiles"][c], self.stats["upper_percentiles"][c]
+            vmin, vmax = scipy.stats.scoreatpercentile(image, (0.05, 99.95))
+            vmax = min(vmax, pmax)
+            image = skimage.exposure.rescale_intensity(image, in_range=(vmin, vmax))
 
             # Save resulting image in 8-bits PNG format
-            image = skimage.exposure.rescale_intensity(image)
             image = skimage.img_as_ubyte(image)
             if self.metadata_control_filter(meta):
                 self.controls_distribution[c] += numpy.histogram(image, bins=256)[0]
