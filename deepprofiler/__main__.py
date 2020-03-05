@@ -1,5 +1,6 @@
 import json
 import os
+import copy
 
 import click
 
@@ -70,7 +71,7 @@ def cli(context, root, config, exp, cores, gpu):
                 else:
                     dirs[key] = params["paths"][key]
         else:
-            params["paths"] = dirs
+            params["paths"] = copy.deepcopy(dirs)
 
         if os.path.isdir(dirs["images"]):
             for k in ["results", "checkpoints", "logs", "summaries", "features"]:
