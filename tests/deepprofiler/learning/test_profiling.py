@@ -23,7 +23,8 @@ def checkpoint(config, dataset):
         .ModelClass(config, dataset, crop_generator, profile_crop_generator)
     dpmodel.feature_model.compile(dpmodel.optimizer, dpmodel.loss)
     filename = os.path.join(config["paths"]["checkpoints"], config["profile"]["checkpoint"])
-    dpmodel.feature_model.save_weights(filename)
+    with tf.Session().as_default():
+        dpmodel.feature_model.save_weights(filename)
     return filename
 
 
