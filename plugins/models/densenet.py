@@ -3,21 +3,18 @@
 - [Densely Connected Convolutional Networks](https://arxiv.org/pdf/1608.06993.pdf)
 - [The One Hundred Layers Tiramisu: Fully Convolutional DenseNets for Semantic Segmentation](https://arxiv.org/pdf/1611.09326.pdf)
 '''
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-
-import warnings
-
-from comet_ml import Experiment
-
-
 import keras
 import keras.applications
-import tensorflow as tf
 
 from deepprofiler.learning.model import DeepProfilerModel
 
+supported_models = {
+    121: keras.applications.DenseNet121,
+    169: keras.applications.DenseNet169,
+    201: keras.applications.DenseNet201
+}
+
+SM = "DenseNet supported models: " + ",".join([str(x) for x in supported_models.keys()])
 
 def define_model(config, dset):
     # 1. Create ResNet architecture to extract features
@@ -28,23 +25,39 @@ def define_model(config, dset):
     )
     input_image = keras.layers.Input(input_shape)
 
+    num_layers = config["train"]["model"]["params"]["conv_blocks"]
+    error_msg = str(num_layers) + " conv_blocks not in " + SM
+    assert num_layers in supported_models.keys(), error_msg
 
-    model = keras.applications.DenseNet121(
-         input_shape=input_shape, 
-         classes=dset.targets[0].shape[1], 
-         input_tensor=input_image,
-         weights=None
-    )
+    pooling = config["train"]["model"]["params"]["pooling"]
+    model = supported_models[num_layers](input_tensor=input_image,
+                                         include_top=False,
+                                         pooling=pooling,
+                                         input_shape=input_shape,
+                                         classes=dset.targets[0].shape[1])
+
+    features = model.get_layer(index=-1).name = "{}_pool".format(config["train"]["model"]["params"]["pooling"])
 
     # TODO: factorize the multi-target output model
+
+    # 2. Create an output embedding for each target
+    class_outputs = []
+
+    i = 0
+    for t in dset.targets:
+        y = keras.layers.Dense(t.shape[1], activation="softmax", name=t.field_name)(model.output)
+        class_outputs.append(y)
+        i += 1
 
     # 3. Define the loss function
     loss_func = "categorical_crossentropy"
 
     # 4. Create and compile model
-    optimizer = keras.optimizers.Adam(lr=config["train"]["model"]["params"]["learning_rate"])
+    model = keras.models.Model(input_image, class_outputs)
+    optimizer = keras.optimizers.SGD(lr=config["train"]["model"]["params"]["learning_rate"], momentum=0.9, nesterov=True)
 
     return model, optimizer, loss_func
+
 
 class ModelClass(DeepProfilerModel):
     def __init__(self, config, dset, generator, val_generator):
