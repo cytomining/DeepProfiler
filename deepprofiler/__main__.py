@@ -33,9 +33,12 @@ import deepprofiler.download.normalize_bbbc021_metadata
 @click.option("--exp", default="results",
               help="Name of experiment",
               type=click.STRING)
+@click.option("--cometml_key", default=None,
+              help="Path to file with comet.ml API key",
+              type=click.STRING)
 
 @click.pass_context
-def cli(context, root, config, exp, cores, gpu):
+def cli(context, root, config, exp, cores, gpu, cometml_key):
     dirs = {
         "root": root,
         "locations": root + "/inputs/locations/",  # TODO: use os.path.join()
@@ -81,6 +84,11 @@ def cli(context, root, config, exp, cores, gpu):
         params["experiment_name"] = exp
         params["paths"]["index"] = params["paths"]["metadata"] + "/index.csv"
         context.obj["config"] = params
+        if cometml_key:
+            with open(cometml_key, "r") as f:
+                cometml_params = json.load(f)
+                context.obj["config"]["train"]["comet_ml"]["api_key"] = cometml_params["api_key"]
+                context.obj["config"]["train"]["comet_ml"]["project_name"] = cometml_params["project_name"]
     elif context.invoked_subcommand != 'setup':
         raise Exception("Config does not exists; make sure that the file exists in /inputs/config/")
 

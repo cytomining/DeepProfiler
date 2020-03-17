@@ -30,8 +30,6 @@ class DeepProfilerModel(abc.ABC):
         self.train_crop_generator = crop_generator(config, dset)
         self.val_crop_generator = val_crop_generator(config, dset)
         self.random_seed = None
-        if "comet_ml" not in config["train"].keys():
-            self.config["train"]["comet_ml"]["track"] = False
 
     def seed(self, seed):
         self.random_seed = seed
@@ -108,7 +106,7 @@ def check_feature_model(dpmodel):
 
 
 def setup_comet_ml(dpmodel):
-    if dpmodel.config["train"]["comet_ml"]["track"]:
+    if dpmodel.config["train"]["comet_ml"]:
         experiment = comet_ml.Experiment(
             api_key=dpmodel.config["train"]["comet_ml"]["api_key"],
             project_name=dpmodel.config["train"]["comet_ml"]["project_name"]
@@ -179,7 +177,7 @@ def setup_params(dpmodel, experiment):
     steps = dpmodel.dset.steps_per_epoch
     lr_schedule_epochs = []
     lr_schedule_lr = []
-    if dpmodel.config["train"]["comet_ml"]["track"]:
+    if dpmodel.config["train"]["comet_ml"]:
         params = dpmodel.config["train"]["model"]["params"]
         experiment.log_others(params)
     if "lr_schedule" in dpmodel.config["train"]["model"]:
