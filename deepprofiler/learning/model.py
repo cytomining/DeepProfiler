@@ -106,7 +106,7 @@ def check_feature_model(dpmodel):
 
 
 def setup_comet_ml(dpmodel):
-    if dpmodel.config["train"]["comet_ml"]:
+    if 'comet_ml' in dpmodel.config["train"].keys():
         experiment = comet_ml.Experiment(
             api_key=dpmodel.config["train"]["comet_ml"]["api_key"],
             project_name=dpmodel.config["train"]["comet_ml"]["project_name"]
@@ -177,7 +177,7 @@ def setup_params(dpmodel, experiment):
     steps = dpmodel.dset.steps_per_epoch
     lr_schedule_epochs = []
     lr_schedule_lr = []
-    if dpmodel.config["train"]["comet_ml"]:
+    if 'comet_ml' in dpmodel.config["train"].keys():
         params = dpmodel.config["train"]["model"]["params"]
         experiment.log_others(params)
     if "lr_schedule" in dpmodel.config["train"]["model"]:

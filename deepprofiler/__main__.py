@@ -87,6 +87,7 @@ def cli(context, root, config, exp, cores, gpu, cometml_key):
         if cometml_key:
             with open(cometml_key, "r") as f:
                 cometml_params = json.load(f)
+                context.obj["config"]["train"]["comet_ml"] = {}
                 context.obj["config"]["train"]["comet_ml"]["api_key"] = cometml_params["api_key"]
                 context.obj["config"]["train"]["comet_ml"]["project_name"] = cometml_params["project_name"]
     elif context.invoked_subcommand != 'setup':
