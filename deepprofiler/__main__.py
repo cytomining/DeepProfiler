@@ -85,7 +85,7 @@ def cli(context, root, config, exp, cores, gpu, cometml_key):
         params["paths"]["index"] = params["paths"]["metadata"] + "/index.csv"
         context.obj["config"] = params
         if cometml_key:
-            with open(cometml_key, "r") as f:
+            with open(os.path.join(dirs["config"], cometml_key), "r") as f:
                 cometml_params = json.load(f)
                 context.obj["config"]["train"]["comet_ml"] = {}
                 context.obj["config"]["train"]["comet_ml"]["api_key"] = cometml_params["api_key"]
