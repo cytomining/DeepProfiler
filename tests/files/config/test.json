@@ -62,11 +62,6 @@
             "workers": 2,
             "alpha": 0.2
         },
-        "comet_ml": {
-            "track": false,
-            "api_key": "",
-            "project_name": "test"
-          },
           "validation": {
               "top_k": 1,
               "batch_size": 2,
