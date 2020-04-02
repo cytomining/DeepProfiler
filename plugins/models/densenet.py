@@ -33,10 +33,13 @@ def define_model(config, dset):
     model = supported_models[num_layers](input_tensor=input_image,
                                          include_top=False,
                                          pooling=pooling,
+                                         weights=None,
                                          input_shape=input_shape,
+
                                          classes=dset.targets[0].shape[1])
 
-    features = model.get_layer(index=-1).name = "{}_pool".format(config["train"]["model"]["params"]["pooling"])
+    features = keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-2].output)
+
 
     # TODO: factorize the multi-target output model
 
@@ -45,7 +48,7 @@ def define_model(config, dset):
 
     i = 0
     for t in dset.targets:
-        y = keras.layers.Dense(t.shape[1], activation="softmax", name=t.field_name)(model.output)
+        y = keras.layers.Dense(t.shape[1], activation="softmax", name=t.field_name)(features)
         class_outputs.append(y)
         i += 1
 
@@ -54,6 +57,7 @@ def define_model(config, dset):
 
     # 4. Create and compile model
     model = keras.models.Model(input_image, class_outputs)
+    model = keras.models.model_from_json(model.to_json())
     optimizer = keras.optimizers.SGD(lr=config["train"]["model"]["params"]["learning_rate"], momentum=0.9, nesterov=True)
 
     return model, optimizer, loss_func
