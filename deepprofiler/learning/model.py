@@ -87,7 +87,7 @@ class DeepProfilerModel(abc.ABC):
         return self.feature_model, x_validation, y_validation
 
     
-    def get_pretrained_weights(self):
+    def copy_pretrained_weights(self):
         # Override this method if the model can load pretrained weights
         print("This model does not support ImageNet pretrained weights initialization")
         return
@@ -103,7 +103,7 @@ class DeepProfilerModel(abc.ABC):
             # Initialize all tf variables
             keras.backend.get_session().run(tf.global_variables_initializer())
             if self.config["train"]["model"]["initialization"] == "ImageNet":
-                self.get_pretrained_weights()
+                self.copy_pretrained_weights()
             return False
 
 

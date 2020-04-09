@@ -51,11 +51,6 @@ def define_model(config, dset):
     optimizer = keras.optimizers.SGD(lr=config["train"]["model"]["params"]["learning_rate"], momentum=0.9, nesterov=True)
     # optimizer = keras.optimizers.Adam(lr=config["train"]["model"]["params"]["learning_rate"])
 
-    finetuning = config["train"]["model"]["finetuning"]
-    if finetuning > 0:
-        for layer in model.layers[:-finetuning]:
-            layer.trainable = False
- 
     return model, optimizer, loss_func
 
 
@@ -65,7 +60,7 @@ class ModelClass(DeepProfilerModel):
         self.feature_model, self.optimizer, self.loss = define_model(config, dset)
 
 
-    def get_pretrained_weights(self):
+    def copy_pretrained_weights(self):
         base_model = keras.applications.ResNet50(weights='imagenet', include_top=False)
         # => Transfer all weights except conv1.1
         for i in range(3,len(base_model.layers)):
