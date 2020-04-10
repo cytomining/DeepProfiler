@@ -83,9 +83,10 @@ class ModelClass(DeepProfilerModel):
     def copy_pretrained_weights(self):
         base_model = self.get_model(self.config, weights="imagenet")
         # => Transfer all weights except conv1.1
-        for i in range(3,len(base_model.layers)):
+        total_layers = len(base_model.layers)
+        for i in range(3,total_layers):
             if len(base_model.layers[i].weights) > 0:
-                print("Setting weights for layer",i, end="\r")
+                print("Setting pre-trained weights: {:.2f}%".format((i/total_layers)*100), end="\r")
                 self.feature_model.layers[i].set_weights(base_model.layers[i].get_weights())
         
         # => Replicate filters of first layer as needed
