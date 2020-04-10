@@ -81,10 +81,11 @@ class ModelClass(DeepProfilerModel):
 
     ## Support for ImageNet initialization
     def copy_pretrained_weights(self):
-        base_model = self.get_model(self.config, weights='imagenet')
+        base_model = self.get_model(self.config, weights="imagenet")
         # => Transfer all weights except conv1.1
         for i in range(3,len(base_model.layers)):
             if len(base_model.layers[i].weights) > 0:
+                print("Setting weights for layer",i, end="\r")
                 self.feature_model.layers[i].set_weights(base_model.layers[i].get_weights())
         
         # => Replicate filters of first layer as needed
@@ -95,7 +96,10 @@ class ModelClass(DeepProfilerModel):
         for i in range(new_weights.shape[2]):
             j = i%available_channels
             new_weights[:,:,i,:] = weights[0][:,:,j,:]
-            self.feature_model.layers[2].set_weights([new_weights, weights[1]])
+            weights_array = [new_weights]
+            if len(weights) > 1: 
+                weights_array += weights[1:]
+            self.feature_model.layers[2].set_weights(weights_array)
         print("Network initialized with pretrained ImageNet weights")
 
 
