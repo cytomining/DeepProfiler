@@ -44,8 +44,7 @@ def test_get_train_batch(metadata, out_dir, dataset, config, make_struct):
 
     lock = threading.Lock()
     batch = dataset.get_train_batch(lock)
-    # TODO check if it is correct
-    assert len(batch) == int(dataset.sample_locations * dataset.load_factor * dataset.sampling_factor) * config['train']['model']['params']['batch_size']
+    assert len(batch["keys"]) == int(config["train"]["model"]["params"]["batch_size"] / config["train"]["sampling"]["workers"]) 
 
 
 def test_scan(metadata, out_dir, dataset, config, make_struct):

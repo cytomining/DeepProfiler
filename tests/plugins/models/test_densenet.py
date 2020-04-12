@@ -18,17 +18,6 @@ def val_generator():
     return deepprofiler.imaging.cropping.SingleImageCropGenerator
 
 
-def test_define_model(config, dataset):
-    config["train"]["model"]["name"] = "densenet"
-    config["train"]["model"]["params"]["conv_blocks"] = 121
-    config["train"]["sampling"]["box_size"] = 32
-    config["train"]["model"]["params"]["pooling"] = 'avg'
-    model, optimizer, loss = plugins.models.densenet.define_model(config, dataset)
-    assert isinstance(model, keras.Model)
-    assert isinstance(optimizer, str) or isinstance(optimizer, keras.optimizers.Optimizer)
-    assert isinstance(loss, str) or callable(loss)
-
-
 def test_init(config, dataset, generator, val_generator):
     config["train"]["model"]["name"] = "densenet"
     config["train"]["model"]["params"]["conv_blocks"] = 121
