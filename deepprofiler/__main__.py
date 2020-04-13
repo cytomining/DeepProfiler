@@ -27,7 +27,7 @@ import deepprofiler.download.normalize_bbbc021_metadata
 @click.option("--cores", default=0,
               help="Number of CPU cores for parallel processing (all=0)",
               type=click.INT)
-@click.option("--gpu", default='0',
+@click.option("--gpu", default="0",
               help="GPU device id",
               type=click.STRING)
 @click.option("--exp", default="results",
