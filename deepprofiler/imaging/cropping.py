@@ -47,7 +47,7 @@ class CropGenerator(object):
         crop_channels = len(self.config["dataset"]["images"]["channels"])
 
         # Identify image and box sizes
-        box_size = self.config["train"]["sampling"]["box_size"]
+        box_size = self.config["dataset"]["locations"]["box_size"]
         img_width = self.config["dataset"]["images"]["width"]
         img_height = self.config["dataset"]["images"]["height"]
 

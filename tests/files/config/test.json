@@ -14,6 +14,12 @@
             "width": 128,
             "height": 128,
             "bits": 16
+        },
+        "locations": {
+            "mode": "single_cells",
+            "box_size": 32,
+            "area_coverage": 1.0,
+            "mask_objects": false
         }
     },
     "prepare": {
@@ -56,8 +62,6 @@
         },
         "sampling": {
             "factor": 1.0,
-            "box_size": 16,
-            "mask_objects": false,
             "queue_size": 10,
             "workers": 2,
             "alpha": 0.2

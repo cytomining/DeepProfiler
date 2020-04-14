@@ -139,8 +139,8 @@ def test_generate(prepared_crop_generator):
     for i in range(test_steps):
         data = next(generator)
         assert np.array(data[0]).shape == (prepared_crop_generator.config["train"]["model"]["params"]["batch_size"],
-                                           prepared_crop_generator.config["train"]["sampling"]["box_size"],
-                                           prepared_crop_generator.config["train"]["sampling"]["box_size"],
+                                           prepared_crop_generator.config["dataset"]["locations"]["box_size"],
+                                           prepared_crop_generator.config["dataset"]["locations"]["box_size"],
                                            len(prepared_crop_generator.config["dataset"]["images"]["channels"]))
         assert data[1].shape == (prepared_crop_generator.config["train"]["model"]["params"]["batch_size"], prepared_crop_generator.dset.targets[0].shape[1])
     prepared_crop_generator.stop(sess)

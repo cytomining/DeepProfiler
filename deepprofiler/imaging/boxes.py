@@ -41,10 +41,10 @@ def prepare_boxes(batch, config):
     for locations in locationsBatch:
         # Collect and normalize boxes between 0 and 1
         boxes = np.zeros((len(locations), 4), np.float32)
-        boxes[:,0] = locations[y_key] - config["train"]["sampling"]["box_size"]/2
-        boxes[:,1] = locations[x_key] - config["train"]["sampling"]["box_size"]/2
-        boxes[:,2] = locations[y_key] + config["train"]["sampling"]["box_size"]/2
-        boxes[:,3] = locations[x_key] + config["train"]["sampling"]["box_size"]/2
+        boxes[:,0] = locations[y_key] - config["dataset"]["locations"]["box_size"]/2
+        boxes[:,1] = locations[x_key] - config["dataset"]["locations"]["box_size"]/2
+        boxes[:,2] = locations[y_key] + config["dataset"]["locations"]["box_size"]/2
+        boxes[:,3] = locations[x_key] + config["dataset"]["locations"]["box_size"]/2
         boxes[:,[0,2]] /= config["dataset"]["images"]["height"]
         boxes[:,[1,3]] /= config["dataset"]["images"]["width"]
         # Create indicators for this set of boxes, belonging to the same image
