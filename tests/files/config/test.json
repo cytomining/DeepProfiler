@@ -40,7 +40,7 @@
             "crop_generator": "crop_generator",
             "metrics": ["accuracy"],
             "epochs": 5,
-            "steps": 10,
+            "initialization": "random",
             "params": {
                 "learning_rate": 0.0001,
                 "batch_size": 2,

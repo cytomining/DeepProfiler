@@ -77,7 +77,7 @@ class DeepProfilerModel(abc.ABC):
             verbose=verbose,
             initial_epoch=epoch - 1,
             validation_data=(x_validation, y_validation),
-            #validation_freq=freq
+            validation_freq=freq
         ) 
             
         # Stop threads and close sessions
@@ -86,6 +86,11 @@ class DeepProfilerModel(abc.ABC):
         # Return the feature model and validation data
         return self.feature_model, x_validation, y_validation
 
+    
+    def copy_pretrained_weights(self):
+        # Override this method if the model can load pretrained weights
+        print("This model does not support ImageNet pretrained weights initialization")
+        return
 
     def load_weights(self, epoch):
         output_file = self.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
@@ -97,11 +102,13 @@ class DeepProfilerModel(abc.ABC):
         else:
             # Initialize all tf variables
             keras.backend.get_session().run(tf.global_variables_initializer())
+            if self.config["train"]["model"]["initialization"] == "ImageNet":
+                self.copy_pretrained_weights()
             return False
 
 
 def check_feature_model(dpmodel):
-    if "feature_model" not in vars(dpmodel) or not isinstance(dpmodel.feature_model, keras.Model):
+    if "feature_model" not in vars(dpmodel): #or not isinstance(dpmodel.feature_model, keras.Model):
         raise ValueError("Feature model is not properly defined.")
 
 

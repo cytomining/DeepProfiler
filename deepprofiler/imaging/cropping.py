@@ -157,7 +157,6 @@ class CropGenerator(object):
                     lock.acquire()
                     first = self.pool_pointer
                     records = output["image_batch"].shape[0]
-                    self.dset.queue_records += records
 
                     if self.pool_pointer + records < self.image_pool.shape[0]:
                         last = self.pool_pointer + records
@@ -168,7 +167,9 @@ class CropGenerator(object):
                         self.pool_pointer = 0
                         self.ready_to_sample = True
 
-                    # Replace block (TODO:order of targets and keys may be wrong)
+                    self.dset.queue_records += records
+
+                    # Replace block (TODO:order of targets and keys may be wrong if more than one target is used)
                     self.image_pool[first:last,...] = output["image_batch"][0:records,...]
                     k = 0
                     for t in output.keys():
