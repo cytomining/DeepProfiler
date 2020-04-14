@@ -45,7 +45,6 @@ def cli(context, root, config, exp, cores, gpu, cometml_key):
         "config": root + "/inputs/config/",
         "images": root + "/inputs/images/",
         "metadata": root + "/inputs/metadata/",
-        "preprocessed": root + "/inputs/preprocessed/",
         "pretrained": root + "/inputs/pretrained/",
         "intensities": root + "/outputs/intensities/",
         "compressed_images": root + "/outputs/compressed/images/",
