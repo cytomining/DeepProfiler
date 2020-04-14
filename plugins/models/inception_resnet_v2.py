@@ -30,8 +30,8 @@ def define_model(config, dset):
     else:
         weights = None
         input_tensor = Input((
-            config["train"]["sampling"]["box_size"],  # height
-            config["train"]["sampling"]["box_size"],  # width
+            config["dataset"]["locations"]["box_size"],  # height
+            config["dataset"]["locations"]["box_size"],  # width
             len(config["dataset"]["images"]["channels"])  # channels
         ), name="input")
         base = inception_resnet_v2.InceptionResNetV2(

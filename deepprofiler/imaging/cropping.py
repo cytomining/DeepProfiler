@@ -39,7 +39,7 @@ class CropGenerator(object):
 
     def build_input_graph(self):
         # Identify number of channels
-        mask_objects = self.config["train"]["sampling"]["mask_objects"]
+        mask_objects = self.config["dataset"]["locations"]["mask_objects"]
         if mask_objects:
             img_channels = len(self.config["dataset"]["images"]["channels"]) + 1
         else:

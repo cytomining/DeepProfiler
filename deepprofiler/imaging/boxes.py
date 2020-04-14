@@ -54,7 +54,7 @@ def prepare_boxes(batch, config):
             all_targets[i].append(image_targets[index][i] * np.ones((len(locations)), np.int32))
         # Identify object mask for each crop
         masks = np.zeros(len(locations), np.int32)
-        if config["train"]["sampling"]["mask_objects"]:
+        if config["dataset"]["locations"]["mask_objects"]:
             i = 0
             for lkey in locations.index:
                 y = int(locations.loc[lkey, y_key])
