@@ -43,8 +43,8 @@ class ModelClass(DeepProfilerModel):
     def define_model(self, config, dset):
         # 1. Create ResNet architecture to extract features
         input_shape = (
-            config["train"]["sampling"]["box_size"],  # height
-            config["train"]["sampling"]["box_size"],  # width
+            config["dataset"]["locations"]["box_size"],  # height
+            config["dataset"]["locations"]["box_size"],  # width
             len(config["dataset"]["images"][
                 "channels"])  # channels
         )

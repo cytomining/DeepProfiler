@@ -21,7 +21,7 @@ class SingleImageGeneratorClass(deepprofiler.imaging.cropping.SingleImageCropGen
 
     def __init__(self, config, dset):
         super().__init__(config, dset)
-        width = self.config["train"]["sampling"]["box_size"]
+        width = self.config["dataset"]["locations"]["box_size"]
         height = width
         channels = len(self.config["dataset"]["images"]["channels"])
         self.crop_ph = tf.placeholder(tf.float32, (None, width, height, channels))
