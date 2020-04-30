@@ -33,14 +33,15 @@ class Profile(object):
         K.set_session(self.sess)
         
         # Create feature extractor
-        if self.config["profile"]["pretrained"]:
-            checkpoint = self.config["paths"]["pretrained"]+"/"+self.config["profile"]["checkpoint"]
-        else:
+        self.sess.run(tf.global_variables_initializer())
+        if self.config["profile"]["checkpoint"] != "None":
             checkpoint = self.config["paths"]["checkpoints"]+"/"+self.config["profile"]["checkpoint"]
-        self.dpmodel.feature_model.load_weights(checkpoint)
-        self.dpmodel.feature_model.summary()
-        self.feat_extractor = keras.Model(self.dpmodel.feature_model.inputs, self.dpmodel.feature_model.get_layer(
-            self.config["profile"]["feature_layer"]).output)
+            self.dpmodel.feature_model.load_weights(checkpoint)
+
+        self.feat_extractor = keras.Model(
+            self.dpmodel.feature_model.inputs, 
+            self.dpmodel.feature_model.get_layer(self.config["profile"]["feature_layer"]).output
+        )
         self.feat_extractor.summary()
 
     def check(self, meta):

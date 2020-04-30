@@ -75,7 +75,7 @@
     "profile": {
       "feature_layer": "features",
       "checkpoint": "checkpoint_0003.hdf5",
-      "pretrained": false,
+      "use_pretrained_input_size": false,
       "batch_size": 2
     },
     "paths": {
@@ -84,7 +84,6 @@
         "images": "/inputs/images",
         "metadata": "/inputs/metadata",
         "preprocessed": "/inputs/preprocessed",
-        "pretrained": "/inputs/pretrained",
         "intensities": "/outputs/intensities",
         "compressed_images": "/outputs/compressed/images",
         "compressed_metadata": "/outputs/compressed/metadata",
