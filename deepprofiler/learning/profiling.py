@@ -36,7 +36,12 @@ class Profile(object):
         # Create feature extractor
         if self.config["profile"]["checkpoint"] != "None":
             checkpoint = self.config["paths"]["checkpoints"]+"/"+self.config["profile"]["checkpoint"]
-            self.dpmodel.feature_model.load_weights(checkpoint)
+            try:
+                self.dpmodel.feature_model.load_weights(checkpoint)
+            except ValueError:
+                print("Loading weights without classifier (different number of classes)")
+                self.dpmodel.feature_model.layers[-1].name = "classifier"
+                self.dpmodel.feature_model.load_weights(checkpoint, by_name=True)
 
         self.feat_extractor = keras.Model(
             self.dpmodel.feature_model.inputs, 
