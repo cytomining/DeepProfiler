@@ -3,32 +3,24 @@ from keras.applications import inception_resnet_v2
 from keras.models import Model
 from keras.layers import Input, Dense
 from keras.optimizers import Adam
-from keras import backend as K
 import tensorflow as tf
 
 from deepprofiler.learning.model import DeepProfilerModel
 
 
 def define_model(config, dset):
-    # Set session
-    configuration = tf.ConfigProto()
-    configuration.gpu_options.allow_growth = True
-    sess = tf.Session(config=configuration)
-    K.set_session(sess)
-    
+   
     # Load InceptionResnetV2 base architecture
-    if config["profile"]["pretrained"]:
-        weights = None
+    if config["profile"]["use_pretrained_input_size"]:
         input_tensor = Input((299, 299, 3), name="input")
-        base = inception_resnet_v2.InceptionResNetV2(
+        model = inception_resnet_v2.InceptionResNetV2(
             include_top=True,
-            input_tensor=input_tensor
+            input_tensor=input_tensor,
+            weights='imagenet',
+            pooling="avg"
         )
-        base.get_layer(index=-2).name = "global_{}_pool".format(config["train"]["model"]["params"]["pooling"])
-        # Define model
-        model = base
+        model.summary()
     else:
-        weights = None
         input_tensor = Input((
             config["dataset"]["locations"]["box_size"],  # height
             config["dataset"]["locations"]["box_size"],  # width
@@ -36,12 +28,11 @@ def define_model(config, dset):
         ), name="input")
         base = inception_resnet_v2.InceptionResNetV2(
             include_top=False,
-            weights=weights,
+            weights=None,
             input_tensor=input_tensor,
-            pooling=config["train"]["model"]["params"]["pooling"],
+            pooling="avg",
             classes=dset.targets[0].shape[1]
         )
-        base.get_layer(index=-1).name = "global_{}_pool".format(config["train"]["model"]["params"]["pooling"])
         # Create output embedding for each target
         class_outputs = []
         i = 0
