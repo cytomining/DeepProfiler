@@ -3,18 +3,12 @@ from keras.applications import inception_resnet_v2
 from keras.models import Model
 from keras.layers import Input, Dense
 from keras.optimizers import Adam
-from keras import backend as K
 import tensorflow as tf
 
 from deepprofiler.learning.model import DeepProfilerModel
 
 
 def define_model(config, dset):
-    # Set session
-    configuration = tf.ConfigProto()
-    configuration.gpu_options.allow_growth = True
-    sess = tf.Session(config=configuration)
-    K.set_session(sess)
    
     # Load InceptionResnetV2 base architecture
     if config["profile"]["use_pretrained_input_size"]:
@@ -25,6 +19,7 @@ def define_model(config, dset):
             weights='imagenet',
             pooling="avg"
         )
+        model.summary()
     else:
         input_tensor = Input((
             config["dataset"]["locations"]["box_size"],  # height

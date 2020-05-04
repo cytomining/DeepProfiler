@@ -15,25 +15,25 @@ class Profile(object):
         self.config = config
         self.dset = dset
         self.num_channels = len(self.config["dataset"]["images"]["channels"])
-        self.crop_generator = importlib.import_module("plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"]))\
-            .GeneratorClass
+        self.crop_generator = importlib.import_module(
+            "plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"])
+        ).GeneratorClass
+
         self.profile_crop_generator = importlib.import_module(
-            "plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"])) \
-            .SingleImageGeneratorClass
-        self.dpmodel = importlib.import_module("plugins.models.{}".format(config["train"]["model"]["name"]))\
-            .ModelClass(config, dset, self.crop_generator, self.profile_crop_generator)
+            "plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"])
+        ).SingleImageGeneratorClass
+
+        self.dpmodel = importlib.import_module(
+            "plugins.models.{}".format(config["train"]["model"]["name"])
+        ).ModelClass(config, dset, self.crop_generator, self.profile_crop_generator)
+
         self.profile_crop_generator = self.profile_crop_generator(config, dset)
 
     def configure(self):        
         # Main session configuration
-        configuration = tf.ConfigProto()
-        configuration.gpu_options.allow_growth = True
-        self.sess = tf.Session(config=configuration)
-        self.profile_crop_generator.start(self.sess)
-        K.set_session(self.sess)
+        self.profile_crop_generator.start(K.get_session())
         
         # Create feature extractor
-        self.sess.run(tf.global_variables_initializer())
         if self.config["profile"]["checkpoint"] != "None":
             checkpoint = self.config["paths"]["checkpoints"]+"/"+self.config["profile"]["checkpoint"]
             self.dpmodel.feature_model.load_weights(checkpoint)
@@ -65,7 +65,7 @@ class Profile(object):
         batch_size = self.config["profile"]["batch_size"]
         image_key, image_names, outlines = self.dset.get_image_paths(meta)
         total_crops = self.profile_crop_generator.prepare_image(
-                                   self.sess,
+                                   K.get_session(),
                                    image_array,
                                    meta,
                                    False
@@ -77,7 +77,7 @@ class Profile(object):
         repeats = self.config["train"]["model"]["crop_generator"] == "repeat_channel_crop_generator"
         
         # Extract features
-        crops = next(self.profile_crop_generator.generate(self.sess))[0]  # single image crop generator yields one batch
+        crops = next(self.profile_crop_generator.generate(K.get_session()))[0]  # single image crop generator yields one batch
         feats = self.feat_extractor.predict(crops, batch_size=batch_size)
         if repeats:
             feats = np.reshape(feats, (self.num_channels, total_crops, -1))
