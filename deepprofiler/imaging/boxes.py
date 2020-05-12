@@ -58,7 +58,7 @@ def get_full_image_locations(image_key, config, random_sample, seed):
     data = None
     if coverage == 1.0:
         # If the area coverage is all the image use the center of the image
-        data = [[rows/2, cols/2]]
+        data = [[cols/2, rows/2]]
     else:
         # Otherwise, generate multiple regions
         if random_sample is not None:

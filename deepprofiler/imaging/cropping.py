@@ -20,8 +20,12 @@ def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes
             mask_values = tf.ones_like(crops[:,:,:,-1], dtype=tf.float32) * tf.cast(mask_ind, dtype=tf.float32)
             masks = tf.to_float( tf.equal(crops[:,:,:,-1], mask_values) )
             crops = crops[:,:,:,0:-1] * tf.expand_dims(masks, -1)
-        max_intensities = tf.reduce_max( tf.reduce_max( crops, axis=1, keepdims=True), axis=2, keepdims=True)
-        crops = crops / (max_intensities + 1e-6)
+        #max_intensities = tf.reduce_max( tf.reduce_max( crops, axis=1, keepdims=True), axis=2, keepdims=True)
+        #crops = crops / (max_intensities + 1e-6)
+        mean = tf.math.reduce_mean(crops, axis=[1,2], keepdims=True)
+        std = tf.math.reduce_std(crops, axis=[1,2], keepdims=True)
+ 
+        crops = (crops - mean)/std
     return crops
 
 
