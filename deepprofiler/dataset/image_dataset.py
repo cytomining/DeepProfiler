@@ -231,7 +231,7 @@ def read_dataset(config):
         dset.add_target(new_target)
 
     # Activate outlines for masking if needed
-    if config["train"]["sampling"]["mask_objects"]:
+    if config["dataset"]["locations"]["mask_objects"]:
         dset.outlines = outlines
 
     dset.prepare_training_locations()

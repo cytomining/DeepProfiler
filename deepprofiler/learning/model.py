@@ -219,3 +219,4 @@ def close(dpmodel, crop_session):
     crop_session.close()
     print("All set.")
     gc.collect()
+

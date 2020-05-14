@@ -20,8 +20,12 @@ def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes
             mask_values = tf.ones_like(crops[:,:,:,-1], dtype=tf.float32) * tf.cast(mask_ind, dtype=tf.float32)
             masks = tf.to_float( tf.equal(crops[:,:,:,-1], mask_values) )
             crops = crops[:,:,:,0:-1] * tf.expand_dims(masks, -1)
-        max_intensities = tf.reduce_max( tf.reduce_max( crops, axis=1, keepdims=True), axis=2, keepdims=True)
-        crops = crops / (max_intensities + 1e-6)
+        #max_intensities = tf.reduce_max( tf.reduce_max( crops, axis=1, keepdims=True), axis=2, keepdims=True)
+        #crops = crops / (max_intensities + 1e-6)
+        mean = tf.math.reduce_mean(crops, axis=[1,2], keepdims=True)
+        std = tf.math.reduce_std(crops, axis=[1,2], keepdims=True)
+ 
+        crops = (crops - mean)/std
     return crops
 
 
@@ -39,7 +43,7 @@ class CropGenerator(object):
 
     def build_input_graph(self):
         # Identify number of channels
-        mask_objects = self.config["train"]["sampling"]["mask_objects"]
+        mask_objects = self.config["dataset"]["locations"]["mask_objects"]
         if mask_objects:
             img_channels = len(self.config["dataset"]["images"]["channels"]) + 1
         else:
@@ -47,7 +51,7 @@ class CropGenerator(object):
         crop_channels = len(self.config["dataset"]["images"]["channels"])
 
         # Identify image and box sizes
-        box_size = self.config["train"]["sampling"]["box_size"]
+        box_size = self.config["dataset"]["locations"]["box_size"]
         img_width = self.config["dataset"]["images"]["width"]
         img_height = self.config["dataset"]["images"]["height"]
 

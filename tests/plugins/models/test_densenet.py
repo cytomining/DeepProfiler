@@ -21,8 +21,7 @@ def val_generator():
 def test_init(config, dataset, generator, val_generator):
     config["train"]["model"]["name"] = "densenet"
     config["train"]["model"]["params"]["conv_blocks"] = 121
-    config["train"]["sampling"]["box_size"] = 32
-    config["train"]["model"]["params"]["pooling"] = 'avg'
+    config["dataset"]["locations"]["box_size"] = 32
     dpmodel = plugins.models.densenet.ModelClass(config, dataset, generator, val_generator)
     model, optimizer, loss = plugins.models.densenet.ModelClass.define_model(dpmodel, config, dataset)
     assert dpmodel.feature_model.__eq__(model)
