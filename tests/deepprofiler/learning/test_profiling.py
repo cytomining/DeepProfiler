@@ -48,9 +48,9 @@ def test_init(config, dataset, locations):
 
 
 def test_configure(profile, checkpoint):
-    profile.configure()
-    assert isinstance(profile.feat_extractor, keras.Model)
-    assert isinstance(profile.sess, tf.Session)
+    with tf.Session().as_default():
+        profile.configure()
+        assert isinstance(profile.feat_extractor, keras.Model)
 
 
 def test_check(profile, metadata):
@@ -58,18 +58,20 @@ def test_check(profile, metadata):
 
 
 def test_extract_features(profile, metadata, locations, checkpoint):
-    meta = metadata.data.iloc[0]
-    image = np.random.randint(0, 256, (128, 128, 3), dtype=np.uint8)
-    profile.configure()
-    profile.extract_features(None, image, meta)
-    output_file = profile.config["paths"]["features"] + "/{}_{}_{}.npz"\
-        .format(meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
-    assert os.path.isfile(output_file)
+    with tf.Session().as_default():
+        meta = metadata.data.iloc[0]
+        image = np.random.randint(0, 256, (128, 128, 3), dtype=np.uint8)
+        profile.configure()
+        profile.extract_features(None, image, meta)
+        output_file = profile.config["paths"]["features"] + "/{}_{}_{}.npz"\
+            .format(meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
+        assert os.path.isfile(output_file)
 
 
 def test_profile(config, dataset, data, locations, checkpoint):
-    deepprofiler.learning.profiling.profile(config, dataset)
-    for index, row in dataset.meta.data.iterrows():
-        output_file = config["paths"]["features"] + "/{}_{}_{}.npz" \
-            .format(row["Metadata_Plate"], row["Metadata_Well"], row["Metadata_Site"])
-        assert os.path.isfile(output_file)
+    with tf.Session().as_default():
+        deepprofiler.learning.profiling.profile(config, dataset)
+        for index, row in dataset.meta.data.iterrows():
+            output_file = config["paths"]["features"] + "/{}_{}_{}.npz" \
+                .format(row["Metadata_Plate"], row["Metadata_Well"], row["Metadata_Site"])
+            assert os.path.isfile(output_file)

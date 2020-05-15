@@ -21,7 +21,7 @@ setuptools.setup(
         "click>=6.7",
         "comet_ml>=1.0",
         "gpyopt>=1.2"
-        "keras>=2.2.5",
+        "keras==2.2.5",
         "lxml>=4.2",
         "numpy>=1.13",
         "pandas>=0.23.0",
