@@ -152,11 +152,6 @@ class CropGenerator(object):
 
                     output = sess.run(self.train_variables, feed_dict)
 
-                    # Remove crops without any content TODO: enable multiple targets
-                    valid = np.sum(output["image_batch"], axis=(1,2,3)) != 0
-                    output["image_batch"] = output["image_batch"][valid, ...]
-                    output["target_0"] = output["target_0"][valid, ...]
-
                     # Find block of the pool to store data
                     lock.acquire()
                     first = self.pool_pointer
@@ -318,14 +313,11 @@ class SingleImageCropGenerator(CropGenerator):
         #    output = session.run(self.aligned_labeled, feed_dict)
         #else:
         output = session.run(self.input_variables["labeled_crops"], feed_dict)
-
         output = {"image_batch": output[0], "target_0": output[1]}
-        # Remove crops without any content TODO: enable multiple targets
-        valid = np.sum(output["image_batch"], axis=(1,2,3)) != 0
-        self.image_pool = output["image_batch"][valid, ...]
-        self.label_pool = output["target_0"][valid, ...]  
+
+        self.image_pool = output["image_batch"]
         num_classes = self.dset.targets[0].shape[1]
-        self.label_pool = keras.utils.to_categorical(self.label_pool,num_classes=num_classes)
+        self.label_pool = keras.utils.to_categorical(output["target_0"], num_classes=num_classes)
 
         return total_crops 
 

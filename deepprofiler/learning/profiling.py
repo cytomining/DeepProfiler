@@ -78,7 +78,6 @@ class Profile(object):
         if total_crops == 0:
             print("No cells to profile:", output_file)
             return
-        num_features = self.config["train"]["model"]["params"]["feature_dim"]
         repeats = self.config["train"]["model"]["crop_generator"] == "repeat_channel_crop_generator"
         
         # Extract features
