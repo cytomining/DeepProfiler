@@ -140,6 +140,10 @@ class CropGenerator(object):
                     if len(batch["images"]) == 0: continue
                     images = np.reshape(batch["images"], self.input_variables["shapes"]["batch"])
                     boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
+                    # Pre-crop augmentation: random zoom
+                    zoom = np.random.uniform(low=0.85, high=1.15, size=(boxes.shape[0],1))
+                    boxes = boxes * zoom
+
                     feed_dict = {
                             self.input_variables["image_ph"]:images,
                             self.input_variables["boxes_ph"]:boxes,
