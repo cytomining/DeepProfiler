@@ -63,7 +63,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         for t in targets:
             self.target_sizes.append(self.train_variables[t].shape[1])
         self.mixer = Mixup(
-                       self.config["train"]["sampling"]["queue_size"],
+                       self.config["train"]["sampling"]["cache_size"],
                        self.input_variables["shapes"]["crops"],
                        self.target_sizes[0],
                        self.config["train"]["sampling"]["alpha"]
