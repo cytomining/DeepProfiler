@@ -149,7 +149,7 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
     output_file = dpmodel.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
     period = 1
     save_best = False
-    if "checkpoint_policy" in dpmodel.config["train"]["model"] and dpmodel.config["train"]["model"]["checkpoint_policy"].isdigit():
+    if "checkpoint_policy" in dpmodel.config["train"]["model"] and isinstance(dpmodel.config["train"]["model"]["checkpoint_policy"], int):
         period = int(dpmodel.config["train"]["model"]["checkpoint_policy"])
     elif "checkpoint_policy" in dpmodel.config["train"]["model"] and dpmodel.config["train"]["model"]["checkpoint_policy"] == 'best':
         save_best = True
