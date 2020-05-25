@@ -61,7 +61,7 @@ class CropGenerator(object):
         imgs_shape = [None, img_height, img_width, img_channels]
         batch_shape = (-1, img_height, img_width, img_channels)
 
-        # Inputs to the load data queue
+        # Inputs to the load data cache
         image_ph = tf.placeholder(tf.float32, shape=imgs_shape, name="raw_images")
         boxes_ph = tf.placeholder(tf.float32, shape=[None, 4], name="cell_boxes")
         box_ind_ph = tf.placeholder(tf.int32, shape=[None], name="box_indicators")
@@ -72,7 +72,7 @@ class CropGenerator(object):
             tgt = self.dset.targets[i]
             targets_phs[tname] = tf.placeholder(tf.int32, shape=[None], name=tname)
 
-        # Outputs and queue of the cropping graph
+        # Outputs and cache of the cropping graph
         crop_op = crop_graph(
             image_ph,
             boxes_ph,
@@ -104,7 +104,7 @@ class CropGenerator(object):
     def build_augmentation_graph(self):
         num_targets = len(self.dset.targets)
 
-        # Outputs and queue of the data augmentation graph
+        # Outputs and cache of the data augmentation graph
         augmented_op = deepprofiler.imaging.augmentations.augment_multiple(
             tf.cast(self.input_variables["labeled_crops"][0], tf.float32),
             self.config["train"]["model"]["params"]["batch_size"]
@@ -140,6 +140,10 @@ class CropGenerator(object):
                     if len(batch["images"]) == 0: continue
                     images = np.reshape(batch["images"], self.input_variables["shapes"]["batch"])
                     boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
+                    # Pre-crop augmentation: random zoom
+                    zoom = np.random.uniform(low=0.85, high=1.15, size=(boxes.shape[0],1))
+                    boxes = boxes * zoom
+
                     feed_dict = {
                             self.input_variables["image_ph"]:images,
                             self.input_variables["boxes_ph"]:boxes,
@@ -151,11 +155,6 @@ class CropGenerator(object):
                         feed_dict[self.input_variables["targets_phs"][tname]] = targets[i]
 
                     output = sess.run(self.train_variables, feed_dict)
-
-                    # Remove crops without any content TODO: enable multiple targets
-                    valid = np.sum(output["image_batch"], axis=(1,2,3)) != 0
-                    output["image_batch"] = output["image_batch"][valid, ...]
-                    output["target_0"] = output["target_0"][valid, ...]
 
                     # Find block of the pool to store data
                     lock.acquire()
@@ -171,7 +170,7 @@ class CropGenerator(object):
                         self.pool_pointer = 0
                         self.ready_to_sample = True
 
-                    self.dset.queue_records += records
+                    self.dset.cache_records += records
 
                     # Replace block (TODO:order of targets and keys may be wrong if more than one target is used)
                     self.image_pool[first:last,...] = output["image_batch"][0:records,...]
@@ -207,8 +206,8 @@ class CropGenerator(object):
             self.build_augmentation_graph()
             targets = [self.train_variables[t] for t in self.train_variables.keys() if t.startswith("target_")]
 
-            self.image_pool = np.zeros([self.config["train"]["sampling"]["queue_size"]] + list(self.input_variables["shapes"]["crops"][0]))
-            self.label_pool = [np.zeros([self.config["train"]["sampling"]["queue_size"], t.shape[1]]) for t in targets]
+            self.image_pool = np.zeros([self.config["train"]["sampling"]["cache_size"]] + list(self.input_variables["shapes"]["crops"][0]))
+            self.label_pool = [np.zeros([self.config["train"]["sampling"]["cache_size"], t.shape[1]]) for t in targets]
             self.pool_pointer = 0
             self.ready_to_sample = False
             print("Waiting for data", self.image_pool.shape, [l.shape for l in self.label_pool])
@@ -318,14 +317,11 @@ class SingleImageCropGenerator(CropGenerator):
         #    output = session.run(self.aligned_labeled, feed_dict)
         #else:
         output = session.run(self.input_variables["labeled_crops"], feed_dict)
-
         output = {"image_batch": output[0], "target_0": output[1]}
-        # Remove crops without any content TODO: enable multiple targets
-        valid = np.sum(output["image_batch"], axis=(1,2,3)) != 0
-        self.image_pool = output["image_batch"][valid, ...]
-        self.label_pool = output["target_0"][valid, ...]  
+
+        self.image_pool = output["image_batch"]
         num_classes = self.dset.targets[0].shape[1]
-        self.label_pool = keras.utils.to_categorical(self.label_pool,num_classes=num_classes)
+        self.label_pool = keras.utils.to_categorical(output["target_0"], num_classes=num_classes)
 
         return total_crops 
 

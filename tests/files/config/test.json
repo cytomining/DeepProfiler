@@ -62,7 +62,7 @@
         },
         "sampling": {
             "factor": 1.0,
-            "queue_size": 10,
+            "cache_size": 10,
             "workers": 2,
             "alpha": 0.2
         },

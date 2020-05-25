@@ -78,7 +78,7 @@ class ImageDataset():
 
         workers = self.config["train"]["sampling"]["workers"]
         batch_size = self.config["train"]["model"]["params"]["batch_size"]
-        queue_size = self.config["train"]["sampling"]["queue_size"]
+        cache_size = self.config["train"]["sampling"]["cache_size"]
         self.sampling_factor = self.config["train"]["sampling"]["factor"]
 
         # Count the total number of single cells
@@ -94,12 +94,12 @@ class ImageDataset():
         # Number of images that each worker should load at a time
         self.images_per_worker = int(batch_size / workers)
         # Percent of all cells that will be loaded in memory at a given moment in the queue
-        self.queue_coverage = 100*(queue_size / self.cells_per_epoch)
+        self.cache_coverage = 100*(cache_size / self.cells_per_epoch)
         # Number of gradient updates required to approximately use all cells in an epoch
         self.steps_per_epoch = int(self.cells_per_epoch / batch_size)
 
         self.data_rotation = 0
-        self.queue_records = 0
+        self.cache_records = 0
         self.shuffle_training_images()
 
 
@@ -110,22 +110,22 @@ class ImageDataset():
         print(" || => Median # of cells per image:", self.sample_locations)
         print(" || => Single cells per epoch (with balanced sampling):", self.cells_per_epoch)
         print(" || => Images sampled per worker:", self.images_per_worker)
-        print(" || => Queue data coverage: {}%".format(int(self.queue_coverage)))
+        print(" || => Cache data coverage: {}%".format(int(self.cache_coverage)))
         print(" || => Steps per epoch:", self.steps_per_epoch)
  
 
     def show_stats(self):
         # Proportion of images loaded by workers from all images that they should load in one epoch (recall)
         worker_efficiency = int(100 * (self.data_rotation / self.training_sample.shape[0]))
-        # Proportion of single cells placed in the queue from all those that should be used in one epoch
-        queue_usage = int(100 * self.queue_records / self.cells_per_epoch)
-        print("Training set coverage: {}% (worker efficiency). Data rotation: {}% (queue usage).".format(
+        # Proportion of single cells placed in the cache from all those that should be used in one epoch
+        cache_usage = int(100 * self.cache_records / self.cells_per_epoch)
+        print("Training set coverage: {}% (worker efficiency). Data rotation: {}% (cache usage).".format(
                   worker_efficiency,
-                  queue_usage)
+                  cache_usage)
         )
         self.data_rotation = 0
-        self.queue_records = 0
-        return {'worker_efficiency': worker_efficiency, 'queue_usage': queue_usage }
+        self.cache_records = 0
+        return {'worker_efficiency': worker_efficiency, 'cache_usage': cache_usage}
 
     def shuffle_training_images(self):
         # Images in the original metadata file are resampled at each epoch
