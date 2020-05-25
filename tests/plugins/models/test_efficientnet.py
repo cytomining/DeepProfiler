@@ -19,9 +19,9 @@ def val_generator():
 
 
 def test_init(config, dataset, generator, val_generator):
-    config["train"]["model"]["name"] = "densenet"
+    config["train"]["model"]["name"] = "efficientnet"
     config["train"]["model"]["params"]["conv_blocks"] = 0
-    config["train"]["sampling"]["box_size"] = 32
+    config["dataset"]["locations"]["box_size"] = 32
     config["train"]["model"]["params"]["pooling"] = 'avg'
     dpmodel = plugins.models.efficientnet.ModelClass(config, dataset, generator, val_generator)
     model, optimizer, loss = plugins.models.efficientnet.ModelClass.define_model(dpmodel, config, dataset)

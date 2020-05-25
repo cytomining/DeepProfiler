@@ -36,8 +36,8 @@ class ModelClass(DeepProfilerModel):
     def define_model(self, config, dset):
         # Set session
         input_shape = (
-            config["train"]["sampling"]["box_size"],  # height
-            config["train"]["sampling"]["box_size"],  # width
+            config["dataset"]["locations"]["box_size"],  # height
+            config["dataset"]["locations"]["box_size"],  # width
             len(config["dataset"]["images"]["channels"])  # channels
         )
         input_image = keras.layers.Input(input_shape)
