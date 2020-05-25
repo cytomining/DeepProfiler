@@ -1,6 +1,9 @@
 import numpy
 import keras
 import efficientnet.keras as efn
+from keras import Input, Model
+from keras.layers import Dense
+from keras.optimizers import Adam
 
 from deepprofiler.learning.model import DeepProfilerModel
 
@@ -35,55 +38,29 @@ class ModelClass(DeepProfilerModel):
 
     def define_model(self, config, dset):
         # Set session
-        input_shape = (
-            config["dataset"]["locations"]["box_size"],  # height
-            config["dataset"]["locations"]["box_size"],  # width
-            len(config["dataset"]["images"]["channels"])  # channels
-        )
-        input_image = keras.layers.Input(input_shape)
-        model = self.get_model(config, input_image=input_image)
-        features = keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-1].output)
+        if config["profile"]["use_pretrained_input_size"]:
+            input_tensor = Input((config["profile"]["use_pretrained_input_size"], config["profile"]["use_pretrained_input_size"], 3), name="input")
+            model = self.get_model(config, input_tensor, weights='imagenet')
+            model.summary()
+        else:
+            input_tensor = Input((
+                config["dataset"]["locations"]["box_size"],  # height
+                config["dataset"]["locations"]["box_size"],  # width
+                len(config["dataset"]["images"]["channels"])  # channels
+            ), name="input")
+            base = self.get_model(config, input_tensor, weights='imagenet')
+            # Create output embedding for each target
+            class_outputs = []
+            i = 0
+            for t in dset.targets:
+                y = Dense(t.shape[1], activation="softmax", name=t.field_name)(base.output)
+                class_outputs.append(y)
+                i += 1
+            # Define model
+            model = Model(input_tensor, class_outputs)
 
-        # 2. Create an output embedding for each target
-        class_outputs = []
+        # Define optimizer and loss
+        optimizer = Adam(lr=config["train"]["model"]["params"]["learning_rate"])
+        loss = "categorical_crossentropy"
 
-        i = 0
-        for t in dset.targets:
-            y = keras.layers.Dense(t.shape[1], activation="softmax", name=t.field_name)(features)
-            class_outputs.append(y)
-            i += 1
-
-        # 3. Define the loss function
-        loss_func = "categorical_crossentropy"
-
-        # 4. Create and compile model
-        model = keras.models.Model(inputs=input_image, outputs=class_outputs)
-
-        model = keras.models.model_from_json(model.to_json())
-        optimizer = keras.optimizers.SGD(lr=config["train"]["model"]["params"]["learning_rate"], momentum=0.9, nesterov=True)
-
-        return model, optimizer, loss_func
-
-    ## Support for ImageNet initialization
-    def copy_pretrained_weights(self):
-        base_model = self.get_model(self.config, weights="imagenet")
-        # => Transfer all weights except conv1.1
-        total_layers = len(base_model.layers)
-        for i in range(3, total_layers):
-            if len(base_model.layers[i].weights) > 0:
-                print("Setting pre-trained weights: {:.2f}%".format((i / total_layers) * 100), end="\r")
-                self.feature_model.layers[i].set_weights(base_model.layers[i].get_weights())
-
-        # => Replicate filters of first layer as needed
-        weights = base_model.layers[2].get_weights()
-        available_channels = weights[0].shape[2]
-        target_shape = self.feature_model.layers[2].weights[0].shape
-        new_weights = numpy.zeros(target_shape)
-        for i in range(new_weights.shape[2]):
-            j = i % available_channels
-            new_weights[:, :, i, :] = weights[0][:, :, j, :]
-            weights_array = [new_weights]
-            if len(weights) > 1:
-                weights_array += weights[1:]
-            self.feature_model.layers[2].set_weights(weights_array)
-        print("Network initialized with pretrained ImageNet weights")
+        return model, optimizer, loss
