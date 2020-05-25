@@ -26,21 +26,26 @@ class ModelClass(DeepProfilerModel):
             7: efn.EfficientNetB7,
         }
 
-    def get_model(self, config, input_image=None, weights=None):
+    def get_model(self, config, input_image=None, weights=None, classes=None):
         supported_models = self.get_supported_models()
         SM = "EfficientNet supported models: " + ",".join([str(x) for x in supported_models.keys()])
         num_layers = config["train"]["model"]["params"]["conv_blocks"]
         error_msg = str(num_layers) + " conv_blocks not in " + SM
         assert num_layers in supported_models.keys(), error_msg
 
-        model = supported_models[num_layers](input_tensor=input_image, include_top=False, weights=weights)
+        model = supported_models[num_layers](input_tensor=input_image, include_top=False, weights=weights, pooling='avg')
         return model
 
     def define_model(self, config, dset):
+        supported_models = self.get_supported_models()
+        SM = "EfficientNet supported models: " + ",".join([str(x) for x in supported_models.keys()])
+        num_layers = config["train"]["model"]["params"]["conv_blocks"]
+        error_msg = str(num_layers) + " conv_blocks not in " + SM
+        assert num_layers in supported_models.keys(), error_msg
         # Set session
         if config["profile"]["use_pretrained_input_size"]:
             input_tensor = Input((config["profile"]["use_pretrained_input_size"], config["profile"]["use_pretrained_input_size"], 3), name="input")
-            model = self.get_model(config, input_tensor, weights='imagenet')
+            model = supported_models[num_layers](input_tensor=input_tensor, include_top=True, weights='imagenet', pooling='avg')
             model.summary()
         else:
             input_tensor = Input((
@@ -48,7 +53,7 @@ class ModelClass(DeepProfilerModel):
                 config["dataset"]["locations"]["box_size"],  # width
                 len(config["dataset"]["images"]["channels"])  # channels
             ), name="input")
-            base = self.get_model(config, input_tensor, weights='imagenet')
+            base = supported_models[num_layers](input_tensor=input_tensor, include_top=False, weights=None, pooling='avg', classes=dset.targets[0].shape[1])
             # Create output embedding for each target
             class_outputs = []
             i = 0
