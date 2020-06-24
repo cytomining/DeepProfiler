@@ -19,8 +19,9 @@ setuptools.setup(
     install_requires=[
         "beautifulsoup4>=4.6",
         "click>=6.7",
-        "gpyopt>=1.2"
-        "keras==2.2.5",
+        "comet_ml>=1.0",
+        "gpyopt>=1.2",
+        "Keras==2.2.5",
         "lxml>=4.2",
         "numpy>=1.13",
         "pandas>=0.23.0",

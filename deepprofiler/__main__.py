@@ -74,7 +74,7 @@ def cli(context, root, config, exp, cores, gpu, logging):
         else:
             params["paths"] = copy.deepcopy(dirs)
 
-        if os.path.isdir(dirs["images"]):
+        if os.path.isdir(dirs["root"]):
             for k in ["results", "checkpoints", "logs", "summaries", "features"]:
                 os.makedirs(dirs[k], exist_ok=True)
 
