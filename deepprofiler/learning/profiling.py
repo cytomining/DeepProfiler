@@ -91,7 +91,7 @@ class Profile(object):
         while len(feats.shape) > 2:  # 2D mean spatial pooling
             feats = np.mean(feats, axis=1)
 
-        np.savez_compressed(output_file, f=feats)
+        np.savez_compressed(output_file, features=feats, metadata=meta)
         toc(image_key + " (" + str(total_crops) + " cells)", start)
 
         
