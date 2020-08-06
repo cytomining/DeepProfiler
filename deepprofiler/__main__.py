@@ -11,6 +11,7 @@ import deepprofiler.dataset.illumination_statistics
 import deepprofiler.dataset.metadata
 import deepprofiler.dataset.utils
 import deepprofiler.dataset.image_dataset
+import deepprofiler.dataset.sampling
 import deepprofiler.learning.training
 import deepprofiler.learning.profiling
 import deepprofiler.download.normalize_bbbc021_metadata
@@ -133,6 +134,19 @@ def prepare(context):
     print("Compression complete!")
 
 
+# Second tool: Sample single cells for training
+@cli.command()
+@click.pass_context
+def sample_sc(context):
+    if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
+        context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
+        context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
+    dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
+    #deepprofiler.learning.training.learn_model(context.obj["config"], metadata, epoch, seed)
+    deepprofiler.dataset.sampling.sample_dataset(context.obj["config"], dset)
+    print("Single-cell sampling complete.")
+
+
 # Second tool: Train a network
 @cli.command()
 @click.option("--epoch", default=1)
@@ -142,8 +156,8 @@ def train(context, epoch, seed):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
         context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
-    metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
-    deepprofiler.learning.training.learn_model(context.obj["config"], metadata, epoch, seed)
+    dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
+    deepprofiler.learning.training.learn_model(context.obj["config"], dset, epoch, seed)
 
 
 # Third tool: Profile cells and extract features
