@@ -108,7 +108,7 @@ class ImageDataset():
         print(" || => Median # of images per class:", self.sample_images)
         print(" || => Number of classes:", len(self.training_images["Target"].unique()))
         print(" || => Median # of cells per image:", self.sample_locations)
-        print(" || => Single cells per epoch (with balanced sampling):", self.cells_per_epoch)
+        print(" || => Approx. cells per epoch (with balanced sampling):", self.cells_per_epoch)
         print(" || => Images sampled per worker:", self.images_per_worker)
         print(" || => Cache data coverage: {}%".format(int(self.cache_coverage)))
         print(" || => Steps per epoch:", self.steps_per_epoch)
