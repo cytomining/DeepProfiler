@@ -4,6 +4,7 @@ import time
 
 import keras
 import numpy as np
+import skimage.exposure
 import tensorflow as tf
 
 import deepprofiler.dataset.utils
@@ -27,6 +28,22 @@ def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes
  
         crops = (crops - mean)/std
     return crops
+
+
+def unfold_channels(crop, mode=0):
+    # Expected input image shape: (h, w, c)
+    # Output image shape: (h, w * c)
+    # Pixels are rescaled to the [0,255] interval with 8 bits encoding
+    unfolded = np.reshape(np.moveaxis(crop, mode, 0), (crop.shape[mode], -1), order='F')
+    unfolded = np.floor( 
+        skimage.exposure.rescale_intensity(unfolded, in_range="image", out_range="uint8")
+    ).astype(np.uint8)
+    return unfolded
+
+def fold_channels(crop):
+    # Expected input image shape: (h, w * c), with h = w
+    # Output image shape: (h, w, c), with h = w
+    return np.reshape(crop, (crop.shape[0], crop.shape[0], -1), order="F")
 
 
 # TODO: implement abstract crop generator
