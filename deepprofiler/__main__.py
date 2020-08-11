@@ -49,6 +49,7 @@ def cli(context, root, config, exp, cores, gpu, logging):
         "intensities": root + "/outputs/intensities/",
         "compressed_images": root + "/outputs/compressed/images/",
         "compressed_metadata": root + "/outputs/compressed/metadata/",
+        "single_cell_sample": root + "/outputs/single-cell-sample/",
         "results": root + "/outputs/" + exp + "/",
         "checkpoints": root + "/outputs/" + exp + "/checkpoint/",
         "logs": root + "/outputs/" + exp + "/logs/",

@@ -3,6 +3,8 @@ import pandas as pd
 import skimage.io
 import threading
 import pickle
+import tqdm
+import os
 
 import tensorflow as tf
 import tensorflow.keras as keras
@@ -43,7 +45,7 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
             feed_dict[self.input_variables["targets_phs"][tname]] = targets[i]
 
         output = self.session.run(self.input_variables["labeled_crops"], feed_dict)
-        return output[0], metadata.reset_index()
+        return output[0], metadata.reset_index(drop=True)
 
 
 def start_session():
@@ -53,13 +55,37 @@ def start_session():
     keras.backend.set_session(main_session)
     return main_session
 
+def is_directory_empty(outdir):
+    # Verify that the output directory is empty
+    os.makedirs(outdir, exist_ok=True)
+    files = os.listdir(outdir)
+    if len(files) > 0:
+        erase = ""
+        while(erase != "y" and erase != "n"):
+            erase = input("Delete " + str(len(files)) + " existing files in " + outdir + "? (y/n) ")
+            print(erase)
+        if erase == "n":
+            print("Terminating sampling.")
+            return False
+        elif erase == "y":
+            print("Removing previous sampled files")
+            for f in tqdm.tqdm(files):
+                os.remove(os.path.join(outdir, f))
+    return True
+
 def sample_dataset(config, dset):
+    outdir = config["paths"]["single_cell_sample"]
+    if not is_directory_empty(outdir):
+        return
+
+    # Start GPU session
     session = start_session()
     dset.show_setup()
     lock = threading.Lock()
     cropper = SingleCellSampler(config, dset)
     cropper.start(session)
 
+    # Loop through a random sample of single cells
     pointer = dset.batch_pointer
     total_single_cells = 0
     all_metadata = []
@@ -67,12 +93,17 @@ def sample_dataset(config, dset):
         pointer = dset.batch_pointer
         batch = dset.get_train_batch(lock)
         crops, metadata = cropper.process_batch(batch)
+        # Store each single cell in a separate unfolded image
         for j in range(crops.shape[0]):
             image = deepprofiler.imaging.cropping.unfold_channels(crops[j,:,:,:])
-            skimage.io.imsave(metadata.loc[j, "Image_Name"], image)
+            skimage.io.imsave(os.path.join(outdir, metadata.loc[j, "Image_Name"]), image)
         all_metadata.append(metadata)
 
         total_single_cells += len(metadata)
-        print("Images:", len(metadata.Key.unique()), "Sampled cells:", len(metadata), "Total", total_single_cells)
+        print(len(metadata), "cells samples from", len(metadata.Key.unique()), "images. Total:", total_single_cells)
+
+    # Save metadata
+    all_metadata = pd.concat(all_metadata).reset_index(drop=True)
+    all_metadata.to_csv(os.path.join(outdir, "sc-metadata.csv"), index=False)
     print("Total single cells sampled:", total_single_cells)
 
