@@ -88,22 +88,26 @@ def sample_dataset(config, dset):
     # Loop through a random sample of single cells
     pointer = dset.batch_pointer
     total_single_cells = 0
+    total_images = 0
     all_metadata = []
     while dset.batch_pointer >= pointer:
         pointer = dset.batch_pointer
         batch = dset.get_train_batch(lock)
-        crops, metadata = cropper.process_batch(batch)
-        # Store each single cell in a separate unfolded image
-        for j in range(crops.shape[0]):
-            image = deepprofiler.imaging.cropping.unfold_channels(crops[j,:,:,:])
-            skimage.io.imsave(os.path.join(outdir, metadata.loc[j, "Image_Name"]), image)
-        all_metadata.append(metadata)
 
-        total_single_cells += len(metadata)
-        print(len(metadata), "cells samples from", len(metadata.Key.unique()), "images. Total:", total_single_cells)
+        # Store each single cell in a separate unfolded image
+        if len(batch["keys"]) > 0:
+            crops, metadata = cropper.process_batch(batch)
+            for j in range(crops.shape[0]):
+                image = deepprofiler.imaging.cropping.unfold_channels(crops[j,:,:,:])
+                skimage.io.imsave(os.path.join(outdir, metadata.loc[j, "Image_Name"]), image)
+            all_metadata.append(metadata)
+
+            total_single_cells += len(metadata)
+            total_images += len(batch["keys"])
+            print(total_single_cells, "single cells sampled from", total_images, "images", end="\r")
+    print()
 
     # Save metadata
     all_metadata = pd.concat(all_metadata).reset_index(drop=True)
     all_metadata.to_csv(os.path.join(outdir, "sc-metadata.csv"), index=False)
-    print("Total single cells sampled:", total_single_cells)
 

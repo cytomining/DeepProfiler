@@ -171,6 +171,8 @@ class CropGenerator(object):
                         tname = "target_" + str(i)
                         feed_dict[self.input_variables["targets_phs"][tname]] = targets[i]
 
+                    # The cache reuses augmented examples :(
+                    # How can we do augmentation on the GPU on the fly?
                     output = sess.run(self.train_variables, feed_dict)
 
                     # Find block of the pool to store data
