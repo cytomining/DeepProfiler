@@ -25,7 +25,7 @@ class Profile(object):
 
         self.dpmodel = importlib.import_module(
             "plugins.models.{}".format(config["train"]["model"]["name"])
-        ).ModelClass(config, dset, self.crop_generator, self.profile_crop_generator)
+        ).ModelClass(config, dset, self.crop_generator, self.profile_crop_generator, is_training=False)
 
         self.profile_crop_generator = self.profile_crop_generator(config, dset)
 

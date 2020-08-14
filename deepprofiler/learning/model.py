@@ -21,7 +21,7 @@ import deepprofiler.learning.validation
 
 class DeepProfilerModel(abc.ABC):
 
-    def __init__(self, config, dset, crop_generator, val_crop_generator):
+    def __init__(self, config, dset, crop_generator, val_crop_generator, is_training):
         self.feature_model = None
         self.loss = None
         self.optimizer = None
@@ -30,6 +30,7 @@ class DeepProfilerModel(abc.ABC):
         self.train_crop_generator = crop_generator(config, dset)
         self.val_crop_generator = val_crop_generator(config, dset)
         self.random_seed = None
+        self.is_training = is_training
 
     def seed(self, seed):
         self.random_seed = seed

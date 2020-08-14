@@ -33,7 +33,7 @@ def learn_model(config, dset, epoch=1, seed=None, verbose=1):
 
     crop_generator = crop_module.GeneratorClass
     val_crop_generator = crop_module.SingleImageGeneratorClass
-    model = model_module.ModelClass(config, dset, crop_generator, val_crop_generator)
+    model = model_module.ModelClass(config, dset, crop_generator, val_crop_generator, is_training=True)
 
     if seed is not None:
         model.seed(seed)

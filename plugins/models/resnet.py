@@ -3,6 +3,7 @@ import keras.applications.resnet_v2
 import numpy
 
 from deepprofiler.learning.model import DeepProfilerModel
+from deepprofiler.imaging.augmentations import AugmentationLayer
 
 ##################################################
 # ResNet architecture as defined in "Identity Mappings 
@@ -13,7 +14,7 @@ from deepprofiler.learning.model import DeepProfilerModel
 
 
 class ModelClass(DeepProfilerModel):
-    def __init__(self, config, dset, generator, val_generator):
+    def __init__(self, config, dset, generator, val_generator, is_training):
         super(ModelClass, self).__init__(config, dset, generator, val_generator)
         self.feature_model, self.optimizer, self.loss = self.define_model(config, dset)
 
@@ -34,8 +35,15 @@ class ModelClass(DeepProfilerModel):
         num_layers = config["train"]["model"]["params"]["conv_blocks"]
         error_msg = str(num_layers) + " conv_blocks not in " + SM
         assert num_layers in supported_models.keys(), error_msg
-        
-        model = supported_models[num_layers](input_tensor=input_image, include_top=False, weights=weights)
+
+        if self.is_training:
+            input_image = AugmentationLayer()(input_image)
+
+        model = supported_models[num_layers](
+                input_tensor=input_image, 
+                include_top=False, 
+                weights=weights
+        )
         return model
  
 
