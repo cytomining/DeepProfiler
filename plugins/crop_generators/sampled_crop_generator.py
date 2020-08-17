@@ -51,7 +51,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
 ## TODO: Next steps:
 ## 1. Fix the session closing error at the end (not a big deal for now, but better to fix it)
-## 2. Integrate augmentations (this is important)
+## 2. DONE => Integrate augmentations (this is important)
 ## 3. Reconsider the cache usage statistics and steps per epoch in ImageDataset
 
 ## Reusing the Single Image Crop Generator. No changes needed

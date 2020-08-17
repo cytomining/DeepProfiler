@@ -1,8 +1,9 @@
 import json
 import os
 import copy
-
 import click
+
+import comet_ml
 
 import deepprofiler.dataset.compression
 import deepprofiler.dataset.image_dataset
@@ -143,7 +144,6 @@ def sample_sc(context):
         context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
-    #deepprofiler.learning.training.learn_model(context.obj["config"], metadata, epoch, seed)
     deepprofiler.dataset.sampling.sample_dataset(context.obj["config"], dset)
     print("Single-cell sampling complete.")
 

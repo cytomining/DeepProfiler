@@ -1,9 +1,9 @@
+from deepprofiler.learning.model import DeepProfilerModel
+from deepprofiler.imaging.augmentations import AugmentationLayer
+
 import keras 
 import keras.applications.resnet_v2
 import numpy
-
-from deepprofiler.learning.model import DeepProfilerModel
-from deepprofiler.imaging.augmentations import AugmentationLayer
 
 ##################################################
 # ResNet architecture as defined in "Identity Mappings 
@@ -15,7 +15,7 @@ from deepprofiler.imaging.augmentations import AugmentationLayer
 
 class ModelClass(DeepProfilerModel):
     def __init__(self, config, dset, generator, val_generator, is_training):
-        super(ModelClass, self).__init__(config, dset, generator, val_generator)
+        super(ModelClass, self).__init__(config, dset, generator, val_generator, is_training)
         self.feature_model, self.optimizer, self.loss = self.define_model(config, dset)
 
 
@@ -36,7 +36,7 @@ class ModelClass(DeepProfilerModel):
         error_msg = str(num_layers) + " conv_blocks not in " + SM
         assert num_layers in supported_models.keys(), error_msg
 
-        if self.is_training:
+        if self.is_training and weights is None:
             input_image = AugmentationLayer()(input_image)
 
         model = supported_models[num_layers](
@@ -80,7 +80,7 @@ class ModelClass(DeepProfilerModel):
         for layer in model.layers:
             if hasattr(layer, "kernel_regularizer"):
                 setattr(layer, "kernel_regularizer", regularizer)
-        model = keras.models.model_from_json(model.to_json())
+        model = keras.models.model_from_json(model.to_json(), {'AugmentationLayer': AugmentationLayer})
         optimizer = keras.optimizers.SGD(lr=config["train"]["model"]["params"]["learning_rate"], momentum=0.9, nesterov=True)
 
         return model, optimizer, loss_func
@@ -90,17 +90,19 @@ class ModelClass(DeepProfilerModel):
     ## Support for ImageNet initialization
     def copy_pretrained_weights(self):
         base_model = self.get_model(self.config, weights="imagenet")
+        lshift = int(self.is_training) # Shift one layer to accommodate the AugmentationLayer
+
         # => Transfer all weights except conv1.1
         total_layers = len(base_model.layers)
         for i in range(3,total_layers):
             if len(base_model.layers[i].weights) > 0:
                 print("Setting pre-trained weights: {:.2f}%".format((i/total_layers)*100), end="\r")
-                self.feature_model.layers[i].set_weights(base_model.layers[i].get_weights())
+                self.feature_model.layers[i + lshift].set_weights(base_model.layers[i].get_weights())
         
         # => Replicate filters of first layer as needed
         weights = base_model.layers[2].get_weights()
         available_channels = weights[0].shape[2]
-        target_shape = self.feature_model.layers[2].weights[0].shape
+        target_shape = self.feature_model.layers[2 + lshift].weights[0].shape
         new_weights = numpy.zeros(target_shape)
         for i in range(new_weights.shape[2]):
             j = i%available_channels
@@ -108,7 +110,7 @@ class ModelClass(DeepProfilerModel):
             weights_array = [new_weights]
             if len(weights) > 1: 
                 weights_array += weights[1:]
-            self.feature_model.layers[2].set_weights(weights_array)
+            self.feature_model.layers[2 + lshift].set_weights(weights_array)
         print("Network initialized with pretrained ImageNet weights")
 
 

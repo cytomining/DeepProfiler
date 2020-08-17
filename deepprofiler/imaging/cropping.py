@@ -43,7 +43,12 @@ def unfold_channels(crop, mode=0):
 def fold_channels(crop):
     # Expected input image shape: (h, w * c), with h = w
     # Output image shape: (h, w, c), with h = w
-    return np.reshape(crop, (crop.shape[0], crop.shape[0], -1), order="F")
+    output = np.reshape(crop, (crop.shape[0], crop.shape[0], -1), order="F")
+    for i in range(output.shape[-1]):
+        mean = np.mean(output[:,:,i])
+        std = np.std(output[:,:,i])
+        output[:,:,i] = (output[:,:,i] - mean) / std
+    return output
 
 
 # TODO: implement abstract crop generator
@@ -113,9 +118,17 @@ class CropGenerator(object):
                 "batch": batch_shape
             },
         }
+        self.train_variables = {
+                "image_batch": self.input_variables["labeled_crops"][0],
+                "target_0": tf.one_hot(
+                    self.input_variables["labeled_crops"][1], 
+                    self.dset.targets[0].shape[1]
+                )
+        }
+
 
     #################################################
-    ## AUGMENTATION GRAPH DEFINITION
+    ## AUGMENTATION GRAPH DEFINITION: Deprecated?
     #################################################
 
     def build_augmentation_graph(self):
@@ -158,8 +171,8 @@ class CropGenerator(object):
                     images = np.reshape(batch["images"], self.input_variables["shapes"]["batch"])
                     boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
                     # Pre-crop augmentation: random zoom
-                    zoom = np.random.uniform(low=0.85, high=1.15, size=(boxes.shape[0],1))
-                    boxes = boxes * zoom
+                    #zoom = np.random.uniform(low=0.85, high=1.15, size=(boxes.shape[0],1))
+                    #boxes = boxes * zoom
 
                     feed_dict = {
                             self.input_variables["image_ph"]:images,
@@ -222,7 +235,7 @@ class CropGenerator(object):
         # Define input data batches
         with tf.variable_scope("train_inputs"):
             self.build_input_graph()
-            self.build_augmentation_graph()
+            #self.build_augmentation_graph()
             targets = [self.train_variables[t] for t in self.train_variables.keys() if t.startswith("target_")]
 
             self.image_pool = np.zeros([self.config["train"]["sampling"]["cache_size"]] + list(self.input_variables["shapes"]["crops"][0]))
