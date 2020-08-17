@@ -91,7 +91,12 @@ class Profile(object):
         while len(feats.shape) > 2:  # 2D mean spatial pooling
             feats = np.mean(feats, axis=1)
 
-        key_values = {k:meta[k] for k in meta.keys()}
+        key_values = {
+                "Metadata_Plate": meta["Metadata_Plate"],
+                "Metadata_Well": meta["Metadata_Well"],
+                "Metadata_Site": meta["Metadata_Site"],
+                "Metadata_Model": self.config["train"]["model"]["name"]
+        }
         np.savez_compressed(output_file, features=feats, metadata=key_values)
         toc(image_key + " (" + str(total_crops) + " cells)", start)
 
