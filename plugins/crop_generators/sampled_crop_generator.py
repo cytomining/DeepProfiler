@@ -23,11 +23,12 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         
     def start(self, session):
         samples = pd.read_csv(os.path.join(self.directory, "sc-metadata.csv"))
-        samples["Target"] = samples["Target"].astype(str)
+        self.num_classes = len(samples["Target"].unique())
         self.generator = self.datagen.flow_from_dataframe(
                 dataframe=samples, 
                 x_col="Image_Name",
                 y_col="Target",
+                class_mode="raw",
                 directory=self.directory,
                 color_mode="grayscale",
                 target_size=(self.box_size, self.box_size * self.num_channels),
@@ -41,7 +42,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                 x = np.zeros([x_.shape[0], self.box_size, self.box_size, self.num_channels])
                 for i in range(x_.shape[0]):
                     x[i,:,:,:] = deepprofiler.imaging.cropping.fold_channels(x_[i])
-                yield (x, y)
+                yield (x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
             except:
                 break
 
