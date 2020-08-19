@@ -53,8 +53,7 @@ class ModelClass(DeepProfilerModel):
         input_shape = (
             config["dataset"]["locations"]["box_size"],  # height
             config["dataset"]["locations"]["box_size"],  # width
-            len(config["dataset"]["images"][
-                "channels"])  # channels
+            len(config["dataset"]["images"]["channels"]) # channels
         )
         input_image = keras.layers.Input(input_shape)
         model = self.get_model(config, input_image=input_image)
@@ -80,11 +79,17 @@ class ModelClass(DeepProfilerModel):
         for layer in model.layers:
             if hasattr(layer, "kernel_regularizer"):
                 setattr(layer, "kernel_regularizer", regularizer)
-        model = keras.models.model_from_json(model.to_json(), {'AugmentationLayer': AugmentationLayer})
-        optimizer = keras.optimizers.SGD(lr=config["train"]["model"]["params"]["learning_rate"], momentum=0.9, nesterov=True)
+        model = keras.models.model_from_json(
+                model.to_json(), 
+                {'AugmentationLayer': AugmentationLayer}
+        )
+        optimizer = keras.optimizers.SGD(
+                lr=config["train"]["model"]["params"]["learning_rate"], 
+                momentum=0.9, 
+                nesterov=True
+        )
 
         return model, optimizer, loss_func
-
 
 
     ## Support for ImageNet initialization
@@ -104,13 +109,16 @@ class ModelClass(DeepProfilerModel):
         available_channels = weights[0].shape[2]
         target_shape = self.feature_model.layers[2 + lshift].weights[0].shape
         new_weights = numpy.zeros(target_shape)
+
         for i in range(new_weights.shape[2]):
-            j = i%available_channels
+            j = i % available_channels
             new_weights[:,:,i,:] = weights[0][:,:,j,:]
-            weights_array = [new_weights]
-            if len(weights) > 1: 
-                weights_array += weights[1:]
-            self.feature_model.layers[2 + lshift].set_weights(weights_array)
+
+        weights_array = [new_weights]
+        if len(weights) > 1: 
+            weights_array += weights[1:]
+
+        self.feature_model.layers[2 + lshift].set_weights(weights_array)
         print("Network initialized with pretrained ImageNet weights")
 
 

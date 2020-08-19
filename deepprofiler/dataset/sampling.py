@@ -25,6 +25,7 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
         for i in range(len(batch["keys"])):
             batch["locations"][i]["Key"] = batch["keys"][i]
             batch["locations"][i]["Target"] = batch["targets"][i][0]
+            batch["locations"][i]["Class_Name"] = self.dset.targets[0].values[batch["targets"][i][0]]
         metadata = pd.concat(batch["locations"])
         cols = ["Key","Target","Nuclei_Location_Center_X","Nuclei_Location_Center_Y"]
         seps = ["+","@","x",".png"]

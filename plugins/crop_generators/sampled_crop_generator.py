@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import pandas as pd
+import skimage.io
 import tensorflow as tf
 
 import deepprofiler.imaging.cropping
@@ -16,44 +17,65 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
     def __init__(self, config, dset):
         super(GeneratorClass, self).__init__(config, dset)
-        self.datagen = tf.keras.preprocessing.image.ImageDataGenerator()
+        #self.datagen = tf.keras.preprocessing.image.ImageDataGenerator()
         self.directory = config["paths"]["single_cell_sample"]
         self.num_channels = len(config["dataset"]["images"]["channels"])
-        self.box_size = config["dataset"]["locations"]["box_size"]
-        
+        self.box_size = self.config["dataset"]["locations"]["box_size"]
+        self.batch_size = self.config["train"]["model"]["params"]["batch_size"]
+
+
     def start(self, session):
-        samples = pd.read_csv(os.path.join(self.directory, "sc-metadata.csv"))
-        self.num_classes = len(samples["Target"].unique())
+        self.samples = pd.read_csv(os.path.join(self.directory, "sc-metadata.csv"))
+        self.samples = self.samples.sample(frac=1.0).reset_index(drop=True)
+        self.num_classes = len(self.samples["Target"].unique())
+        '''
         self.generator = self.datagen.flow_from_dataframe(
                 dataframe=samples, 
                 x_col="Image_Name",
-                y_col="Target",
-                class_mode="raw",
+                y_col="Class_Name",
+                class_mode="categorical",
                 directory=self.directory,
                 color_mode="grayscale",
                 target_size=(self.box_size, self.box_size * self.num_channels),
                 batch_size=self.config["train"]["model"]["params"]["batch_size"]
         )
+        '''
 
     def generate(self, sess, global_step=0):
+        pointer = 0
+        while True:
+            #try:
+                x = np.zeros([self.batch_size, self.box_size, self.box_size, self.num_channels])
+                y = []
+                for i in range(self.batch_size):
+                    if pointer >= len(self.samples):
+                        self.samples = self.samples.sample(frac=1.0).reset_index(drop=True)
+                        pointer = 0
+                    filename = os.path.join(self.directory, self.samples.loc[pointer, "Image_Name"])
+                    im = skimage.io.imread(filename).astype(np.float32)
+                    x[i,:,:,:] = deepprofiler.imaging.cropping.fold_channels(im)
+                    y.append(self.samples.loc[pointer, "Target"])
+                    pointer += 1
+                yield(x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
+            #except:
+            #   break
+
+
+    def generate_old(self, sess, global_step=0):
         while True:
             try:
                 x_, y = next(self.generator)
                 x = np.zeros([x_.shape[0], self.box_size, self.box_size, self.num_channels])
                 for i in range(x_.shape[0]):
                     x[i,:,:,:] = deepprofiler.imaging.cropping.fold_channels(x_[i])
-                yield (x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
+                yield (x, y) #tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
             except:
                 break
+
 
     def stop(self, session):
         session.close()
         return
-
-## TODO: Next steps:
-## 1. Fix the session closing error at the end (not a big deal for now, but better to fix it)
-## 2. DONE => Integrate augmentations (this is important)
-## 3. Reconsider the cache usage statistics and steps per epoch in ImageDataset
 
 ## Reusing the Single Image Crop Generator. No changes needed
 

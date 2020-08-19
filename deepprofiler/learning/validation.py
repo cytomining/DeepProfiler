@@ -32,5 +32,5 @@ def load_validation_data(config, dset, crop_generator, session):
 
     validation = Validation(config, dset, crop_generator, session)
     dset.scan(validation.process_batches, frame="val")
-    print("Validation data loaded")
+    print("Validation data loaded ")
     return np.concatenate(validation.batch_inputs), np.concatenate(validation.batch_outputs)
