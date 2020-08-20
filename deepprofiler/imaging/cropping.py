@@ -23,7 +23,6 @@ def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes
             crops = crops[:,:,:,0:-1] * tf.expand_dims(masks, -1)
         mean = tf.math.reduce_mean(crops, axis=[1,2], keepdims=True)
         std = tf.math.reduce_std(crops, axis=[1,2], keepdims=True)
- 
         crops = (crops - mean)/std
     return crops
 
