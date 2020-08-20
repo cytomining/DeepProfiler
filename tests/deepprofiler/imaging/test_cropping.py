@@ -175,7 +175,8 @@ def test_single_image_crop_generator_prepare_image(single_image_crop_generator, 
     assert os.path.exists(path)
     with tf.Session(config=cpu_config) as sess:
         single_image_crop_generator.start(sess)
-        num_crops = single_image_crop_generator.prepare_image(sess, image, meta)
+        crop_locations = single_image_crop_generator.prepare_image(sess, image, meta)
+        num_crops = len(crop_locations)
         assert num_crops == 10
         assert single_image_crop_generator.batch_size == single_image_crop_generator.config["train"]["validation"]["batch_size"]
         assert np.array(single_image_crop_generator.image_pool).shape == (10,
@@ -203,7 +204,8 @@ def test_single_image_crop_generator_generate(single_image_crop_generator, make_
     assert os.path.exists(path)
     with tf.Session(config=cpu_config) as sess:
         single_image_crop_generator.start(sess)
-        num_crops = single_image_crop_generator.prepare_image(sess, image, meta)
+        crop_locations = single_image_crop_generator.prepare_image(sess, image, meta)
+        num_crops = len(crop_locations)
         for i, item in enumerate(single_image_crop_generator.generate(sess)):
             assert np.array(item[0]).shape == (10,
                                            single_image_crop_generator.config["dataset"]["locations"]["box_size"],

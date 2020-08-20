@@ -64,17 +64,19 @@ class Profile(object):
     # Function to process a single image
     def extract_features(self, key, image_array, meta):  # key is a placeholder
         start = tic()
-        output_file = self.config["paths"]["features"] + "/{}_{}_{}.npz"
+        output_file = self.config["paths"]["features"] + "/{}/{}_{}.npz"
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
+        os.makedirs(self.config["paths"]["features"] + "/" + meta["Metadata_Plate"], exist_ok=True)
 
         batch_size = self.config["profile"]["batch_size"]
         image_key, image_names, outlines = self.dset.get_image_paths(meta)
-        total_crops = self.profile_crop_generator.prepare_image(
+        crop_locations = self.profile_crop_generator.prepare_image(
                                    K.get_session(),
                                    image_array,
                                    meta,
                                    False
                             )
+        total_crops = len(crop_locations)
         if total_crops == 0:
             print("No cells to profile:", output_file)
             return
@@ -91,13 +93,9 @@ class Profile(object):
         while len(feats.shape) > 2:  # 2D mean spatial pooling
             feats = np.mean(feats, axis=1)
 
-        key_values = {
-                "Metadata_Plate": meta["Metadata_Plate"],
-                "Metadata_Well": meta["Metadata_Well"],
-                "Metadata_Site": meta["Metadata_Site"],
-                "Metadata_Model": self.config["train"]["model"]["name"]
-        }
-        np.savez_compressed(output_file, features=feats, metadata=key_values)
+        key_values = {k:meta[k] for k in meta.keys()}
+        key_values["Metadata_Model"] = self.config["train"]["model"]["name"]
+        np.savez_compressed(output_file, features=feats, metadata=key_values, locations=crop_locations)
         toc(image_key + " (" + str(total_crops) + " cells)", start)
 
         
