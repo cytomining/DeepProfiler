@@ -49,7 +49,7 @@ class AugmentationLayer(keras.layers.Layer):
   def build(self, input_shape):
       return
 
-  def call(self, input_tensor, training=False):
+  def call(self, input_tensor, training=True):
       if training:
           return augment_multiple(input_tensor)
       else:
