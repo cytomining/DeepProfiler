@@ -1,6 +1,5 @@
 from deepprofiler.learning.model import DeepProfilerModel
 from deepprofiler.imaging.augmentations import AugmentationLayer
-import deepprofiler.learning.layers as dp_layers
 
 import keras 
 import keras.applications.resnet_v2
@@ -80,14 +79,9 @@ class ModelClass(DeepProfilerModel):
         for layer in model.layers:
             if hasattr(layer, "kernel_regularizer"):
                 setattr(layer, "kernel_regularizer", regularizer)
-
-        model = dp_layers.insert_layer_nonseq(model, ".*_bn", dp_layers.cn_factory, position="replace")
         model = keras.models.model_from_json(
                 model.to_json(), 
-                {
-                    'AugmentationLayer': AugmentationLayer,
-                    "ControlNormalization": dp_layers.ControlNormalization
-                }
+                {'AugmentationLayer': AugmentationLayer}
         )
         optimizer = keras.optimizers.SGD(
                 lr=config["train"]["model"]["params"]["learning_rate"], 

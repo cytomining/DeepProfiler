@@ -11,7 +11,6 @@ import tensorflow as tf
 import deepprofiler.dataset.utils
 import deepprofiler.imaging.cropping
 import deepprofiler.learning.validation
-import deepprofiler.learning.layers
 
 ##################################################
 # This class should be used as an abstract base
@@ -171,9 +170,6 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
         on_train_begin=lambda logs: dset.show_setup(),
         on_epoch_end=lambda epoch, logs: experiment.log_metrics(dset.show_stats()) if experiment else dset.show_stats()
     )
-    
-    # Control Normalization statistics
-    cn_stats = deepprofiler.learning.layers.UpdateControlStatistics(dpmodel.config)
 
     # Learning rate schedule
     def lr_schedule(epoch, lr):
@@ -185,9 +181,9 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
     # Collect all callbacks
     if lr_schedule_epochs:
         callback_lr_schedule = keras.callbacks.LearningRateScheduler(lr_schedule, verbose=1)
-        callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule, qstats, cn_stats]
+        callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule, qstats]
     else:
-        callbacks = [callback_model_checkpoint, callback_csv, qstats, cn_stats]
+        callbacks = [callback_model_checkpoint, callback_csv, qstats]
     return callbacks
 
 
