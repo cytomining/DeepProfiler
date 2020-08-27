@@ -108,21 +108,21 @@ class ImageDataset():
         print(" || => Median # of images per class:", self.sample_images)
         print(" || => Number of classes:", len(self.training_images["Target"].unique()))
         print(" || => Median # of cells per image:", self.sample_locations)
-        print(" || => Single cells per epoch (with balanced sampling):", self.cells_per_epoch)
+        print(" || => Approx. cells per epoch (with balanced sampling):", self.cells_per_epoch)
         print(" || => Images sampled per worker:", self.images_per_worker)
         print(" || => Cache data coverage: {}%".format(int(self.cache_coverage)))
         print(" || => Steps per epoch:", self.steps_per_epoch)
  
 
-    def show_stats(self):
+    def show_stats(self): ## Deprecated?
         # Proportion of images loaded by workers from all images that they should load in one epoch (recall)
         worker_efficiency = int(100 * (self.data_rotation / self.training_sample.shape[0]))
         # Proportion of single cells placed in the cache from all those that should be used in one epoch
         cache_usage = int(100 * self.cache_records / self.cells_per_epoch)
-        print("Training set coverage: {}% (worker efficiency). Data rotation: {}% (cache usage).".format(
-                  worker_efficiency,
-                  cache_usage)
-        )
+        #print("Training set coverage: {}% (worker efficiency). Data rotation: {}% (cache usage).".format(
+        #          worker_efficiency,
+        #          cache_usage)
+        #)
         self.data_rotation = 0
         self.cache_records = 0
         return {'worker_efficiency': worker_efficiency, 'cache_usage': cache_usage}

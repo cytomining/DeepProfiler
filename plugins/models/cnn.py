@@ -6,7 +6,7 @@ from keras.models import Model, Sequential
 from keras.optimizers import Adam
 
 from deepprofiler.learning.model import DeepProfilerModel
-
+from deepprofiler.imaging.augmentations import AugmentationLayer
 
 ##################################################
 # Basic convolutional network with alternating
@@ -14,7 +14,7 @@ from deepprofiler.learning.model import DeepProfilerModel
 ##################################################
 
 
-def define_model(config, dset):
+def define_model(config, dset, is_training):
     # Define input layer
     input_shape = (
         config["dataset"]["locations"]["box_size"],  # height
@@ -28,6 +28,8 @@ def define_model(config, dset):
 
     # Add convolutional blocks based on number specified in config, with increasing number of filters
     x = input_image
+    if is_training:
+        x = AugmentationLayer()(x)
     for i in range(config["train"]["model"]["params"]["conv_blocks"]):
         x = Conv2D(8 * 2 ** i, (3, 3), padding="same")(x)
         x = BatchNormalization()(x)
@@ -52,6 +54,6 @@ def define_model(config, dset):
 
 
 class ModelClass(DeepProfilerModel):
-    def __init__(self, config, dset, generator, val_generator):
-        super(ModelClass, self).__init__(config, dset, generator, val_generator)
-        self.feature_model, self.optimizer, self.loss = define_model(config, dset)
+    def __init__(self, config, dset, generator, val_generator, is_training):
+        super(ModelClass, self).__init__(config, dset, generator, val_generator, is_training)
+        self.feature_model, self.optimizer, self.loss = define_model(config, dset, is_training)

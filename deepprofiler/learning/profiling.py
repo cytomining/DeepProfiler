@@ -25,7 +25,7 @@ class Profile(object):
 
         self.dpmodel = importlib.import_module(
             "plugins.models.{}".format(config["train"]["model"]["name"])
-        ).ModelClass(config, dset, self.crop_generator, self.profile_crop_generator)
+        ).ModelClass(config, dset, self.crop_generator, self.profile_crop_generator, is_training=False)
 
         self.profile_crop_generator = self.profile_crop_generator(config, dset)
 
@@ -43,11 +43,12 @@ class Profile(object):
                 self.dpmodel.feature_model.layers[-1].name = "classifier"
                 self.dpmodel.feature_model.load_weights(checkpoint, by_name=True)
 
+        self.dpmodel.feature_model.summary()
         self.feat_extractor = keras.Model(
             self.dpmodel.feature_model.inputs, 
             self.dpmodel.feature_model.get_layer(self.config["profile"]["feature_layer"]).output
         )
-        self.feat_extractor.summary()
+        print("Extracting output from layer:", self.config["profile"]["feature_layer"])
 
     def check(self, meta):
         output_folder = self.config["paths"]["features"]

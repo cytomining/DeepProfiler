@@ -1,4 +1,5 @@
 import tensorflow as tf
+import keras
 import numpy as np
 
 #################################################
@@ -34,7 +35,23 @@ def augment(crop):
     return augmented
 
 
-def augment_multiple(crops, parallel=10):
+def augment_multiple(crops, parallel=None):
     with tf.variable_scope("augmentation"):
         return tf.map_fn(augment, crops, parallel_iterations=parallel, dtype=tf.float32)
+
+
+## A layer for GPU accelerated augmentations
+
+class AugmentationLayer(keras.layers.Layer):
+  def __init__(self, **kwargs):
+      super(AugmentationLayer, self).__init__(**kwargs)
+
+  def build(self, input_shape):
+      return
+
+  def call(self, input_tensor, training=False):
+      if training:
+          return augment_multiple(input_tensor)
+      else:
+          return input_tensor
 
