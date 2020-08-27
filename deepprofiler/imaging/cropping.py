@@ -322,7 +322,7 @@ class SingleImageCropGenerator(CropGenerator):
         num_classes = self.dset.targets[0].shape[1]
         self.label_pool = keras.utils.to_categorical(output["target_0"], num_classes=num_classes)
 
-        return total_crops 
+        return batch["locations"][0] 
 
 
     def generate(self, session, global_step=0):

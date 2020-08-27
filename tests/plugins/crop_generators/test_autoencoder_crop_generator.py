@@ -55,7 +55,8 @@ def test_single_image_generator_class_generate(config, dataset, tmpdir):
     assert os.path.exists(path)
     sess = tf.Session()
     crop_generator.start(sess)
-    num_crops = crop_generator.prepare_image(sess, image, meta)
+    crop_locations = crop_generator.prepare_image(sess, image, meta)
+    num_crops = len(crop_locations)
     for i, item in enumerate(crop_generator.generate(sess)):
         np.testing.assert_array_equal(item[0], item[1])
         assert i == 0
