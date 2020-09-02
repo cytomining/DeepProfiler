@@ -67,7 +67,7 @@ class Profile(object):
         start = tic()
         output_file = self.config["paths"]["features"] + "/{}/{}_{}.npz"
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
-        os.makedirs(self.config["paths"]["features"] + "/" + meta["Metadata_Plate"], exist_ok=True)
+        os.makedirs(self.config["paths"]["features"] + "/{}".format(meta["Metadata_Plate"]), exist_ok=True)
 
         batch_size = self.config["profile"]["batch_size"]
         image_key, image_names, outlines = self.dset.get_image_paths(meta)
