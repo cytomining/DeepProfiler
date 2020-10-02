@@ -132,6 +132,7 @@ def prepare(context):
     metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["paths"]["index"])  # reinitialize generator
     process.compute(deepprofiler.dataset.compression.compress_plate, metadata)
     deepprofiler.dataset.indexing.write_compression_index(context.obj["config"])
+    os.mkdir(context.obj["config"]["paths"]["compressed_metadata"])
     context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
     print("Compression complete!")
 
