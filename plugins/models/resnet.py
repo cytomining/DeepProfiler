@@ -1,12 +1,13 @@
 from deepprofiler.learning.model import DeepProfilerModel
 from deepprofiler.imaging.augmentations import AugmentationLayer
 
-import keras 
+import keras
 import keras.applications.resnet_v2
 import numpy
 
+
 ##################################################
-# ResNet architecture as defined in "Identity Mappings 
+# ResNet architecture as defined in "Identity Mappings
 # in Deep Residual Networks" by Kaiming He,
 # Xiangyu Zhang, Shaoqing Ren, Jian Sun
 # https://arxiv.org/abs/1603.05027
@@ -18,7 +19,6 @@ class ModelClass(DeepProfilerModel):
         super(ModelClass, self).__init__(config, dset, generator, val_generator, is_training)
         self.feature_model, self.optimizer, self.loss = self.define_model(config, dset)
 
-
     ## Define supported models
     def get_supported_models(self):
         return {
@@ -26,68 +26,76 @@ class ModelClass(DeepProfilerModel):
             101: keras.applications.resnet_v2.ResNet101V2,
             152: keras.applications.resnet_v2.ResNet152V2,
         }
- 
 
     ## Load a supported model
-    def get_model(self, config, input_image=None, weights=None):
+    def get_model(self, config, input_image=None, weights=None, pooling=None, include_top=False):
         supported_models = self.get_supported_models()
         SM = "ResNet supported models: " + ",".join([str(x) for x in supported_models.keys()])
         num_layers = config["train"]["model"]["params"]["conv_blocks"]
         error_msg = str(num_layers) + " conv_blocks not in " + SM
         assert num_layers in supported_models.keys(), error_msg
-
         if self.is_training and weights is None:
             input_image = AugmentationLayer()(input_image)
-
-        model = supported_models[num_layers](
-                input_tensor=input_image, 
-                include_top=False, 
-                weights=weights
-        )
+        if pooling is not None:
+            model = supported_models[num_layers](input_tensor=input_image, pooling=pooling, include_top=include_top,
+                                                 weights=weights)
+        else:
+            model = supported_models[num_layers](input_tensor=input_image, include_top=include_top, weights=weights)
         return model
- 
 
     ## Model definition
     def define_model(self, config, dset):
         # 1. Create ResNet architecture to extract features
-        input_shape = (
-            config["dataset"]["locations"]["box_size"],  # height
-            config["dataset"]["locations"]["box_size"],  # width
-            len(config["dataset"]["images"]["channels"]) # channels
-        )
-        input_image = keras.layers.Input(input_shape)
-        model = self.get_model(config, input_image=input_image)
-        features = keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-1].output)
-
-        # 2. Create an output embedding for each target
-        class_outputs = []
-
-        i = 0
-        for t in dset.targets:
-            y = keras.layers.Dense(t.shape[1], activation="softmax", name=t.field_name)(features)
-            class_outputs.append(y)
-            i += 1
-
-        # 3. Define the loss function
         loss_func = "categorical_crossentropy"
+        optimizer = keras.optimizers.SGD(lr=config["train"]["model"]["params"]["learning_rate"], momentum=0.9,
+                                         nesterov=True)
+        if "use_pretrained_input_size" in config["profile"].keys() and self.is_training is False:
+            input_tensor = keras.layers.Input(
+                (config["profile"]["use_pretrained_input_size"], config["profile"]["use_pretrained_input_size"], 3),
+                name="input")
+            model = self.get_model(
+                config,
+                input_image=input_tensor,
+                weights='imagenet',
+                pooling="avg",
+                include_top=True
+            )
+            model.summary()
 
-        # 4. Create and compile model
-        model = keras.models.Model(inputs=input_image, outputs=class_outputs)
-        ## Added weight decay following tricks reported in:
-        ## https://github.com/keras-team/keras/issues/2717
-        regularizer = keras.regularizers.l2(0.00001)
-        for layer in model.layers:
-            if hasattr(layer, "kernel_regularizer"):
-                setattr(layer, "kernel_regularizer", regularizer)
-        model = keras.models.model_from_json(
-                model.to_json(), 
+        elif self.is_training is True or "use_pretrained_input_size" not in config["profile"].keys():
+            input_shape = (
+                config["dataset"]["locations"]["box_size"],  # height
+                config["dataset"]["locations"]["box_size"],  # width
+                len(config["dataset"]["images"][
+                        "channels"])  # channels
+            )
+            input_image = keras.layers.Input(input_shape)
+            model = self.get_model(config, input_image=input_image)
+            features = keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-1].output)
+
+            # 2. Create an output embedding for each target
+            class_outputs = []
+
+            i = 0
+            for t in dset.targets:
+                y = keras.layers.Dense(t.shape[1], activation="softmax", name=t.field_name)(features)
+                class_outputs.append(y)
+                i += 1
+
+            # 4. Create and compile model
+            model = keras.models.Model(inputs=input_image, outputs=class_outputs)
+
+            ## Added weight decay following tricks reported in:
+            ## https://github.com/keras-team/keras/issues/2717
+            regularizer = keras.regularizers.l2(0.00001)
+            for layer in model.layers:
+                if hasattr(layer, "kernel_regularizer"):
+                    setattr(layer, "kernel_regularizer", regularizer)
+
+            model = keras.models.model_from_json(
+                model.to_json(),
                 {'AugmentationLayer': AugmentationLayer}
-        )
-        optimizer = keras.optimizers.SGD(
-                lr=config["train"]["model"]["params"]["learning_rate"], 
-                momentum=0.9, 
-                nesterov=True
-        )
+            )
 
         return model, optimizer, loss_func
 
