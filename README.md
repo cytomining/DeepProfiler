@@ -2,7 +2,6 @@
 
 -----------------
 
-[![Build Status](https://travis-ci.com/broadinstitute/DeepProfiler.svg?branch=master)](https://travis-ci.com/broadinstitute/DeepProfiler)
 [![codecov](https://codecov.io/gh/broadinstitute/DeepProfiler/branch/master/graph/badge.svg)](https://codecov.io/gh/broadinstitute/DeepProfiler)
 [![Requirements Status](https://requires.io/github/broadinstitute/DeepProfiler/requirements.svg?branch=master)](https://requires.io/github/broadinstitute/DeepProfiler/requirements/?branch=master)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1966/badge)](https://bestpractices.coreinfrastructure.org/projects/1966)
