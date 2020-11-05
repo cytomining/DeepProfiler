@@ -33,13 +33,13 @@ def model(config, dataset, crop_generator, val_crop_generator):
     def create():
         module = importlib.import_module("plugins.models.{}".format(config["train"]["model"]["name"]))
         importlib.invalidate_caches()
-        dpmodel = module.ModelClass(config, dataset, crop_generator, val_crop_generator)
+        dpmodel = module.ModelClass(config, dataset, crop_generator, val_crop_generator, is_training=True)
         return dpmodel
     return create
 
 
 def test_init(config, dataset, crop_generator, val_crop_generator):
-    dpmodel = DeepProfilerModel(config, dataset, crop_generator, val_crop_generator)
+    dpmodel = DeepProfilerModel(config, dataset, crop_generator, val_crop_generator, is_training=True)
     assert dpmodel.feature_model is None
     assert dpmodel.config == config
     assert dpmodel.dset == dataset
