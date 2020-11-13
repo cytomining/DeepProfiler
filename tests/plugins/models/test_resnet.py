@@ -21,7 +21,7 @@ def val_generator():
 def test_init(config, dataset, generator, val_generator):
     config["train"]["model"]["name"] = "resnet" 
     config["train"]["model"]["params"]["conv_blocks"] = 50
-    dpmodel = plugins.models.resnet.ModelClass(config, dataset, generator, val_generator)
+    dpmodel = plugins.models.resnet.ModelClass(config, dataset, generator, val_generator, is_training=False)
     model, optimizer, loss = plugins.models.resnet.ModelClass.define_model(dpmodel, config, dataset)
     assert dpmodel.feature_model.__eq__(model)
     assert dpmodel.optimizer.__eq__(optimizer)

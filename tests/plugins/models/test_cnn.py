@@ -19,15 +19,15 @@ def val_generator():
 
 
 def test_define_model(config, dataset):
-    model, optimizer, loss = plugins.models.cnn.define_model(config, dataset)
+    model, optimizer, loss = plugins.models.cnn.define_model(config, dataset, is_training=False)
     assert isinstance(model, keras.Model)
     assert isinstance(optimizer, str) or isinstance(optimizer, keras.optimizers.Optimizer)
     assert isinstance(loss, str) or callable(loss)
 
 
-def test_init(config, dataset, generator, val_generator):
-    dpmodel = plugins.models.cnn.ModelClass(config, dataset, generator, val_generator)
-    model, optimizer, loss = plugins.models.cnn.define_model(config, dataset)
+def test_init(config, dataset, generator, val_generator, is_training=False):
+    dpmodel = plugins.models.cnn.ModelClass(config, dataset, generator, val_generator, is_training)
+    model, optimizer, loss = plugins.models.cnn.define_model(config, dataset, is_training)
     assert dpmodel.feature_model.__eq__(model)
     assert dpmodel.optimizer.__eq__(optimizer)
     assert dpmodel.loss.__eq__(loss)

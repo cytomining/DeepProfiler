@@ -1,6 +1,7 @@
 import keras
 import keras.applications
-from plugins.models import resnet 
+
+from plugins.models import resnet
 
 ##################################################
 # DenseNet architecture as in "Densely Connected 
@@ -9,10 +10,9 @@ from plugins.models import resnet
 # https://arxiv.org/pdf/1608.06993.pdf
 ##################################################
 
-
 class ModelClass(resnet.ModelClass):
-    def __init__(self, config, dset, generator, val_generator):
-        super().__init__(config, dset, generator, val_generator)
+    def __init__(self, config, dset, generator, val_generator, is_training):
+        super(ModelClass, self).__init__(config, dset, generator, val_generator, is_training)
         self.feature_model, self.optimizer, self.loss = super().define_model(config, dset)
 
 
@@ -22,5 +22,4 @@ class ModelClass(resnet.ModelClass):
             169: keras.applications.DenseNet169,
             201: keras.applications.DenseNet201
         }
-
 

@@ -20,7 +20,7 @@ def checkpoint(config, dataset):
         "plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"])) \
         .SingleImageGeneratorClass
     dpmodel = importlib.import_module("plugins.models.{}".format(config["train"]["model"]["name"])) \
-        .ModelClass(config, dataset, crop_generator, profile_crop_generator)
+        .ModelClass(config, dataset, crop_generator, profile_crop_generator, False)
     dpmodel.feature_model.compile(dpmodel.optimizer, dpmodel.loss)
     filename = os.path.join(config["paths"]["checkpoints"], config["profile"]["checkpoint"])
     with tf.Session().as_default():
