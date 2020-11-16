@@ -19,7 +19,7 @@ def val_generator():
 
 
 def test_define_model(config, dataset):
-    model, optimizer, loss = plugins.models.cnn.define_model(config, dataset, is_training=False)
+    model, optimizer, loss = plugins.models.cnn.define_model(config, dataset, is_training=True)
     assert isinstance(model, keras.Model)
     assert isinstance(optimizer, str) or isinstance(optimizer, keras.optimizers.Optimizer)
     assert isinstance(loss, str) or callable(loss)

@@ -33,7 +33,6 @@ def prepared_crop_generator(crop_generator, out_dir):
         skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["G"][i // 3]), images[:, :, i + 1])
         skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["B"][i // 3]), images[:, :, i + 2])
     crop_generator.build_input_graph()
-    crop_generator.build_augmentation_graph()
     return crop_generator
 
 
@@ -79,7 +78,6 @@ def test_crop_generator_build_input_graph(crop_generator):
 def test_crop_generator_build_augmentation_graph(crop_generator):
     with tf.Session(config=cpu_config) as sess:
         crop_generator.build_input_graph()
-        crop_generator.build_augmentation_graph()
         image_batch = crop_generator.train_variables["image_batch"]
         generated_shape = image_batch.shape #get_shape().as_list() 
 
