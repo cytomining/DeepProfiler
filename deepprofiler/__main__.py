@@ -35,12 +35,15 @@ import deepprofiler.download.normalize_bbbc021_metadata
 @click.option("--exp", default="results",
               help="Name of experiment",
               type=click.STRING)
+@click.option("--sample", default="single-cell-sample",
+              help="Name of single cell sample",
+              type=click.STRING)
 @click.option("--logging", default=None,
               help="Path to file with comet.ml API key",
               type=click.STRING)
 
 @click.pass_context
-def cli(context, root, config, exp, cores, gpu, logging):
+def cli(context, root, config, exp, cores, gpu, logging, sample):
     dirs = {
         "root": root,
         "locations": root + "/inputs/locations/",  # TODO: use os.path.join()
@@ -50,7 +53,7 @@ def cli(context, root, config, exp, cores, gpu, logging):
         "intensities": root + "/outputs/intensities/",
         "compressed_images": root + "/outputs/compressed/images/",
         "compressed_metadata": root + "/outputs/compressed/metadata/",
-        "single_cell_sample": root + "/outputs/single-cell-sample/",
+        "single_cell_sample": root + "/outputs/" + sample + "/",
         "results": root + "/outputs/" + exp + "/",
         "checkpoints": root + "/outputs/" + exp + "/checkpoint/",
         "logs": root + "/outputs/" + exp + "/logs/",
