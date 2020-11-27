@@ -25,7 +25,6 @@ def test_generator_class_generate(config, dataset, out_dir):
         skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["G"][i // 3]), images[:, :, i + 1])
         skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["B"][i // 3]), images[:, :, i + 2])
     crop_generator.build_input_graph()
-    crop_generator.build_augmentation_graph()
     sess = tf.Session()
     crop_generator.start(sess)
     generator = crop_generator.generate(sess)

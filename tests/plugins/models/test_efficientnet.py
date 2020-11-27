@@ -19,7 +19,7 @@ def val_generator():
     return deepprofiler.imaging.cropping.SingleImageCropGenerator
 
 
-def test_init(config, dataset, generator, val_generator, is_training=False):
+def test_init(config, dataset, generator, val_generator, is_training=True):
     with tf.Session().as_default():
         config["train"]["model"]["name"] = "efficientnet"
         config["train"]["model"]["params"]["conv_blocks"] = 0

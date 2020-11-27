@@ -25,7 +25,6 @@ def prepared_crop_generator(crop_generator, out_dir):
         skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["G"][i // 3]), images[:, :, i + 1])
         skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["B"][i // 3]), images[:, :, i + 2])
     crop_generator.build_input_graph()
-    crop_generator.build_augmentation_graph()
     return crop_generator
 
 @pytest.fixture(scope="function")
