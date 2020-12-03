@@ -198,6 +198,8 @@ class ImageDataset():
 def read_dataset(config):
     # Read metadata and split dataset in training and validation
     metadata = deepprofiler.dataset.metadata.Metadata(config["paths"]["index"], dtype=None)
+    if config["prepare"]["compression"]["implement"]:
+        metadata.data.replace({'.tiff': '.png', '.tif': '.png'}, inplace=True, regex=True)
 
     # Add outlines if specified
     outlines = None

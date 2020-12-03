@@ -38,12 +38,16 @@ import deepprofiler.download.normalize_bbbc021_metadata
 @click.option("--sample", default="single-cell-sample",
               help="Name of single cell sample",
               type=click.STRING)
+@click.option("--metadata", default='index.csv',
+              help="Name of metadata file, default index.csv",
+              type=click.STRING)
 @click.option("--logging", default=None,
               help="Path to file with comet.ml API key",
               type=click.STRING)
 
+
 @click.pass_context
-def cli(context, root, config, exp, cores, gpu, logging, sample):
+def cli(context, root, config, exp, cores, gpu, sample, metadata, logging):
     dirs = {
         "root": root,
         "locations": root + "/inputs/locations/",  # TODO: use os.path.join()
@@ -52,7 +56,6 @@ def cli(context, root, config, exp, cores, gpu, logging, sample):
         "metadata": root + "/inputs/metadata/",
         "intensities": root + "/outputs/intensities/",
         "compressed_images": root + "/outputs/compressed/images/",
-        "compressed_metadata": root + "/outputs/compressed/metadata/",
         "single_cell_sample": root + "/outputs/" + sample + "/",
         "results": root + "/outputs/" + exp + "/",
         "checkpoints": root + "/outputs/" + exp + "/checkpoint/",
@@ -86,7 +89,7 @@ def cli(context, root, config, exp, cores, gpu, logging, sample):
 
         # Update references
         params["experiment_name"] = exp
-        params["paths"]["index"] = params["paths"]["metadata"] + "/index.csv"
+        params["paths"]["index"] = params["paths"]["metadata"] + metadata
         context.obj["config"] = params
         if logging:
             with open(os.path.join(dirs["config"], logging), "r") as f:
@@ -134,9 +137,6 @@ def prepare(context):
     print("Illumination complete!")
     metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["paths"]["index"])  # reinitialize generator
     process.compute(deepprofiler.dataset.compression.compress_plate, metadata)
-    deepprofiler.dataset.indexing.write_compression_index(context.obj["config"])
-    os.mkdir(context.obj["config"]["paths"]["compressed_metadata"])
-    context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
     print("Compression complete!")
 
 
@@ -145,27 +145,25 @@ def prepare(context):
 @click.pass_context
 def sample_sc(context):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-        context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     deepprofiler.dataset.sampling.sample_dataset(context.obj["config"], dset)
     print("Single-cell sampling complete.")
 
 
-# Second tool: Train a network
+# Third tool: Train a network
 @cli.command()
 @click.option("--epoch", default=1)
 @click.option("--seed", default=None)
 @click.pass_context
 def train(context, epoch, seed):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-        context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     deepprofiler.learning.training.learn_model(context.obj["config"], dset, epoch, seed)
 
 
-# Third tool: Profile cells and extract features
+# Fourth tool: Profile cells and extract features
 @cli.command()
 @click.pass_context
 @click.option("--part",
@@ -174,7 +172,6 @@ def train(context, epoch, seed):
               type=click.INT)
 def profile(context, part):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-        context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     config = context.obj["config"]
     if part >= 0:
@@ -183,7 +180,7 @@ def profile(context, part):
     metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
     deepprofiler.learning.profiling.profile(context.obj["config"], metadata)
     
-""
+
 # Auxiliary tool: Split index in multiple parts
 @cli.command()
 @click.pass_context
@@ -192,7 +189,6 @@ def profile(context, part):
               type=click.INT)
 def split(context, parts):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-        context.parent.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["compressed_metadata"]+"/compressed.csv"
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     deepprofiler.dataset.indexing.split_index(context.obj["config"], parts)
 
