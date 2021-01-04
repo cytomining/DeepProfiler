@@ -95,13 +95,13 @@ class DeepProfilerModel(abc.ABC):
     def load_weights(self, epoch):
         output_file = self.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
         previous_model = output_file.format(epoch=epoch - 1)
+        # Initialize all tf variables
+        keras.backend.get_session().run(tf.global_variables_initializer())
         if epoch >= 1 and os.path.isfile(previous_model):
             self.feature_model.load_weights(previous_model)
             print("Weights from previous model loaded:", previous_model)
             return True
         else:
-            # Initialize all tf variables
-            keras.backend.get_session().run(tf.global_variables_initializer())
             if self.config["train"]["model"]["initialization"] == "ImageNet":
                 self.copy_pretrained_weights()
             return False
