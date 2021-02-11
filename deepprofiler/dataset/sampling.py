@@ -135,7 +135,7 @@ def export_dataset(config, dset):
     cropper.start(session)
     dset.scan(cropper.export_single_cells, frame="all")
     df = pd.concat(cropper.all_metadata).reset_index(drop=True)
-    df.to_csv(outdir, os.path.join("sc-metadata.csv"), index=False)
+    df.to_csv(os.path.join(outdir, "sc-metadata.csv"), index=False)
     print("Exporting: done")    
 
 
