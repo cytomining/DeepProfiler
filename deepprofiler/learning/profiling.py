@@ -51,8 +51,7 @@ class Profile(object):
         print("Extracting output from layer:", self.config["profile"]["feature_layer"])
 
     def check(self, meta):
-        output_folder = self.config["paths"]["features"]
-        output_file = self.config["paths"]["features"] + "/{}_{}_{}.npz"
+        output_file = self.config["paths"]["features"] + "/{}/{}_{}.npz"
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
 
         # Check if features were computed before
