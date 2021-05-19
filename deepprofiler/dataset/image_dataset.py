@@ -195,7 +195,7 @@ class ImageDataset():
     def add_target(self, new_target):
         self.targets.append(new_target)
 
-def read_dataset(config):
+def read_dataset(config, mode = 'train'):
     # Read metadata and split dataset in training and validation
     metadata = deepprofiler.dataset.metadata.Metadata(config["paths"]["index"], dtype=None)
     if config["prepare"]["compression"]["implement"]:
@@ -211,10 +211,12 @@ def read_dataset(config):
     print(metadata.data.info())
 
     # Split training data
-    split_field = config["train"]["partition"]["split_field"]
-    trainingFilter = lambda df: df[split_field].isin(config["train"]["partition"]["training_values"])
-    validationFilter = lambda df: df[split_field].isin(config["train"]["partition"]["validation_values"])
-    metadata.splitMetadata(trainingFilter, validationFilter)
+    if mode == 'train':
+        split_field = config["train"]["partition"]["split_field"]
+        trainingFilter = lambda df: df[split_field].isin(config["train"]["partition"]["training_values"])
+        validationFilter = lambda df: df[split_field].isin(config["train"]["partition"]["validation_values"])
+        metadata.splitMetadata(trainingFilter, validationFilter)
+
 
     # Create a dataset
     keyGen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
@@ -228,9 +230,10 @@ def read_dataset(config):
     )
 
     # Add training targets
-    for t in config["train"]["partition"]["targets"]:
-        new_target = deepprofiler.dataset.target.MetadataColumnTarget(t, metadata.data[t].unique())
-        dset.add_target(new_target)
+    if mode == 'train':
+        for t in config["train"]["partition"]["targets"]:
+            new_target = deepprofiler.dataset.target.MetadataColumnTarget(t, metadata.data[t].unique())
+            dset.add_target(new_target)
 
     # Activate outlines for masking if needed
     if config["dataset"]["locations"]["mask_objects"]:
