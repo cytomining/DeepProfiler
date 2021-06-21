@@ -11,6 +11,8 @@ import deepprofiler.dataset.target
 import deepprofiler.imaging.cropping
 import plugins.crop_generators.autoencoder_crop_generator
 
+tf.compat.v1.disable_v2_behavior()
+
 
 def test_autoencoder_crop_generator():
     assert issubclass(plugins.crop_generators.autoencoder_crop_generator.GeneratorClass, deepprofiler.imaging.cropping.CropGenerator)
@@ -25,7 +27,7 @@ def test_generator_class_generate(config, dataset, out_dir):
         skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["G"][i // 3]), images[:, :, i + 1])
         skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["B"][i // 3]), images[:, :, i + 2])
     crop_generator.build_input_graph()
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
     crop_generator.start(sess)
     generator = crop_generator.generate(sess)
     crop_generator.ready_to_sample = True
@@ -52,7 +54,7 @@ def test_single_image_generator_class_generate(config, dataset, tmpdir):
     })
     locations.to_csv(path, index=False)
     assert os.path.exists(path)
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
     crop_generator.start(sess)
     crop_locations = crop_generator.prepare_image(sess, image, meta)
     num_crops = len(crop_locations)

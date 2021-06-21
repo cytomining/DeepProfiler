@@ -1,23 +1,21 @@
-import numpy as np
 import pandas as pd
 import skimage.io
 import threading
-import pickle
 import tqdm
 import os
 
 import tensorflow as tf
-import tensorflow.keras as keras
 
 import deepprofiler.imaging.boxes
 import deepprofiler.imaging.cropping
+
 
 class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
 
     def start(self, session):
         self.session = session
         # Define input data batches
-        with tf.variable_scope("train_inputs"):
+        with tf.compat.v1.variable_scope("train_inputs"):
             self.config["train"]["model"]["params"]["batch_size"] = self.config["train"]["validation"]["batch_size"]
             self.build_input_graph()
 
@@ -50,11 +48,12 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
 
 
 def start_session():
-    configuration = tf.ConfigProto()
+    configuration = tf.compat.v1.ConfigProto()
     configuration.gpu_options.allow_growth = True
-    main_session = tf.Session(config=configuration)
-    keras.backend.set_session(main_session)
+    main_session = tf.compat.v1.Session(config=configuration)
+    tf.compat.v1.keras.backend.set_session(main_session)
     return main_session
+
 
 def is_directory_empty(outdir):
     # Verify that the output directory is empty
@@ -62,7 +61,7 @@ def is_directory_empty(outdir):
     files = os.listdir(outdir)
     if len(files) > 0:
         erase = ""
-        while(erase != "y" and erase != "n"):
+        while erase != "y" and erase != "n":
             erase = input("Delete " + str(len(files)) + " existing files in " + outdir + "? (y/n) ")
             print(erase)
         if erase == "n":
@@ -73,6 +72,7 @@ def is_directory_empty(outdir):
             for f in tqdm.tqdm(files):
                 os.remove(os.path.join(outdir, f))
     return True
+
 
 def sample_dataset(config, dset):
     outdir = config["paths"]["single_cell_sample"]

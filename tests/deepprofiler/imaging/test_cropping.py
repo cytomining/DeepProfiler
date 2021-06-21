@@ -11,7 +11,9 @@ import deepprofiler.dataset.metadata
 import deepprofiler.dataset.target
 import deepprofiler.imaging.cropping
 
-cpu_config = tf.ConfigProto(
+tf.compat.v1.disable_v2_behavior()
+
+cpu_config = tf.compat.v1.ConfigProto(
     device_count = {'GPU': 0}
 )
 
@@ -24,6 +26,7 @@ def crop_generator(config, dataset):
 @pytest.fixture(scope="function")
 def single_image_crop_generator(config, dataset):
     return deepprofiler.imaging.cropping.SingleImageCropGenerator(config, dataset)
+
 
 @pytest.fixture(scope="function")
 def prepared_crop_generator(crop_generator, out_dir):
@@ -40,12 +43,12 @@ def test_crop_graph():
     num_crops = 100
     channels = 3
     box_size = 16
-    image_ph = tf.placeholder(tf.float32, shape=(10, 128, 128, channels + 1), name="raw_images")
-    boxes_ph = tf.placeholder(tf.float32, shape=(num_crops, 4), name="cell_boxes")
-    box_ind_ph = tf.placeholder(tf.int32, shape=(num_crops,), name="box_indicators")
-    mask_ind_ph = tf.placeholder(tf.int32, shape=(num_crops,), name="mask_indicators")
+    image_ph = tf.compat.v1.placeholder(tf.float32, shape=(10, 128, 128, channels + 1), name="raw_images")
+    boxes_ph = tf.compat.v1.placeholder(tf.float32, shape=(num_crops, 4), name="cell_boxes")
+    box_ind_ph = tf.compat.v1.placeholder(tf.int32, shape=(num_crops,), name="box_indicators")
+    mask_ind_ph = tf.compat.v1.placeholder(tf.int32, shape=(num_crops,), name="mask_indicators")
     op = deepprofiler.imaging.cropping.crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=True)
-    with tf.Session(config=cpu_config) as sess:
+    with tf.compat.v1.Session(config=cpu_config) as sess:
         assert tuple(tf.shape(op).eval()) == (num_crops, box_size, box_size, channels)
         op = deepprofiler.imaging.cropping.crop_graph(image_ph, boxes_ph, box_ind_ph, None, box_size, mask_boxes=False)
         assert tuple(tf.shape(op).eval()) == (num_crops, box_size, box_size, channels + 1)
@@ -75,19 +78,16 @@ def test_crop_generator_build_input_graph(crop_generator):
     for target in crop_generator.input_variables["labeled_crops"][1:]:
         assert target.get_shape().as_list() == [None]
 
+
 def test_crop_generator_build_augmentation_graph(crop_generator):
-    with tf.Session(config=cpu_config) as sess:
+    with tf.compat.v1.Session(config=cpu_config) as sess:
         crop_generator.build_input_graph()
         image_batch = crop_generator.train_variables["image_batch"]
         generated_shape = image_batch.shape #get_shape().as_list() 
 
-    generated_shape == [None,
-                        crop_generator.config["dataset"]["locations"]["box_size"],
-                        crop_generator.config["dataset"]["locations"]["box_size"],
-                        len(crop_generator.config["dataset"]["images"]["channels"])]
 
 def test_crop_generator_start(prepared_crop_generator):  # includes test for training queues
-    with tf.Session(config=cpu_config) as sess:
+    with tf.compat.v1.Session(config=cpu_config) as sess:
         prepared_crop_generator.start(sess)
         assert not prepared_crop_generator.coord.joined
         assert not prepared_crop_generator.exception_occurred
@@ -96,7 +96,7 @@ def test_crop_generator_start(prepared_crop_generator):  # includes test for tra
 
 
 def test_crop_generator_sample_batch(prepared_crop_generator):
-    with tf.Session(config=cpu_config) as sess:
+    with tf.compat.v1.Session(config=cpu_config) as sess:
         prepared_crop_generator.start(sess)
         pool_index = np.zeros((prepared_crop_generator.config["train"]["model"]["params"]["batch_size"],), dtype=int)
         prepared_crop_generator.ready_to_sample = True
@@ -111,7 +111,7 @@ def test_crop_generator_sample_batch(prepared_crop_generator):
 
 
 def test_crop_generator_generate(prepared_crop_generator):
-    with tf.Session(config=cpu_config) as sess:
+    with tf.compat.v1.Session(config=cpu_config) as sess:
         prepared_crop_generator.start(sess)
         generator = prepared_crop_generator.generate(sess)
         prepared_crop_generator.ready_to_sample = True
@@ -129,7 +129,7 @@ def test_crop_generator_generate(prepared_crop_generator):
 
 
 def test_crop_generator_stop(prepared_crop_generator):
-    with tf.Session(config=cpu_config) as sess:
+    with tf.compat.v1.Session(config=cpu_config) as sess:
         prepared_crop_generator.start(sess)
         assert not prepared_crop_generator.coord.joined
         prepared_crop_generator.stop(sess)
@@ -143,7 +143,7 @@ def test_single_image_crop_generator_init(config, dataset):
 
 
 def test_single_image_crop_generator_start(single_image_crop_generator):
-    with tf.Session(config=cpu_config) as sess:
+    with tf.compat.v1.Session(config=cpu_config) as sess:
         single_image_crop_generator.start(sess)
         assert single_image_crop_generator.config["train"]["model"]["params"]["batch_size"] == single_image_crop_generator.config["train"]["validation"]["batch_size"]
         assert hasattr(single_image_crop_generator, "input_variables")
@@ -171,7 +171,7 @@ def test_single_image_crop_generator_prepare_image(single_image_crop_generator, 
     })
     locations.to_csv(path, index=False)
     assert os.path.exists(path)
-    with tf.Session(config=cpu_config) as sess:
+    with tf.compat.v1.Session(config=cpu_config) as sess:
         single_image_crop_generator.start(sess)
         crop_locations = single_image_crop_generator.prepare_image(sess, image, meta)
         num_crops = len(crop_locations)
@@ -200,7 +200,7 @@ def test_single_image_crop_generator_generate(single_image_crop_generator, make_
     })
     locations.to_csv(path, index=False)
     assert os.path.exists(path)
-    with tf.Session(config=cpu_config) as sess:
+    with tf.compat.v1.Session(config=cpu_config) as sess:
         single_image_crop_generator.start(sess)
         crop_locations = single_image_crop_generator.prepare_image(sess, image, meta)
         num_crops = len(crop_locations)

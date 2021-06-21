@@ -1,13 +1,14 @@
 import deepprofiler.learning.metric
 import inspect
 
+
 def is_method(obj, name):
     return hasattr(obj, name) and inspect.ismethod(getattr(obj, name))
 
 
 class MetricClass(deepprofiler.learning.metric.Metric):
-     def metric(self, y_true, y_pred):
-         pass
+    def metric(self, y_true, y_pred):
+        pass
 
 
 def test_init(config, out_dir, make_struct):

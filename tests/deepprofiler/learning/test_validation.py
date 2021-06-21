@@ -9,13 +9,14 @@ import deepprofiler.imaging.cropping
 import deepprofiler.learning.training
 import deepprofiler.learning.validation
 
+tf.compat.v1.disable_v2_behavior()
 
 
 @pytest.fixture(scope="function")
 def session():
-    configuration = tf.ConfigProto(device_count = {'GPU': 0})
+    configuration = tf.compat.v1.ConfigProto(device_count = {'GPU': 0})
     configuration.gpu_options.visible_device_list = "0"
-    session = tf.Session(config = configuration)
+    session = tf.compat.v1.Session(config=configuration)
     return session
 
 

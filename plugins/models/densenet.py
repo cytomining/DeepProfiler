@@ -1,7 +1,8 @@
-import keras
-import keras.applications
+import tensorflow as tf
 
 from plugins.models import resnet
+
+tf.compat.v1.disable_v2_behavior()
 
 ##################################################
 # DenseNet architecture as in "Densely Connected 
@@ -18,8 +19,8 @@ class ModelClass(resnet.ModelClass):
 
     def get_supported_models(self):
         return {
-            121: keras.applications.DenseNet121,
-            169: keras.applications.DenseNet169,
-            201: keras.applications.DenseNet201
+            121: tf.compat.v1.keras.applications.DenseNet121,
+            169: tf.compat.v1.keras.applications.DenseNet169,
+            201: tf.compat.v1.keras.applications.DenseNet201
         }
 

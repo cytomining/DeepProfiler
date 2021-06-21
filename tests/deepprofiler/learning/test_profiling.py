@@ -1,14 +1,15 @@
 import importlib
+import os
+import pytest
+import tensorflow as tf
+import numpy as np
 
-import keras
 import deepprofiler.learning.profiling
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.metadata
 import deepprofiler.dataset.target
-import pytest
-import tensorflow as tf
-import os
-import numpy as np
+
+tf.compat.v1.disable_v2_behavior()
 
 
 @pytest.fixture(scope="function")
@@ -23,7 +24,7 @@ def checkpoint(config, dataset):
         .ModelClass(config, dataset, crop_generator, profile_crop_generator, False)
     dpmodel.feature_model.compile(dpmodel.optimizer, dpmodel.loss)
     filename = os.path.join(config["paths"]["checkpoints"], config["profile"]["checkpoint"])
-    with tf.Session().as_default():
+    with tf.compat.v1.Session().as_default():
         dpmodel.feature_model.save_weights(filename)
     return filename
 
@@ -48,9 +49,9 @@ def test_init(config, dataset, locations):
 
 
 def test_configure(profile, checkpoint):
-    with tf.Session().as_default():
+    with tf.compat.v1.Session().as_default():
         profile.configure()
-        assert isinstance(profile.feat_extractor, keras.Model)
+        assert isinstance(profile.feat_extractor, tf.compat.v1.keras.Model)
 
 
 def test_check(profile, metadata):
@@ -58,7 +59,7 @@ def test_check(profile, metadata):
 
 
 def test_extract_features(profile, metadata, locations, checkpoint):
-    with tf.Session().as_default():
+    with tf.compat.v1.Session().as_default():
         meta = metadata.data.iloc[0]
         image = np.random.randint(0, 256, (128, 128, 3), dtype=np.uint8)
         profile.configure()
@@ -69,7 +70,7 @@ def test_extract_features(profile, metadata, locations, checkpoint):
 
 
 def test_profile(config, dataset, data, locations, checkpoint):
-    with tf.Session().as_default():
+    with tf.compat.v1.Session().as_default():
         deepprofiler.learning.profiling.profile(config, dataset)
         for index, row in dataset.meta.data.iterrows():
             output_file = config["paths"]["features"] + "/{}/{}_{}.npz" \

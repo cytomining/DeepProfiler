@@ -21,16 +21,14 @@ setuptools.setup(
         "click>=6.7",
         "comet_ml>=1.0",
         "gpyopt>=1.2",
-        "Keras==2.2.5",
         "lxml>=4.2",
         "numpy>=1.13",
         "pandas>=0.23.0",
         "scikit-image>=0.14.0",
         "scikit-learn>=0.19.0",
         "scipy>=1.1",
-        "efficientnet>=1.0.0"
         "comet-ml>=3.1.6",
-#        "tensorflow-gpu==1.12.2"
+        "tensorflow_addons"
     ],
     extras_require={
         "test": [

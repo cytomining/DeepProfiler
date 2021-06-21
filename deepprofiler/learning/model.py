@@ -4,13 +4,14 @@ import random
 import abc
 
 import comet_ml
-import keras
 import numpy as np
 import tensorflow as tf
 
 import deepprofiler.dataset.utils
 import deepprofiler.imaging.cropping
 import deepprofiler.learning.validation
+
+tf.compat.v1.disable_v2_behavior()
 
 ##################################################
 # This class should be used as an abstract base
@@ -35,7 +36,7 @@ class DeepProfilerModel(abc.ABC):
         self.random_seed = seed
         random.seed(seed)
         np.random.seed(seed)
-        tf.set_random_seed(seed)
+        tf.compat.v1.set_random_seed(seed)
 
     def train(self, epoch=1, metrics=["accuracy"], verbose=1):
         # Raise ValueError if feature model isn't properly defined
@@ -86,7 +87,6 @@ class DeepProfilerModel(abc.ABC):
         # Return the feature model and validation data
         return self.feature_model, x_validation, y_validation
 
-    
     def copy_pretrained_weights(self):
         # Override this method if the model can load pretrained weights
         print("This model does not support ImageNet pretrained weights initialization")
@@ -96,7 +96,7 @@ class DeepProfilerModel(abc.ABC):
         output_file = self.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
         previous_model = output_file.format(epoch=epoch - 1)
         # Initialize all tf variables
-        keras.backend.get_session().run(tf.global_variables_initializer())
+        tf.compat.v1.keras.backend.get_session().run(tf.compat.v1.global_variables_initializer())
         if epoch >= 1 and os.path.isfile(previous_model):
             self.feature_model.load_weights(previous_model)
             print("Weights from previous model loaded:", previous_model)
@@ -108,7 +108,7 @@ class DeepProfilerModel(abc.ABC):
 
 
 def check_feature_model(dpmodel):
-    if "feature_model" not in vars(dpmodel): #or not isinstance(dpmodel.feature_model, keras.Model):
+    if "feature_model" not in vars(dpmodel):  # or not isinstance(dpmodel.feature_model, keras.Model):
         raise ValueError("Feature model is not properly defined.")
 
 
@@ -127,10 +127,10 @@ def setup_comet_ml(dpmodel):
 
 
 def start_main_session():
-    configuration = tf.ConfigProto()
+    configuration = tf.compat.v1.ConfigProto()
     configuration.gpu_options.allow_growth = True
-    main_session = tf.Session(config=configuration)
-    keras.backend.set_session(main_session)
+    main_session = tf.compat.v1.Session(config=configuration)
+    tf.compat.v1.keras.backend.set_session(main_session)
     return main_session
 
 
@@ -154,7 +154,7 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
     elif "checkpoint_policy" in dpmodel.config["train"]["model"] and dpmodel.config["train"]["model"]["checkpoint_policy"] == 'best':
         save_best = True
 
-    callback_model_checkpoint = keras.callbacks.ModelCheckpoint(
+    callback_model_checkpoint = tf.compat.v1.keras.callbacks.ModelCheckpoint(
         filepath=output_file,
         save_weights_only=True,
         save_best_only=save_best,
@@ -163,10 +163,10 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
     
     # CSV Log
     csv_output = dpmodel.config["paths"]["logs"] + "/log.csv"
-    callback_csv = keras.callbacks.CSVLogger(filename=csv_output)
+    callback_csv = tf.compat.v1.keras.callbacks.CSVLogger(filename=csv_output)
 
     # Queue stats
-    qstats = keras.callbacks.LambdaCallback(
+    qstats = tf.compat.v1.keras.callbacks.LambdaCallback(
         on_train_begin=lambda logs: dset.show_setup(),
         on_epoch_end=lambda epoch, logs: experiment.log_metrics(dset.show_stats()) if experiment else dset.show_stats()
     )
@@ -180,7 +180,7 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
 
     # Collect all callbacks
     if lr_schedule_epochs:
-        callback_lr_schedule = keras.callbacks.LearningRateScheduler(lr_schedule, verbose=1)
+        callback_lr_schedule = tf.compat.v1.keras.callbacks.LearningRateScheduler(lr_schedule, verbose=1)
         callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule, qstats]
     else:
         callbacks = [callback_model_checkpoint, callback_csv, qstats]

@@ -12,7 +12,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):  # TODO: this
                 break
             data = self.sample_batch(pool_index)
             global_step += 1
-            yield (data[0], data[0])
+            yield data[0], data[0]
 
 
 class SingleImageGeneratorClass(deepprofiler.imaging.cropping.SingleImageCropGenerator):

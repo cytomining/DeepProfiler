@@ -1,12 +1,10 @@
 from comet_ml import Experiment
 
-import keras
-from keras.layers import *
-from keras.models import Model, Sequential
-from keras.optimizers import Adam
+import tensorflow as tf
 
 from deepprofiler.learning.model import DeepProfilerModel
 
+tf.compat.v1.disable_v2_behavior()
 
 ##################################################
 # Convolutional autoencoder with alternating
@@ -21,7 +19,7 @@ def define_model(config, dset):
         config["dataset"]["locations"]["box_size"],  # width
         len(config["dataset"]["images"]["channels"])  # channels
     )
-    input_image = keras.layers.Input(input_shape)
+    input_image = tf.compat.v1.keras.layers.Input(input_shape)
 
     if config["train"]["model"]["params"]["conv_blocks"] < 1:
         raise ValueError("At least 1 convolutional block is required.")
@@ -29,37 +27,37 @@ def define_model(config, dset):
     # Add convolutional blocks to encoder based on number specified in config, with increasing number of filters
     x = input_image
     for i in range(config["train"]["model"]["params"]["conv_blocks"]):
-        x = Conv2D(8 * 2 ** i, (3, 3), padding="same")(x)
-        x = BatchNormalization()(x)
-        x = Activation("relu")(x)
-        x = MaxPooling2D((2, 2))(x)
-    conv_shape = x._keras_shape[1:]
-    x = Flatten()(x)
-    flattened_shape = x._keras_shape[1:]
-    encoded = Dense(config["train"]["model"]["params"]["feature_dim"], name="encoded")(x)
-    encoded_shape = encoded._keras_shape[1:]
-    encoder = Model(input_image, encoded)
+        x = tf.compat.v1.keras.layers.Conv2D(8 * 2 ** i, (3, 3), padding="same")(x)
+        x = tf.compat.v1.keras.layers.BatchNormalization()(x)
+        x = tf.compat.v1.keras.layers.Activation("relu")(x)
+        x = tf.compat.v1.keras.layers.MaxPooling2D((2, 2))(x)
+    conv_shape = x.shape[1:]
+    x = tf.compat.v1.keras.layers.Flatten()(x)
+    flattened_shape = x.shape[1:]
+    encoded = tf.compat.v1.keras.layers.Dense(config["train"]["model"]["params"]["feature_dim"], name="encoded")(x)
+    encoded_shape = encoded.shape[1:]
+    encoder = tf.compat.v1.keras.Model(input_image, encoded)
 
     # Build decoder
-    decoder_input = Input(encoded_shape)
+    decoder_input = tf.compat.v1.keras.layers.Input(encoded_shape)
     decoder_layers = []
-    decoder_layers.append(Dense(flattened_shape[0], input_shape=encoded_shape))
-    decoder_layers.append(Reshape(conv_shape))
+    decoder_layers.append(tf.compat.v1.keras.layers.Dense(flattened_shape[0], input_shape=encoded_shape))
+    decoder_layers.append(tf.compat.v1.keras.layers.Reshape(conv_shape))
     for i in reversed(range(config["train"]["model"]["params"]["conv_blocks"])):
         decoder_layers.extend([
-            Conv2DTranspose(8 * 2 ** i, (3, 3), padding="same"),
-            BatchNormalization(),
-            Activation("relu"),
-            UpSampling2D((2, 2))
+            tf.compat.v1.keras.layers.Conv2DTranspose(8 * 2 ** i, (3, 3), padding="same"),
+            tf.compat.v1.keras.layers.BatchNormalization(),
+            tf.compat.v1.keras.layers.Activation("relu"),
+            tf.compat.v1.keras.layers.UpSampling2D((2, 2))
         ])
-    decoder_layers.append(Conv2DTranspose(len(config["dataset"]["images"]["channels"]), (3, 3), activation="sigmoid", padding="same"))
-    decoder = Sequential(decoder_layers, name="decoded")
+    decoder_layers.append(tf.compat.v1.keras.layers.Conv2DTranspose(len(config["dataset"]["images"]["channels"]), (3, 3), activation="sigmoid", padding="same"))
+    decoder = tf.compat.v1.keras.Sequential(decoder_layers, name="decoded")
     decoded = decoder(encoded)
-    decoder = Model(decoder_input, decoder(decoder_input))
+    decoder = tf.compat.v1.keras.Model(decoder_input, decoder(decoder_input))
 
     # Define autoencoder
-    autoencoder = Model(input_image, decoded)
-    optimizer = Adam(lr=config["train"]["model"]["params"]["learning_rate"])
+    autoencoder = tf.compat.v1.keras.Model(input_image, decoded)
+    optimizer = tf.compat.v1.keras.optimizers.Adam(learning_rate=config["train"]["model"]["params"]["learning_rate"])
     loss = "mse"
 
     return autoencoder, encoder, decoder, optimizer, loss

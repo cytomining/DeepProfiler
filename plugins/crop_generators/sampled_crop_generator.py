@@ -6,12 +6,15 @@ import tensorflow as tf
 
 import deepprofiler.imaging.cropping
 
+tf.compat.v1.disable_v2_behavior()
+
 ## Wrapper for Keras ImageDataGenerator
 ## The Keras generator is not completely useful, because it makes assumptions about
 ## color (grayscale or RGB). We need flexibility for color channels, and augmentations
 ## tailored to multi-dimensional microscopy images. It's based on PIL rather than skimage.
 ## In addition, the samples loaded in this generator have unfolded channels, which
 ## requires us to fold them back to a tensor before feeding them to a CNN.
+
 
 class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 

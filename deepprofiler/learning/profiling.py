@@ -1,12 +1,13 @@
 import importlib
 import os
 
-import keras
 import numpy as np
 import tensorflow as tf
 from keras import backend as K
 
 from deepprofiler.dataset.utils import tic, toc
+
+tf.compat.v1.disable_v2_behavior()
 
 
 class Profile(object):
@@ -44,7 +45,7 @@ class Profile(object):
                 self.dpmodel.feature_model.load_weights(checkpoint, by_name=True)
 
         self.dpmodel.feature_model.summary()
-        self.feat_extractor = keras.Model(
+        self.feat_extractor = tf.compat.v1.keras.Model(
             self.dpmodel.feature_model.inputs, 
             self.dpmodel.feature_model.get_layer(self.config["profile"]["feature_layer"]).output
         )

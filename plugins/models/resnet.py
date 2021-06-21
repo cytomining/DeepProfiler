@@ -1,9 +1,9 @@
+import numpy as np
+import tensorflow as tf
 from deepprofiler.learning.model import DeepProfilerModel
 from deepprofiler.imaging.augmentations import AugmentationLayer
 
-import keras
-import keras.applications.resnet_v2
-import numpy
+tf.compat.v1.disable_v2_behavior()
 
 
 ##################################################
@@ -22,9 +22,9 @@ class ModelClass(DeepProfilerModel):
     ## Define supported models
     def get_supported_models(self):
         return {
-            50: keras.applications.resnet_v2.ResNet50V2,
-            101: keras.applications.resnet_v2.ResNet101V2,
-            152: keras.applications.resnet_v2.ResNet152V2,
+            50: tf.compat.v1.keras.applications.resnet_v2.ResNet50V2,
+            101: tf.compat.v1.keras.applications.resnet_v2.ResNet101V2,
+            152: tf.compat.v1.keras.applications.resnet_v2.ResNet152V2,
         }
 
     ## Load a supported model
@@ -47,10 +47,10 @@ class ModelClass(DeepProfilerModel):
     def define_model(self, config, dset):
         # 1. Create ResNet architecture to extract features
         loss_func = "categorical_crossentropy"
-        optimizer = keras.optimizers.SGD(lr=config["train"]["model"]["params"]["learning_rate"], momentum=0.9,
-                                         nesterov=True)
+        optimizer = tf.compat.v1.keras.optimizers.SGD(learning_rate=config["train"]["model"]["params"]["learning_rate"],
+                                                      momentum=0.9, nesterov=True)
         if "use_pretrained_input_size" in config["profile"].keys() and self.is_training is False:
-            input_tensor = keras.layers.Input(
+            input_tensor = tf.compat.v1.keras.layers.Input(
                 (config["profile"]["use_pretrained_input_size"], config["profile"]["use_pretrained_input_size"], 3),
                 name="input")
             model = self.get_model(
@@ -69,30 +69,30 @@ class ModelClass(DeepProfilerModel):
                 len(config["dataset"]["images"][
                         "channels"])  # channels
             )
-            input_image = keras.layers.Input(input_shape)
+            input_image = tf.compat.v1.keras.layers.Input(input_shape)
             model = self.get_model(config, input_image=input_image)
-            features = keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-1].output)
+            features = tf.compat.v1.keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-1].output)
 
             # 2. Create an output embedding for each target
             class_outputs = []
 
             i = 0
             for t in dset.targets:
-                y = keras.layers.Dense(t.shape[1], activation="softmax", name=t.field_name)(features)
+                y = tf.compat.v1.keras.layers.Dense(t.shape[1], activation="softmax", name=t.field_name)(features)
                 class_outputs.append(y)
                 i += 1
 
             # 4. Create and compile model
-            model = keras.models.Model(inputs=input_image, outputs=class_outputs)
+            model = tf.compat.v1.keras.models.Model(inputs=input_image, outputs=class_outputs)
 
             ## Added weight decay following tricks reported in:
             ## https://github.com/keras-team/keras/issues/2717
-            regularizer = keras.regularizers.l2(0.00001)
+            regularizer = tf.compat.v1.keras.regularizers.l2(0.00001)
             for layer in model.layers:
                 if hasattr(layer, "kernel_regularizer"):
                     setattr(layer, "kernel_regularizer", regularizer)
 
-            model = keras.models.model_from_json(
+            model = tf.compat.v1.keras.models.model_from_json(
                 model.to_json(),
                 {'AugmentationLayer': AugmentationLayer}
             )
@@ -116,7 +116,7 @@ class ModelClass(DeepProfilerModel):
         weights = base_model.layers[2].get_weights()
         available_channels = weights[0].shape[2]
         target_shape = self.feature_model.layers[2 + lshift].weights[0].shape
-        new_weights = numpy.zeros(target_shape)
+        new_weights = np.zeros(target_shape)
 
         for i in range(new_weights.shape[2]):
             j = i % available_channels

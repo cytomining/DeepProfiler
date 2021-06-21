@@ -12,6 +12,8 @@ import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.metadata
 import deepprofiler.dataset.target
 
+tf.compat.v1.disable_v2_behavior()
+
 
 @pytest.fixture(scope="function")
 def crop_generator(config, dataset):
@@ -27,6 +29,7 @@ def prepared_crop_generator(crop_generator, out_dir):
     crop_generator.build_input_graph()
     return crop_generator
 
+
 @pytest.fixture(scope="function")
 def mixup():
     test_alpha = 1
@@ -40,6 +43,7 @@ def mixup():
                                                      test_alpha
                                                      )
 
+
 def test_init_mixup(mixup):
     test_table_size = 500
     test_target_size = 500
@@ -51,6 +55,7 @@ def test_init_mixup(mixup):
     assert mixup.pointer == 0
     assert mixup.ready == False
     assert mixup.alpha == test_alpha
+
 
 def test_add_crops(mixup):
     test_table_size = 500
@@ -81,6 +86,7 @@ def test_add_crops(mixup):
     assert mixup.ready == True
     np.testing.assert_array_equal(mixup.crops,np.concatenate((test_crops[450:500],test_crops[0:450] )))
     assert_frame_equal(mixup.labels,pd.DataFrame(data=np.array((test_load*[2]), dtype=np.int64),columns=["target"]))
+
 
 def test_batch_mixup(mixup):
     test_load = 500
@@ -113,12 +119,14 @@ def test_batch_mixup(mixup):
     expected_labels[:,2] = 1.0
     np.testing.assert_array_equal(mixup.batch(test_batch_size,seed=test_seed)[1],expected_labels)
 
+
 def test_mixup_crop_generator():
     assert issubclass(plugins.crop_generators.mixup_crop_generator.GeneratorClass, deepprofiler.imaging.cropping.CropGenerator)
     assert issubclass(plugins.crop_generators.mixup_crop_generator.SingleImageGeneratorClass, deepprofiler.imaging.cropping.SingleImageCropGenerator)
 
+
 def test_start(prepared_crop_generator):  # includes test for training queues
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
     prepared_crop_generator.start(sess)
     assert not prepared_crop_generator.coord.joined
     assert not prepared_crop_generator.exception_occurred
@@ -129,8 +137,9 @@ def test_start(prepared_crop_generator):  # includes test for training queues
     assert isinstance(prepared_crop_generator.mixer, plugins.crop_generators.mixup_crop_generator.Mixup)
     prepared_crop_generator.stop(sess)
 
+
 def test_generate(prepared_crop_generator):
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
     prepared_crop_generator.start(sess)
     generator = prepared_crop_generator.generate(sess)
     prepared_crop_generator.ready_to_sample = True
