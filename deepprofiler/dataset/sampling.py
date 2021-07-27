@@ -25,19 +25,20 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
             batch["locations"][i]["Target"] = batch["targets"][i][0]
             batch["locations"][i]["Class_Name"] = self.dset.targets[0].values[batch["targets"][i][0]]
         metadata = pd.concat(batch["locations"])
-        cols = ["Key","Target","Nuclei_Location_Center_X","Nuclei_Location_Center_Y"]
-        seps = ["+","@","x",".png"]
-        metadata["Image_Name"] = ""
+        cols = ["Key", "Target", "Nuclei_Location_Center_X", "Nuclei_Location_Center_Y"]
+        seps = ["/", "@", "x", ".png"]
+        metadata["Image_Name"] = ''
         for c in range(len(cols)):
-            metadata["Image_Name"] += metadata[cols[c]].astype(str).str.replace("/","-") + seps[c]
-        
+            metadata["Image_Name"] += metadata[cols[c]].astype(str) + seps[c]
+        print(metadata["Image_Name"])
+
         boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
 
         feed_dict = {
-            self.input_variables["image_ph"]:batch["images"],
-            self.input_variables["boxes_ph"]:boxes,
-            self.input_variables["box_ind_ph"]:box_ind,
-            self.input_variables["mask_ind_ph"]:masks
+            self.input_variables["image_ph"]: batch["images"],
+            self.input_variables["boxes_ph"]: boxes,
+            self.input_variables["box_ind_ph"]: box_ind,
+            self.input_variables["mask_ind_ph"]: masks
         }
         for i in range(len(targets)):
             tname = "target_" + str(i)
@@ -99,7 +100,9 @@ def sample_dataset(config, dset):
         if len(batch["keys"]) > 0:
             crops, metadata = cropper.process_batch(batch)
             for j in range(crops.shape[0]):
-                image = deepprofiler.imaging.cropping.unfold_channels(crops[j,:,:,:])
+                image = deepprofiler.imaging.cropping.unfold_channels(crops[j, :, :, :])
+                plate, well_site, rest = metadata.loc[j, "Image_Name"].split('/')
+                os.makedirs(os.path.join(outdir, plate, well_site), exist_ok=True)
                 skimage.io.imsave(os.path.join(outdir, metadata.loc[j, "Image_Name"]), image)
             all_metadata.append(metadata)
 
