@@ -28,7 +28,10 @@ setuptools.setup(
         "scikit-learn>=0.19.0",
         "scipy>=1.1",
         "comet-ml>=3.1.6",
-        "tensorflow_addons"
+        "efficientnet>=1.0.0",
+        "Keras==2.2.5",
+        "tensorflow_addons",
+
     ],
     extras_require={
         "test": [
