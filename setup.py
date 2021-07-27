@@ -31,7 +31,6 @@ setuptools.setup(
         "efficientnet>=1.0.0",
         "Keras==2.2.5",
         "tensorflow_addons",
-
     ],
     extras_require={
         "test": [
