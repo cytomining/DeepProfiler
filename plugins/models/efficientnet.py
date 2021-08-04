@@ -100,7 +100,7 @@ class ModelClass(DeepProfilerModel):
 
         # => Transfer all weights except conv1.1
         total_layers = len(base_model.layers)
-        for i in range(3, total_layers):
+        for i in range(5, total_layers):
             if len(base_model.layers[i].weights) > 0:
                 print("Setting pre-trained weights: {:.2f}%".format((i / total_layers) * 100), end="\r")
                 self.feature_model.layers[i + lshift].set_weights(base_model.layers[i].get_weights())
