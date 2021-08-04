@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 import tensorflow as tf
-from keras import backend as K
+from tensorflow.compat.v1.keras import backend as K
 
 from deepprofiler.dataset.utils import tic, toc
 
