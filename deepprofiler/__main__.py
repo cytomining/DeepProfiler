@@ -192,6 +192,17 @@ def split(context, parts):
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     deepprofiler.dataset.indexing.split_index(context.obj["config"], parts)
 
+# Auxiliary tool: check if images and locations are complete to run profiling functions
+@cli.command()
+@click.pass_context
+@click.option("--check-profile",
+              help="check images and locations before running profile function",
+              type=click.INT)
+def check_profile(context, parts):
+    dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='profile')
+    deepprofiler.dataset.helper.check_profiling(context.obj["config"], dset)
+    print("checking for profile complete.")
+
 
 if __name__ == "__main__":
     cli(obj={})
