@@ -30,7 +30,7 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
         seps = ["/", "@", "x", ".png"]
         metadata["Image_Name"] = ""
         for c in range(len(cols)):
-            metadata["Image_Name"] += metadata[cols[c]].astype(str).str + seps[c]
+            metadata["Image_Name"] += metadata[cols[c]].astype(str) + seps[c]
 
         boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
 
