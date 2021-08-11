@@ -6,35 +6,10 @@ import pandas as pd
 import numpy as np
 import cv2
 import os
-
-def imgs_dont_exist(ls, image_dir, channels):
-    """ Adds images to a list if those images are not found.
-
-    Parameters
-    ----------
-    ls : empty list, will be filled with missing images
-    image_dir : directory to the images
-    channels : different channels for each image
-    """
-    for img in channels:
-        if not os.path.isfile(os.path.join(image_dir, img)):
-            ls.append(img)
-    return None
-
-def locs_dont_exist(ls, locs_dir, loc):
-    """ Adds location files to a list if they are missing are not found.
-
-    Parameters
-    ----------
-    ls : empty list, will be filled with missing files
-    locs_dir : directory to the location files
-    """
-    if not os.path.isfile(os.path.join(locs_dir, loc)):
-        ls.append(loc)
-    return None
+import deepprofiler.imaging.boxes
 
 
-def check_profile(dset):
+def check_profiling(config, dset):
     """Checks images and location files to prepare for the profiling function.
     If this function runs correctly, the function 'profile' will also run without errors.
 
@@ -47,25 +22,29 @@ def check_profile(dset):
     -------
 
     """
-    project_dir = '/Users/mbornhol/git/DeepProf/DP2'
-    feat_rows = ['DNA','Tubulin','Actin']
+    ls_imgs, ls_locs = [], []
+    os.makedirs('checks', exist_ok=True)
 
-    # Checking images
-    index = pd.read_csv('/Users/mbornhol/git/DeepProf/DP2/inputs/metadata/index.csv')
-    image_dir = os.path.join(project_dir, 'inputs', 'images')
-    ls = []
+    frame = dset.meta.data.iterrows()
+    images = [dset.get_image_paths(r) for i, r in frame]
+    for channels in images:
+        for img in channels[1]:
+            if not os.path.isfile(img):
+                ls_imgs.append(img)
+    print('found {} missing images'.format(len(ls_imgs)), '|| saving list of missing files to checks/')
+    pd.DataFrame(ls_imgs, columns=['missing_images']).to_csv('checks/missing_images.csv', index=False)
 
-    # use this: row[dset.channels]
-    index.apply(lambda row: imgs_dont_exist(ls, image_dir, row[feat_rows]), axis=1)
-    pd.DataFrame(ls, columns=['missing_images']).to_csv('missing_images.csv', index=False)
+    # start checking location files
+    frame = dset.meta.data.iterrows()
+    for i, r in frame:
+        df = deepprofiler.imaging.boxes.get_single_cell_locations("{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"]), dset.config)
+        if df.empty:
+            ls_locs.append("{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"]))
 
+    print('found {} missing location files'.format(len(ls_locs)), '|| saving list of missing files to checks/')
+    pd.DataFrame(ls_locs, columns=['missing_locs']).to_csv('checks/missing_locs.csv', index=False)
 
-    # Checking location files
-    # image_dir = os.path.join(project_dir, 'outputs', 'images')
-    # ls = []
-    # index.apply(lambda row: locs_dont_exist(ls, dset.locations, row), axis=1)
-    # pd.DataFrame(ls, columns=['missing_locations']).to_csv('missing_locations.csv', index=False)\
-    return ls
+    return ls_imgs, ls_locs
 
 
 """

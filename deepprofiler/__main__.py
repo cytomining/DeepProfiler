@@ -15,6 +15,7 @@ import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.sampling
 import deepprofiler.learning.training
 import deepprofiler.learning.profiling
+import deepprofiler.dataset.helper
 import deepprofiler.download.normalize_bbbc021_metadata
 
 
@@ -195,14 +196,21 @@ def split(context, parts):
 # Auxiliary tool: check if images and locations are complete to run profiling functions
 @cli.command()
 @click.pass_context
-@click.option("--check-profile",
-              help="check images and locations before running profile function",
-              type=click.INT)
-def check_profile(context, parts):
+def check_profile(context):
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='profile')
     deepprofiler.dataset.helper.check_profiling(context.obj["config"], dset)
     print("checking for profile complete.")
 
+# Auxiliary tool: check if crops are complete. Use this before running training
+@cli.command()
+@click.pass_context
+@click.option("--check-train",
+              help="checks if crops are complete. Use this before running training",
+              type=click.INT)
+def check_profile(context):
+    dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='profile')
+    deepprofiler.dataset.helper.check_training(context.obj["config"], dset)
+    print("checking for train is complete.")
 
 if __name__ == "__main__":
     cli(obj={})
