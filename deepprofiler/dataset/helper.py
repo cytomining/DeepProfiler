@@ -9,7 +9,7 @@ import os
 import deepprofiler.imaging.boxes
 
 
-def check_profiling(config, dset):
+def check_profile(dset):
     """Checks images and location files to prepare for the profiling function.
     If this function runs correctly, the function 'profile' will also run without errors.
 
@@ -61,17 +61,16 @@ def crop_checks(ls_missing, ls_zero, img_name, sample_dir):
             ls_zero.append(img_name)
 
 
-def check_training(dset):
+def check_train(dset):
     """Check all crops before training in order to avoid errors during training.
 
     Returns
     -------
 
     """
+    # print(dset.meta.data.columns)
     # First check if images exist
-    crops_dir = '/Users/mbornhol/git/DeepProf/DP2/outputs/single-cell-sample'
-    # use dset.sample_directory?
-    df = pd.read_csv(os.path.join(crops_dir, 'sc-metadata.csv'))
+    df = # read sc-metadata file
 
     ls_missing = []
     ls_zero = []

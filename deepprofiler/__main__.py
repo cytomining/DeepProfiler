@@ -198,18 +198,16 @@ def split(context, parts):
 @click.pass_context
 def check_profile(context):
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='profile')
-    deepprofiler.dataset.helper.check_profiling(context.obj["config"], dset)
+    deepprofiler.dataset.helper.check_profile(dset)
     print("checking for profile complete.")
 
 # Auxiliary tool: check if crops are complete. Use this before running training
+
 @cli.command()
 @click.pass_context
-@click.option("--check-train",
-              help="checks if crops are complete. Use this before running training",
-              type=click.INT)
-def check_profile(context):
-    dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='profile')
-    deepprofiler.dataset.helper.check_training(context.obj["config"], dset)
+def check_train(context):
+    dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='train')
+    deepprofiler.dataset.helper.check_train(dset)
     print("checking for train is complete.")
 
 if __name__ == "__main__":
