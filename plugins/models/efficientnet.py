@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 from deepprofiler.learning.model import DeepProfilerModel
 from deepprofiler.imaging.augmentations import AugmentationLayer
@@ -105,4 +106,17 @@ class ModelClass(DeepProfilerModel):
                 print("Setting pre-trained weights: {:.2f}%".format((i / total_layers) * 100), end="\r")
                 self.feature_model.layers[i + lshift].set_weights(base_model.layers[i].get_weights())
 
+        weights = base_model.layers[4].get_weights()
+        print(weights[0].shape)
+        available_channels = weights[0].shape[2]
+        target_shape = self.feature_model.layers[4+lshift].weights[0].shape
+        new_weights = np.zeros(target_shape)
+
+        for i in range(new_weights.shape[2]):
+            j = i % available_channels
+            new_weights[:, :, i, :] = weights[0][:, :, j, :]
+
+        weights_array = [new_weights]
+        if len(weights) > 1:
+            weights_array += weights[1:]
         print("Network initialized with pretrained ImageNet weights")
