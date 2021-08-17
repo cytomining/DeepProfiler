@@ -207,7 +207,7 @@ def check_profile(context):
 @click.pass_context
 def check_train(context):
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='train')
-    deepprofiler.dataset.helper.check_train(dset)
+    deepprofiler.dataset.helper.check_train(context.obj["config"], dset)
     print("checking for train is complete.")
 
 if __name__ == "__main__":
