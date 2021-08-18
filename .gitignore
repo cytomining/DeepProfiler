@@ -95,4 +95,3 @@ ENV/
 .ropeproject
 
 .idea
-/tests/files/test_data/
