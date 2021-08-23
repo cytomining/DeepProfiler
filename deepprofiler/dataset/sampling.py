@@ -15,6 +15,7 @@ import deepprofiler.imaging.cropping
 class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
 
     def start(self, session):
+        self.all_metadata = []
         self.session = session
         # Define input data batches
         with tf.variable_scope("train_inputs"):
@@ -48,6 +49,18 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
         output = self.session.run(self.input_variables["labeled_crops"], feed_dict)
         return output[0], metadata.reset_index(drop=True)
 
+    def export_single_cells(self, key, image_array, meta):
+        outdir = self.config["paths"]["single_cell_sample"]
+        key = self.dset.keyGen(meta)
+        batch = {"keys": [key], "images": [image_array], "targets": [], "locations": []}
+        batch["locations"].append(deepprofiler.imaging.boxes.get_locations(key, self.config))
+        batch["targets"].append([t.get_values(meta) for t in self.dset.targets])
+        crops, metadata = self.process_batch(batch)
+        for j in range(crops.shape[0]):
+            image = deepprofiler.imaging.cropping.unfold_channels(crops[j,:,:,:])
+            skimage.io.imsave(os.path.join(outdir, metadata.loc[j, "Image_Name"]), image)
+        self.all_metadata.append(metadata)
+        print("{}: {} single cells".format(key, crops.shape[0]))
 
 def start_session():
     configuration = tf.ConfigProto()
@@ -111,4 +124,18 @@ def sample_dataset(config, dset):
     # Save metadata
     all_metadata = pd.concat(all_metadata).reset_index(drop=True)
     all_metadata.to_csv(os.path.join(outdir, "sc-metadata.csv"), index=False)
+
+def export_dataset(config, dset):
+    outdir = config["paths"]["single_cell_sample"]
+    if not is_directory_empty(outdir):
+        return
+
+    session = start_session()
+    cropper = SingleCellSampler(config, dset)
+    cropper.start(session)
+    dset.scan(cropper.export_single_cells, frame="all")
+    df = pd.concat(cropper.all_metadata).reset_index(drop=True)
+    df.to_csv(os.path.join(outdir, "sc-metadata.csv"), index=False)
+    print("Exporting: done")    
+
 
