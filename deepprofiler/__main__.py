@@ -163,7 +163,7 @@ def sample_sc(context, mode):
 def train(context, epoch, seed):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
-    dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
+    dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='train')
     deepprofiler.learning.training.learn_model(context.obj["config"], dset, epoch, seed)
 
 
@@ -181,8 +181,8 @@ def profile(context, part):
     if part >= 0:
         partfile = "index-{0:03d}.csv".format(part)
         config["paths"]["index"] = context.obj["config"]["paths"]["index"].replace("index.csv", partfile)
-    metadata = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
-    deepprofiler.learning.profiling.profile(context.obj["config"], metadata)
+    dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='profile')
+    deepprofiler.learning.profiling.profile(context.obj["config"], dset)
     
 
 # Auxiliary tool: Split index in multiple parts
