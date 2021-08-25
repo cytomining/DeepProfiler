@@ -41,7 +41,7 @@ class Profile(object):
                 self.dpmodel.feature_model.load_weights(checkpoint)
             except ValueError:
                 print("Loading weights without classifier (different number of classes)")
-                self.dpmodel.feature_model.layers[-1].name = "classifier"
+                self.dpmodel.feature_model.layers[-1]._name = "classifier"
                 self.dpmodel.feature_model.load_weights(checkpoint, by_name=True)
 
         self.dpmodel.feature_model.summary()
