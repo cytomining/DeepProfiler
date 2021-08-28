@@ -1,4 +1,6 @@
 import tensorflow as tf
+import numpy
+import efficientnet.tfkeras as efn
 
 from deepprofiler.learning.model import DeepProfilerModel
 from deepprofiler.imaging.augmentations import AugmentationLayer
@@ -14,14 +16,14 @@ class ModelClass(DeepProfilerModel):
     ## Define supported models
     def get_supported_models(self):
         return {
-            0: tf.compat.v1.keras.applications.EfficientNetB0,
-            1: tf.compat.v1.keras.applications.EfficientNetB1,
-            2: tf.compat.v1.keras.applications.EfficientNetB2,
-            3: tf.compat.v1.keras.applications.EfficientNetB3,
-            4: tf.compat.v1.keras.applications.EfficientNetB4,
-            5: tf.compat.v1.keras.applications.EfficientNetB5,
-            6: tf.compat.v1.keras.applications.EfficientNetB6,
-            7: tf.compat.v1.keras.applications.EfficientNetB7,
+            0: efn.EfficientNetB0,
+            1: efn.EfficientNetB1,
+            2: efn.EfficientNetB2,
+            3: efn.EfficientNetB3,
+            4: efn.EfficientNetB4,
+            5: efn.EfficientNetB5,
+            6: efn.EfficientNetB6,
+            7: efn.EfficientNetB7,
         }
 
     def get_model(self, config, input_image=None, weights=None, include_top=False):
@@ -100,9 +102,24 @@ class ModelClass(DeepProfilerModel):
 
         # => Transfer all weights except conv1.1
         total_layers = len(base_model.layers)
-        for i in range(5, total_layers):
+        for i in range(2, total_layers):
             if len(base_model.layers[i].weights) > 0:
                 print("Setting pre-trained weights: {:.2f}%".format((i / total_layers) * 100), end="\r")
                 self.feature_model.layers[i + lshift].set_weights(base_model.layers[i].get_weights())
+        
+        # => Replicate filters of first layer as needed
+        weights = base_model.layers[1].get_weights()
+        available_channels = weights[0].shape[2]
+        target_shape = self.feature_model.layers[1 + lshift].weights[0].shape
+        new_weights = numpy.zeros(target_shape)
 
+        for i in range(new_weights.shape[2]):
+            j = i % available_channels
+            new_weights[:,:,i,:] = weights[0][:,:,j,:]
+
+        weights_array = [new_weights]
+        if len(weights) > 1: 
+            weights_array += weights[1:]
+
+        self.feature_model.layers[1 + lshift].set_weights(weights_array)
         print("Network initialized with pretrained ImageNet weights")
