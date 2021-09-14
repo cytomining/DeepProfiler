@@ -28,21 +28,32 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
 
     def start(self, session):
-        self.samples = pd.read_csv(os.path.join(self.directory, "sc-metadata.csv"))
-        self.samples = self.samples.sample(frac=1.0).reset_index(drop=True)
+        self.all_cells = pd.read_csv(os.path.join(self.directory, "sc_metadata.csv"))
+        #self.samples = self.samples.sample(frac=1.0).reset_index(drop=True)
+        self.balanced_sample()
+        self.expected_steps = self.samples.shape[0] / self.batch_size
         self.num_classes = len(self.samples["Target"].unique())
-        '''
-        self.generator = self.datagen.flow_from_dataframe(
-                dataframe=samples, 
-                x_col="Image_Name",
-                y_col="Class_Name",
-                class_mode="categorical",
-                directory=self.directory,
-                color_mode="grayscale",
-                target_size=(self.box_size, self.box_size * self.num_channels),
-                batch_size=self.config["train"]["model"]["params"]["batch_size"]
-        )
-        '''
+
+
+    def balanced_sample(self):
+        # Obtain distribution of single cells per class
+        #df = self.all_cells[self.all_cells.Training_Status_Alpha == "Training"].sample(frac=1.0).reset_index(drop=True)
+        df = self.all_cells[self.all_cells.Next_Training_Status == "Training"].sample(frac=1.0).reset_index(drop=True)
+
+        counts = df.groupby("Class_Name").count().reset_index()[["Class_Name", "Key"]]
+        sample_size = int(counts.Key.median())
+        counts = {r.Class_Name: r.Key for k,r in counts.iterrows()}
+
+        # Sample the same number of cells per class
+        class_samples = []
+        for cls in df.Class_Name.unique():
+            class_samples.append(df[df.Class_Name == cls].sample(n=sample_size, replace=counts[cls] < sample_size))
+        self.samples = pd.concat(class_samples)
+
+        # Randomize order
+        self.samples = self.samples.sample(frac=1.0).reset_index(drop=True)
+        print(" >> Shuffling training sample with",len(self.samples),"examples")
+
 
     def generate(self, sess, global_step=0):
         pointer = 0
@@ -52,7 +63,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                 y = []
                 for i in range(self.batch_size):
                     if pointer >= len(self.samples):
-                        self.samples = self.samples.sample(frac=1.0).reset_index(drop=True)
+                        self.balanced_sample()
                         pointer = 0
                     filename = os.path.join(self.directory, self.samples.loc[pointer, "Image_Name"])
                     im = skimage.io.imread(filename).astype(np.float32)
@@ -62,18 +73,6 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                 yield(x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
             #except:
             #   break
-
-
-    def generate_old(self, sess, global_step=0):
-        while True:
-            try:
-                x_, y = next(self.generator)
-                x = np.zeros([x_.shape[0], self.box_size, self.box_size, self.num_channels])
-                for i in range(x_.shape[0]):
-                    x[i,:,:,:] = deepprofiler.imaging.cropping.fold_channels(x_[i])
-                yield (x, y) #tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
-            except:
-                break
 
 
     def stop(self, session):

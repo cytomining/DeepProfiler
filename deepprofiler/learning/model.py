@@ -62,6 +62,7 @@ class DeepProfilerModel(abc.ABC):
 
         # Get training parameters
         epochs, steps, schedule_epochs, schedule_lr, freq = setup_params(self, experiment)
+        steps = self.train_crop_generator.expected_steps
 
         # Load weights
         self.load_weights(epoch)

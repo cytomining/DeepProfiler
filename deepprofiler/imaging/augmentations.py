@@ -31,16 +31,16 @@ def random_illumination(image):
     source = tf.image.grayscale_to_rgb(source)
     
     # Apply illumination augmentations
-    bright = tf.random.uniform([numchn], minval=-0.2, maxval=0.2, dtype=tf.float32)
+    bright = tf.random.uniform([numchn], minval=-0.1, maxval=0.1, dtype=tf.float32)
     channels = [tf.image.adjust_brightness(source[s,...], bright[s]) for s in range(numchn)]
-    contrast = tf.random.uniform([numchn], minval=0.5, maxval=1.5, dtype=tf.float32)
+    contrast = tf.random.uniform([numchn], minval=0.8, maxval=1.2, dtype=tf.float32)
     channels = [tf.image.adjust_contrast(channels[s], contrast[s]) for s in range(numchn)]
     result = tf.concat([tf.expand_dims(t, 0) for t in channels], axis=0)
     
     # Recover multi-channel image
     result = tf.image.rgb_to_grayscale(result)
     result = tf.transpose(result[:,:,:,0], [2, 1, 0])
-    result = result / tf.math.reduce_max(result)
+    #result = result / tf.math.reduce_max(result)
     return result
 
 
