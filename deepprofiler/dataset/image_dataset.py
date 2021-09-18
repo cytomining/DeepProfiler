@@ -238,8 +238,8 @@ def read_dataset(config, mode = 'train'):
     if config["dataset"]["locations"]["mask_objects"]:
         dset.outlines = outlines
 
-    if mode == 'train':
-        dset.prepare_training_locations()
+    #if mode == 'train':
+    #    dset.prepare_training_locations()
 
     return dset
 

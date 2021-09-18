@@ -9,7 +9,7 @@ import importlib
 def learn_model(config, dset, epoch=1, seed=None, verbose=1):
     model_module = importlib.import_module("plugins.models.{}".format(config["train"]["model"]["name"]))
     crop_module = importlib.import_module("plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"]))
-    config["num_classes"] = len(dset.training_images["Target"].unique())
+    #config["num_classes"] = len(dset.training_images["Target"].unique())
     if "metrics" in config["train"]["model"].keys():
         if type(config["train"]["model"]["metrics"]) not in [list, dict]:
             raise ValueError("Metrics should be a list or dictionary.")
