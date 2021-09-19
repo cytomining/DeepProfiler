@@ -62,10 +62,10 @@ def random_rotate(image):
 
 
 def augment(image):
-    if tf.less(tf.random.uniform([], minval=0, maxval=1, dtype=tf.float32), tf.cast(0.5, tf.float32)):
-        augm = random_crop(image)
-    else:
-        augm = random_rotate(image)
+    #if tf.less(tf.random.uniform([], minval=0, maxval=1, dtype=tf.float32), tf.cast(0.5, tf.float32)):
+    #    augm = random_crop(image)
+    #else:
+    #    augm = random_rotate(image)
 
     augm = random_flips(augm)
     augm = random_illumination(augm)

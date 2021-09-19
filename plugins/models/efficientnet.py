@@ -33,7 +33,7 @@ class ModelClass(DeepProfilerModel):
         error_msg = str(num_layers) + " conv_blocks not in " + SM
         assert num_layers in supported_models.keys(), error_msg
 
-        if self.is_training: #and weights is None:
+        if self.is_training and weights is None:
             input_image = AugmentationLayer()(input_image)
 
         model = supported_models[num_layers](
