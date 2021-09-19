@@ -67,7 +67,7 @@ def augment(image):
     #else:
     #    augm = random_rotate(image)
 
-    augm = random_flips(augm)
+    augm = random_flips(image)
     augm = random_illumination(augm)
 
     return augm
