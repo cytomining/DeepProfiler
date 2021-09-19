@@ -185,6 +185,13 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
         callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule] 
     else:
         callbacks = [callback_model_checkpoint, callback_csv] 
+
+    # Online labels callback
+    update_labels = tf.compat.v1.keras.callbacks.LambdaCallback(
+            on_epoch_end=lambda epoch, logs: dpmodel.train_crop_generator.update_online_labels(dpmodel.feature_model, epoch)
+    )
+    callbacks.append(update_labels)
+
     return callbacks
 
 
