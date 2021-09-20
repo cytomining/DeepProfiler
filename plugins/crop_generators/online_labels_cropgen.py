@@ -30,10 +30,21 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
         # Load metadata
         self.all_cells = pd.read_csv(os.path.join(self.directory, "expanded_sc_metadata_tengenes.csv"))
+
+        ## UNCOMMENT FOR ALPHA SET
+        #self.all_cells.loc[(self.all_cells.Training_Status == "Unused") & self.all_cells.Metadata_Plate.isin([41756,41757]), "Training_Status_Alpha"] = "Validation"
+
+        ## UNCOMMENT FOR SINGLE CELL BALANCED SET
+        self.all_cells.loc[self.all_cells.Training_Status == "Training", "Training_Status"] = "XXX"
+        self.all_cells.loc[self.all_cells.Training_Status == "SingleCellTraining", "Training_Status"] = "Training"
+        self.all_cells.loc[self.all_cells.Training_Status == "Validation", "Training_Status"] = "YYY"
+        self.all_cells.loc[self.all_cells.Training_Status == "SingleCellValidation", "Training_Status"] = "Validation"
+
         self.target = config["train"]["partition"]["targets"][0]
 
         # Index targets for one-hot encoded labels
-        self.split_data = self.all_cells[self.all_cells.Training_Status_TenGenes == self.mode].reset_index(drop=True)
+        #self.split_data = self.all_cells[self.all_cells.Training_Status_TenGenes == self.mode].reset_index(drop=True)
+        self.split_data = self.all_cells[self.all_cells.Training_Status == self.mode].reset_index(drop=True)
         self.classes = list(self.split_data[self.target].unique())
         self.num_classes = len(self.classes)
         self.classes.sort()
@@ -49,6 +60,8 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
         # Online labels
         if self.mode == "Training":
+            self.out_dir = config["paths"]["results"] + "soft_labels/"
+            os.makedirs(self.out_dir, exist_ok=True)
             self.init_online_labels()
 
 
@@ -128,7 +141,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
             self.soft_labels[k, label] += 1. - LABEL_SMOOTHING
         print("Total labels:", np.sum(self.soft_labels))
         sl = pd.DataFrame(data=self.soft_labels)
-        sl.to_csv("soft_labels_0000.csv", index=False)
+        sl.to_csv(self.out_dir + "0000.csv", index=False)
 
 
     def update_online_labels(self, model, epoch):
@@ -149,7 +162,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
         # Save labels for this epoch
         sl = pd.DataFrame(data=self.soft_labels)
-        sl.to_csv("soft_labels_{:04d}.csv".format(epoch+1), index=False)
+        sl.to_csv(self.out_dir + "{:04d}.csv".format(epoch+1), index=False)
 
 
     def stop(self, session):
