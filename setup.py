@@ -28,7 +28,9 @@ setuptools.setup(
         "scikit-learn>=0.19.0",
         "scipy>=1.1",
         "comet-ml>=3.1.6",
-        "tensorflow_addons"
+        "tensorflow==2.5.*",
+        "tensorflow_addons",
+        "tqdm>=4.62"
     ],
     extras_require={
         "test": [
