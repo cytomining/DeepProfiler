@@ -57,10 +57,15 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
         for j in range(crops.shape[0]):
             image = deepprofiler.imaging.cropping.unfold_channels(crops[j,:,:,:])
             skimage.io.imsave(os.path.join(outdir, metadata.loc[j, "Image_Name"]), image)
+<<<<<<< HEAD
 
         self.all_metadata.append(metadata)
         print("{}: {} single cells".format(key, crops.shape[0]))
 
+=======
+        self.all_metadata.append(metadata)
+        print("{}: {} single cells".format(key, crops.shape[0]))
+>>>>>>> master
 
 def start_session():
     configuration = tf.compat.v1.ConfigProto()
@@ -138,4 +143,6 @@ def export_dataset(config, dset):
     dset.scan(cropper.export_single_cells, frame="all")
     df = pd.concat(cropper.all_metadata).reset_index(drop=True)
     df.to_csv(os.path.join(outdir, "sc-metadata.csv"), index=False)
-    print("Exporting: done")
+    print("Exporting: done")    
+
+

@@ -238,6 +238,7 @@ def read_dataset(config, mode = 'train'):
     if config["dataset"]["locations"]["mask_objects"]:
         dset.outlines = outlines
 
+    # For training with sampled_crop_generator, no need to read locations again necessary.
     #if mode == 'train':
     #    dset.prepare_training_locations()
 
