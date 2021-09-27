@@ -143,12 +143,16 @@ def prepare(context):
 
 # Second tool: Sample single cells for training
 @cli.command()
+@click.option("--mode", default="sample")
 @click.pass_context
-def sample_sc(context):
+def sample_sc(context, mode):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
-    dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='train')
-    deepprofiler.dataset.sampling.sample_dataset(context.obj["config"], dset)
+    dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
+    if mode == "sample":
+        deepprofiler.dataset.sampling.sample_dataset(context.obj["config"], dset)
+    elif mode == "export_all":
+        deepprofiler.dataset.sampling.export_dataset(context.obj["config"], dset)
     print("Single-cell sampling complete.")
 
 
@@ -176,7 +180,7 @@ def traintf2(context, epoch):
 @cli.command()
 @click.pass_context
 @click.option("--part",
-              help="Part of index to process", 
+               help="Part of index to process",
               default=-1, 
               type=click.INT)
 def profile(context, part):
