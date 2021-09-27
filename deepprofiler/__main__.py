@@ -14,6 +14,7 @@ import deepprofiler.dataset.utils
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.sampling
 import deepprofiler.learning.training
+import deepprofiler.learning.tf2train
 import deepprofiler.learning.profiling
 import deepprofiler.download.normalize_bbbc021_metadata
 
@@ -161,6 +162,14 @@ def train(context, epoch, seed):
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='train')
     deepprofiler.learning.training.learn_model(context.obj["config"], dset, epoch, seed)
+
+
+# Third tool (b): Train a network with TF dataset
+@cli.command()
+@click.option("--epoch", default=1)
+@click.pass_context
+def traintf2(context, epoch):
+    deepprofiler.learning.tf2train.learn_model(context.obj["config"], epoch)
 
 
 # Fourth tool: Profile cells and extract features
