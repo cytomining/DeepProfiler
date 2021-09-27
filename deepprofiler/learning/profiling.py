@@ -3,12 +3,11 @@ import os
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.compat.v1.keras import backend as K
 
 from deepprofiler.dataset.utils import tic, toc
 
 tf.compat.v1.disable_v2_behavior()
-
+tf.config.run_functions_eagerly(False)
 
 class Profile(object):
     
@@ -32,7 +31,7 @@ class Profile(object):
 
     def configure(self):        
         # Main session configuration
-        self.profile_crop_generator.start(K.get_session())
+        self.profile_crop_generator.start(tf.compat.v1.keras.backend.get_session())
         
         # Create feature extractor
         if self.config["profile"]["checkpoint"] != "None":
@@ -72,7 +71,7 @@ class Profile(object):
         batch_size = self.config["profile"]["batch_size"]
         image_key, image_names, outlines = self.dset.get_image_paths(meta)
         crop_locations = self.profile_crop_generator.prepare_image(
-                                   K.get_session(),
+                                   tf.compat.v1.keras.backend.get_session(),
                                    image_array,
                                    meta,
                                    False
@@ -84,7 +83,7 @@ class Profile(object):
         repeats = self.config["train"]["model"]["crop_generator"] == "repeat_channel_crop_generator"
         
         # Extract features
-        crops = next(self.profile_crop_generator.generate(K.get_session()))[0]  # single image crop generator yields one batch
+        crops = next(self.profile_crop_generator.generate(tf.compat.v1.keras.backend.get_session()))[0]  # single image crop generator yields one batch
         feats = self.feat_extractor.predict(crops, batch_size=batch_size)
         if repeats:
             feats = np.reshape(feats, (self.num_channels, total_crops, -1))
