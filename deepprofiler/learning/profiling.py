@@ -81,7 +81,7 @@ class Profile(object):
         if total_crops == 0:
             print("No cells to profile:", output_file)
             return
-        repeats = self.config["train"]["model"]["crop_generator"] == "repeat_channel_crop_generator"
+        repeats = self.config["train"]["model"]["crop_generator"] in ["repeat_channel_crop_generator", "individual_channel_cropgen"]
         
         # Extract features
         crops = next(self.profile_crop_generator.generate(K.get_session()))[0]  # single image crop generator yields one batch
