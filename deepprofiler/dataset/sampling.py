@@ -26,8 +26,8 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
             batch["locations"][i]["Target"] = batch["targets"][i][0]
             batch["locations"][i]["Class_Name"] = self.dset.targets[0].values[batch["targets"][i][0]]
         metadata = pd.concat(batch["locations"])
-        cols = ["Key","Target","Nuclei_Location_Center_X","Nuclei_Location_Center_Y"]
-        seps = ["+","@","x",".png"]
+        cols = ["Key", "Target", "Nuclei_Location_Center_X", "Nuclei_Location_Center_Y"]
+        seps = ["+", "@", "x", ".png"]
         metadata["Image_Name"] = ""
         for c in range(len(cols)):
             metadata["Image_Name"] += metadata[cols[c]].astype(str).str.replace("/","-") + seps[c]
@@ -57,15 +57,10 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
         for j in range(crops.shape[0]):
             image = deepprofiler.imaging.cropping.unfold_channels(crops[j,:,:,:])
             skimage.io.imsave(os.path.join(outdir, metadata.loc[j, "Image_Name"]), image)
-<<<<<<< HEAD
 
         self.all_metadata.append(metadata)
         print("{}: {} single cells".format(key, crops.shape[0]))
 
-=======
-        self.all_metadata.append(metadata)
-        print("{}: {} single cells".format(key, crops.shape[0]))
->>>>>>> master
 
 def start_session():
     configuration = tf.compat.v1.ConfigProto()
@@ -119,7 +114,7 @@ def sample_dataset(config, dset):
         if len(batch["keys"]) > 0:
             crops, metadata = cropper.process_batch(batch)
             for j in range(crops.shape[0]):
-                image = deepprofiler.imaging.cropping.unfold_channels(crops[j,:,:,:])
+                image = deepprofiler.imaging.cropping.unfold_channels(crops[j, :, :, :])
                 skimage.io.imsave(os.path.join(outdir, metadata.loc[j, "Image_Name"]), image)
             all_metadata.append(metadata)
 
