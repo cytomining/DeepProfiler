@@ -11,6 +11,7 @@ import deepprofiler.imaging.augmentations
 import deepprofiler.imaging.boxes
 
 tf.compat.v1.disable_v2_behavior()
+tf.config.run_functions_eagerly(False)
 
 
 def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False):

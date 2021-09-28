@@ -12,6 +12,7 @@ import deepprofiler.imaging.cropping
 import deepprofiler.learning.validation
 
 tf.compat.v1.disable_v2_behavior()
+tf.config.run_functions_eagerly(False)
 
 ##################################################
 # This class should be used as an abstract base
@@ -28,7 +29,10 @@ class DeepProfilerModel(abc.ABC):
         self.config = config
         self.dset = dset
         self.train_crop_generator = crop_generator(config, dset)
-        self.val_crop_generator = crop_generator(config, dset, mode="Validation") #val_crop_generator(config, dset)
+        if self.config['train']['model']['crop_generator'] == 'online_labels_cropgen':
+            self.val_crop_generator = crop_generator(config, dset, mode="Validation")
+        else:
+            self.val_crop_generator = val_crop_generator(config, dset)
         self.random_seed = None
         self.is_training = is_training
 
@@ -62,7 +66,13 @@ class DeepProfilerModel(abc.ABC):
 
         # Get training parameters
         epochs, schedule_epochs, schedule_lr, freq = setup_params(self, experiment)
-        steps = self.train_crop_generator.expected_steps
+        if self.config['train']['model']['crop_generator'] == 'online_labels_cropgen':
+            steps = self.train_crop_generator.expected_steps
+        elif self.config['train']['model']['crop_generator'] == 'sampled_crop_generator':
+            steps = int((len(os.listdir(self.config['paths']['single_cell_sample'])) - 1)
+                         / self.config["train"]["model"]["params"]["batch_size"])
+        else:
+            steps = self.dset.steps_per_epoch
 
         # Load weights
         self.load_weights(epoch)
@@ -137,15 +147,26 @@ def start_main_session():
 
 def load_validation_data(dpmodel, session):
     dpmodel.val_crop_generator.start(session)
-    x_validation = []
-    y_validation = []
 
-    for batch in dpmodel.val_crop_generator.generate():
-        x_validation.append(batch[0])
-        y_validation.append(batch[1])
+    if dpmodel.config['train']['model']['crop_generator'] == 'online_labels_cropgen':
+        x_validation = []
+        y_validation = []
 
-    x_validation = np.concatenate(x_validation)
-    y_validation = np.concatenate(y_validation)
+        for batch in dpmodel.val_crop_generator.generate():
+            x_validation.append(batch[0])
+            y_validation.append(batch[1])
+
+        x_validation = np.concatenate(x_validation)
+        y_validation = np.concatenate(y_validation)
+
+    else:
+        x_validation, y_validation = deepprofiler.learning.validation.load_validation_data(
+            dpmodel.config,
+            dpmodel.dset,
+            dpmodel.val_crop_generator,
+            session
+        )
+
     print("Validation data:", x_validation.shape, y_validation.shape)
 
     return x_validation, y_validation
