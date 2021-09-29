@@ -82,7 +82,7 @@ class DeepProfilerModel(abc.ABC):
 
         # Train model
         self.feature_model.fit_generator(
-            generator=self.train_crop_generator.generator(main_session),
+            generator=self.train_crop_generator.generate(main_session),
             steps_per_epoch=steps,
             epochs=epochs,
             callbacks=callbacks,
