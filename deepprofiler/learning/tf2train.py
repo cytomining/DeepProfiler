@@ -6,6 +6,8 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 import efficientnet.tfkeras as efn
 
+from deepprofiler.imaging.augmentations import AugmentationLayerV2
+
 tf.compat.v1.enable_v2_behavior()
 tf.config.run_functions_eagerly(True)
 
@@ -31,63 +33,10 @@ def make_dataset(path, batch_size, single_cell_metadata, config, is_training):
         image = tf.py_function(func=fold_channels, inp=[image], Tout=tf.float32)
         return image
 
-    def configure_for_performance(ds, is_training):
-
-        ds = ds.shuffle(buffer_size=323000)
-        if is_training:
-            ds = augment(ds)
+    def configure_for_performance(ds):
+        ds = ds.shuffle(buffer_size=5000)
         ds = ds.batch(batch_size)
         ds = ds.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
-        return ds
-
-    def random_illumination(image):
-        # Make channels independent images
-        numchn = len(config["dataset"]["images"]["channels"])
-        source = tf.transpose(image, [2, 1, 0])
-        source = tf.expand_dims(source, -1)
-        source = tf.image.grayscale_to_rgb(source)
-
-        # Apply illumination augmentations
-        bright = tf.random.uniform([numchn], minval=-0.4, maxval=0.4, dtype=tf.float32)
-        channels = [tf.image.adjust_brightness(source[s, ...], bright[s]) for s in range(numchn)]
-        contrast = tf.random.uniform([numchn], minval=0.6, maxval=1.4, dtype=tf.float32)
-        channels = [tf.image.adjust_contrast(channels[s], contrast[s]) for s in range(numchn)]
-        result = tf.concat([tf.expand_dims(t, 0) for t in channels], axis=0)
-
-        # Recover multi-channel image
-        result = tf.image.rgb_to_grayscale(result)
-        result = tf.transpose(result[:, :, :, 0], [2, 1, 0])
-        # result = result / tf.math.reduce_max(result)
-
-        return result
-
-    def random_flips(image):
-        augmented = tf.image.random_flip_left_right(image)
-
-        # 90 degree rotations
-        angle = tf.random.uniform([1], minval=0, maxval=4, dtype=tf.int32)
-        augmented = tf.image.rot90(augmented, angle[0])
-        return augmented
-
-    def random_crop_or_rotate(image):
-        w, h, c = config["dataset"]["locations"]["box_size"], config["dataset"]["locations"]["box_size"], len(
-            config["dataset"]["images"]["channels"])
-        if tf.less(tf.random.uniform([], minval=0, maxval=1, dtype=tf.float32), tf.cast(0.5, tf.float32)):
-            size = tf.random.uniform([1], minval=int(w * 0.8), maxval=w, dtype=tf.int32)
-            image = tf.image.random_crop(image, [size[0], size[0], c])
-            return tf.image.resize(image, (w, h))
-        else:
-            return image
-
-
-    def augment(ds):
-        ds = ds.map(
-            lambda image, label: (random_crop_or_rotate(image), label), num_parallel_calls=AUTOTUNE
-        ).map(
-            lambda image, label: (random_flips(image), label), num_parallel_calls=AUTOTUNE
-        ).map(
-            lambda image, label: (random_illumination(image), label), num_parallel_calls=AUTOTUNE
-        )
         return ds
 
     filenames = single_cell_metadata["Image_Name"].tolist()
@@ -100,7 +49,7 @@ def make_dataset(path, batch_size, single_cell_metadata, config, is_training):
     labels = tf.keras.utils.to_categorical(single_cell_metadata["Categorical"])
     labels_ds = tf.data.Dataset.from_tensor_slices(labels)
     ds = tf.data.Dataset.zip((images_ds, labels_ds))
-    ds = configure_for_performance(ds, is_training)
+    ds = configure_for_performance(ds)
     return ds, steps
 
 
@@ -147,7 +96,8 @@ def setup_callbacks(config):
             lr_schedule_lr += [0.5 * (1 + np.cos((np.pi * t) / epochs)) * init_lr for t in range(5, epochs)]
             callback_lr_schedule = tf.keras.callbacks.LearningRateScheduler(lr_schedule, verbose=1)
         elif config["train"]["model"]["lr_schedule"] == "plateau":
-            callback_lr_schedule = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, min_lr=0.0001)
+            callback_lr_schedule = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1,
+                                                                        patience=5, min_lr=0.0001)
             config["train"]["validation"]["frequency"] = 1
         else:
             assert len(config["train"]["model"]["lr_schedule"]["epoch"]) == \
@@ -193,15 +143,8 @@ def learn_model(config, epoch):
     }
 
     BATCH_SIZE = config["train"]["model"]["params"]["batch_size"]
-    strategy_lr = config["train"]["model"]["params"]["learning_rate"]
-
     experiment = setup_comet_ml(config)
-
-    single_cell_metadata = pd.read_csv(
-        os.path.join(config["paths"]["single_cell_sample"], "expanded_sc_metadata_alpha.csv"))
-    single_cell_metadata = single_cell_metadata[
-        ["Class_Name", "Image_Name", "Training_Status", "Training_Status_Alpha"]]
-    single_cell_metadata = single_cell_metadata[single_cell_metadata["Training_Status"] != "Unused"]
+    single_cell_metadata = pd.read_csv(os.path.join(config["paths"]["index"]))
 
     num_classes = len(pd.unique(single_cell_metadata["Class_Name"]))
     single_cell_metadata["Categorical"] = pd.Categorical(single_cell_metadata["Class_Name"]).codes
@@ -209,21 +152,24 @@ def learn_model(config, epoch):
     path = config["paths"]["single_cell_sample"]
     dataset, steps_per_epoch = make_dataset(path, BATCH_SIZE,
                                             single_cell_metadata[
-                                                single_cell_metadata["Training_Status_Alpha"] == "Training"],
+                                                single_cell_metadata[config["train"]["partition"]["split_field"]].isin(
+                                                    config["train"]["partition"]["training_values"])],
                                             config,
                                             is_training=True)
     validation_dataset, _ = make_dataset(path, BATCH_SIZE,
                                          single_cell_metadata[
-                                             single_cell_metadata["Training_Status_Alpha"] == "Validation"],
+                                             single_cell_metadata[config["train"]["partition"]["split_field"]].isin(
+                                                 config["train"]["partition"]["validation_values"])],
                                          config,
                                          is_training=False)
 
     input_shape = (config["dataset"]["locations"]["box_size"], config["dataset"]["locations"]["box_size"],
                    len(config["dataset"]["images"]["channels"]))
     input_image = tf.keras.layers.Input(input_shape)
+    augmented_input = AugmentationLayerV2(input_shape=input_shape)(input_image)
 
     model = efn.EfficientNetB0(
-        include_top=False, weights=None, input_tensor=input_image,
+        include_top=False, weights=None, input_tensor=augmented_input,
         input_shape=input_shape
     )
     features = tf.keras.layers.GlobalAveragePooling2D(name='avg_pool')(model.output)
@@ -236,15 +182,15 @@ def learn_model(config, epoch):
         if hasattr(layer, "kernel_regularizer"):
             setattr(layer, "kernel_regularizer", regularizer)
 
-    model = tf.keras.models.model_from_json(model.to_json())
-    optimizer = tf.keras.optimizers.SGD(learning_rate=strategy_lr)
+    model = tf.keras.models.model_from_json(model.to_json(), custom_objects={'AugmentationLayerV2': AugmentationLayerV2})
+    optimizer = tf.keras.optimizers.SGD(learning_rate=config["train"]["model"]["params"]["learning_rate"])
     loss_func = tf.keras.losses.CategoricalCrossentropy(from_logits=False)  # , label_smoothing = 0.6)
 
     model.compile(optimizer, loss_func,
-                  metrics=["accuracy", tfa.metrics.F1Score(num_classes=num_classes, average='macro'),
-                           tf.keras.metrics.TopKCategoricalAccuracy(k=5), tf.keras.metrics.Precision()])
+                  metrics=["accuracy"])#, tfa.metrics.F1Score(num_classes=num_classes, average='macro'),
+                           #tf.keras.metrics.TopKCategoricalAccuracy(k=5), tf.keras.metrics.Precision()])
 
-    callbacks = setup_callbacks(config, strategy_lr)
+    callbacks = setup_callbacks(config)
 
     if epoch == 1 and config["train"]["model"]["initialization"] == "ImageNet":
         base_model = efn.EfficientNetB0(weights='imagenet', include_top=False)
@@ -269,8 +215,6 @@ def learn_model(config, epoch):
             weights_array += weights[1:]
 
         model.layers[1].set_weights(weights_array)
-        print(model.layers[1].name,
-              np.array_equal(np.array(model.layers[1].get_weights()), np.array(base_model.layers[1].get_weights())))
 
         print("Network initialized with pretrained ImageNet weights")
 
@@ -279,7 +223,7 @@ def learn_model(config, epoch):
         previous_model = output_file.format(epoch=epoch - 1)
         model.load_weights(previous_model)
 
-    print(model.summary())
+    #print(model.summary())
     if experiment:
         with experiment.train():
             model.fit(dataset,
