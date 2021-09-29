@@ -48,7 +48,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         self.classes = list(self.split_data[self.target].unique())
         self.num_classes = len(self.classes)
         self.classes.sort()
-        self.classes = {self.classes[i]:i for i in range(self.num_classes)}
+        self.classes = {self.classes[i]: i for i in range(self.num_classes)}
 
         # Identify targets and samples
         self.balanced_sample()
@@ -88,7 +88,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
             print(self.samples[self.target].value_counts())
 
 
-    def generator(self, sess, global_step=0):
+    def generate(self, sess, global_step=0):
         pointer = 0
         while True:
             x = np.zeros([self.batch_size, self.box_size, self.box_size, self.num_channels])
@@ -105,7 +105,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
             yield(x, np.concatenate(y, axis=0))
 
 
-    def generate(self, source="samples"):
+    def generator(self, source="samples"):
         pointer = 0
         if source == "splits":
             dataframe = self.split_data
@@ -124,19 +124,19 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                     break
                 filename = os.path.join(self.directory, dataframe.loc[pointer, "Image_Name"])
                 im = skimage.io.imread(filename).astype(np.float32)
-                x[i,:,:,:] = deepprofiler.imaging.cropping.fold_channels(im)
+                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im)
                 y.append(self.classes[dataframe.loc[pointer, self.target]])
                 pointer += 1
             if len(y) < x.shape[0]:
-                x = x[0:len(y),...]
-            yield(x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
+                x = x[0:len(y), ...]
+            yield(x, tf.keras.utils.to_categorical(y, num_classes = self.num_classes))
 
 
     def init_online_labels(self):
         LABEL_SMOOTHING = 0.2
         self.soft_labels = np.zeros((self.split_data.shape[0], self.num_classes)) + LABEL_SMOOTHING/self.num_classes
         print("Soft labels:", self.soft_labels.shape)
-        for k,r in self.split_data.iterrows():
+        for k, r in self.split_data.iterrows():
             label = self.classes[self.split_data.loc[k, self.target]]
             self.soft_labels[k, label] += 1. - LABEL_SMOOTHING
         print("Total labels:", np.sum(self.soft_labels))
@@ -151,8 +151,8 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
         # Get predictions with the model
         model.get_layer("augmentation_layer").is_training = False
-        for batch in self.generate(source="splits"):
-            predictions.append( model.predict(batch[0]) )
+        for batch in self.generator(source = "splits"):
+            predictions.append(model.predict(batch[0]))
         model.get_layer("augmentation_layer").is_training = True
 
         # Update soft labels
