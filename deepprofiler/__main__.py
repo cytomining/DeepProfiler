@@ -149,10 +149,7 @@ def sample_sc(context, mode):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
-    if mode == "sample":
-        deepprofiler.dataset.sampling.sample_dataset(context.obj["config"], dset)
-    elif mode == "export_all":
-        deepprofiler.dataset.sampling.export_dataset(context.obj["config"], dset)
+    deepprofiler.dataset.sampling.export_dataset(context.obj["config"], dset)
     print("Single-cell sampling complete.")
 
 
@@ -164,6 +161,11 @@ def sample_sc(context, mode):
 def train(context, epoch, seed):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
+    if context.obj["config"]["train"]["model"]["crop_generator"] in ['online_labels_cropgen', 'sampled_crop_generator']:
+        context.obj["config"]["paths"]["metadata"] = context.obj["config"]["paths"]["single_cell_sample"]
+        if 'index.csv' in context.obj["config"]["paths"]["index"]:
+            context.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["single_cell_sample"] + 'sc-metadata.csv'
+
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='train')
     deepprofiler.learning.training.learn_model(context.obj["config"], dset, epoch, seed)
 
@@ -173,6 +175,11 @@ def train(context, epoch, seed):
 @click.option("--epoch", default=1)
 @click.pass_context
 def traintf2(context, epoch):
+    if context.obj["config"]["train"]["model"]["crop_generator"] in ['online_labels_cropgen', 'sampled_crop_generator']:
+        context.obj["config"]["paths"]["metadata"] = context.obj["config"]["paths"]["single_cell_sample"]
+        if 'index.csv' in context.obj["config"]["paths"]["index"]:
+            context.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["single_cell_sample"] + 'sc-metadata.csv'
+
     deepprofiler.learning.tf2train.learn_model(context.obj["config"], epoch)
 
 
@@ -180,7 +187,7 @@ def traintf2(context, epoch):
 @cli.command()
 @click.pass_context
 @click.option("--part",
-               help="Part of index to process",
+              help="Part of index to process",
               default=-1, 
               type=click.INT)
 def profile(context, part):
