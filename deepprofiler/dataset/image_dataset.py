@@ -239,8 +239,8 @@ def read_dataset(config, mode = 'train'):
         dset.outlines = outlines
 
     # For training with sampled_crop_generator, no need to read locations again necessary.
-    #if mode == 'train':
-    #    dset.prepare_training_locations()
+    if mode == 'train' and config['train']['model']['crop_generator'] == 'crop_generator':
+        dset.prepare_training_locations()
 
     return dset
 
