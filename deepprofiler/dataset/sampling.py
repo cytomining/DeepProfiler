@@ -25,20 +25,23 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
             batch["locations"][i]["Key"] = batch["keys"][i]
             batch["locations"][i]["Target"] = batch["targets"][i][0]
             batch["locations"][i]["Class_Name"] = self.dset.targets[0].values[batch["targets"][i][0]]
+            batch["locations"][i][self.config["train"]["partition"]["split_field"]] = batch["split"][i]
+
         metadata = pd.concat(batch["locations"])
         cols = ["Key", "Target", "Nuclei_Location_Center_X", "Nuclei_Location_Center_Y"]
         seps = ["+", "@", "x", ".png"]
         metadata["Image_Name"] = ""
+
         for c in range(len(cols)):
-            metadata["Image_Name"] += metadata[cols[c]].astype(str).str.replace("/","-") + seps[c]
+            metadata["Image_Name"] += metadata[cols[c]].astype(str).str.replace("/", "-") + seps[c]
         
         boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
 
         feed_dict = {
-            self.input_variables["image_ph"]:batch["images"],
-            self.input_variables["boxes_ph"]:boxes,
-            self.input_variables["box_ind_ph"]:box_ind,
-            self.input_variables["mask_ind_ph"]:masks
+            self.input_variables["image_ph"]: batch["images"],
+            self.input_variables["boxes_ph"]: boxes,
+            self.input_variables["box_ind_ph"]: box_ind,
+            self.input_variables["mask_ind_ph"]: masks
         }
         for i in range(len(targets)):
             tname = "target_" + str(i)
@@ -50,12 +53,13 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
     def export_single_cells(self, key, image_array, meta):
         outdir = self.config["paths"]["single_cell_sample"]
         key = self.dset.keyGen(meta)
-        batch = {"keys": [key], "images": [image_array], "targets": [], "locations": []}
+        batch = {"keys": [key], "images": [image_array], "targets": [], "locations": [], "split": []}
         batch["locations"].append(deepprofiler.imaging.boxes.get_locations(key, self.config))
         batch["targets"].append([t.get_values(meta) for t in self.dset.targets])
+        batch["split"].append(meta[self.config["train"]["partition"]["split_field"]])
         crops, metadata = self.process_batch(batch)
         for j in range(crops.shape[0]):
-            image = deepprofiler.imaging.cropping.unfold_channels(crops[j,:,:,:])
+            image = deepprofiler.imaging.cropping.unfold_channels(crops[j, :, :, :])
             skimage.io.imsave(os.path.join(outdir, metadata.loc[j, "Image_Name"]), image)
 
         self.all_metadata.append(metadata)
@@ -88,44 +92,6 @@ def is_directory_empty(outdir):
                 os.remove(os.path.join(outdir, f))
     return True
 
-
-def sample_dataset(config, dset):
-    outdir = config["paths"]["single_cell_sample"]
-    if not is_directory_empty(outdir):
-        return
-
-    # Start GPU session
-    session = start_session()
-    dset.show_setup()
-    lock = threading.Lock()
-    cropper = SingleCellSampler(config, dset)
-    cropper.start(session)
-
-    # Loop through a random sample of single cells
-    pointer = dset.batch_pointer
-    total_single_cells = 0
-    total_images = 0
-    all_metadata = []
-    while dset.batch_pointer >= pointer:
-        pointer = dset.batch_pointer
-        batch = dset.get_train_batch(lock)
-
-        # Store each single cell in a separate unfolded image
-        if len(batch["keys"]) > 0:
-            crops, metadata = cropper.process_batch(batch)
-            for j in range(crops.shape[0]):
-                image = deepprofiler.imaging.cropping.unfold_channels(crops[j, :, :, :])
-                skimage.io.imsave(os.path.join(outdir, metadata.loc[j, "Image_Name"]), image)
-            all_metadata.append(metadata)
-
-            total_single_cells += len(metadata)
-            total_images += len(batch["keys"])
-            print(total_single_cells, "single cells sampled from", total_images, "images", end="\r")
-    print()
-
-    # Save metadata
-    all_metadata = pd.concat(all_metadata).reset_index(drop=True)
-    all_metadata.to_csv(os.path.join(outdir, "sc-metadata.csv"), index=False)
 
 def export_dataset(config, dset):
     outdir = config["paths"]["single_cell_sample"]

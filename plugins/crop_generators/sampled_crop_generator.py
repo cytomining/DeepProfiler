@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import skimage.io
 import tensorflow as tf
-import tqdm
 
 import deepprofiler.imaging.cropping
 
@@ -22,7 +21,6 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
     def __init__(self, config, dset, mode="Training"):
         super(GeneratorClass, self).__init__(config, dset)
-        #self.datagen = tf.keras.preprocessing.image.ImageDataGenerator()
         self.directory = config["paths"]["single_cell_sample"]
         self.num_channels = len(config["dataset"]["images"]["channels"])
         self.box_size = self.config["dataset"]["locations"]["box_size"]
@@ -30,7 +28,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         self.mode = mode
 
         # Load metadata
-        self.all_cells = pd.read_csv(os.path.join(self.directory, "expanded_sc_metadata_tengenes.csv"))
+        self.all_cells = pd.read_csv(config["paths"]["index"])
         self.target = config["train"]["partition"]["targets"][0]
 
         # Index targets for one-hot encoded labels
@@ -59,7 +57,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         # Obtain distribution of single cells per class
         counts = self.split_data.groupby("Class_Name").count().reset_index()[["Class_Name", "Key"]]
         sample_size = int(counts.Key.median())
-        counts = {r.Class_Name: r.Key for k,r in counts.iterrows()}
+        counts = {r.Class_Name: r.Key for k, r in counts.iterrows()}
 
         # Sample the same number of cells per class
         class_samples = []
@@ -87,7 +85,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                     pointer = 0
                 filename = os.path.join(self.directory, self.samples.loc[pointer, "Image_Name"])
                 im = skimage.io.imread(filename).astype(np.float32)
-                x[i,:,:,:] = deepprofiler.imaging.cropping.fold_channels(im)
+                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im)
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
                 pointer += 1
             yield(x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
@@ -103,11 +101,11 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                     break
                 filename = os.path.join(self.directory, self.samples.loc[pointer, "Image_Name"])
                 im = skimage.io.imread(filename).astype(np.float32)
-                x[i,:,:,:] = deepprofiler.imaging.cropping.fold_channels(im)
+                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im)
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
                 pointer += 1
             if len(y) < x.shape[0]:
-                x = x[0:len(y),...]
+                x = x[0:len(y), ...]
             yield(x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
 
 
