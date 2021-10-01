@@ -28,11 +28,12 @@ class DeepProfilerModel(abc.ABC):
         self.optimizer = None
         self.config = config
         self.dset = dset
-        self.train_crop_generator = crop_generator(config, dset)
-        if self.config['train']['model']['crop_generator'] == 'online_labels_cropgen':
-            self.val_crop_generator = crop_generator(config, dset, mode="Validation")
-        else:
-            self.val_crop_generator = val_crop_generator(config, dset)
+        if is_training:
+            self.train_crop_generator = crop_generator(config, dset)
+            if self.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator']:
+                self.val_crop_generator = crop_generator(config, dset, mode="Validation")
+            else:
+                self.val_crop_generator = val_crop_generator(config, dset)
         self.random_seed = None
         self.is_training = is_training
 
@@ -66,11 +67,8 @@ class DeepProfilerModel(abc.ABC):
 
         # Get training parameters
         epochs, schedule_epochs, schedule_lr, freq = setup_params(self, experiment)
-        if self.config['train']['model']['crop_generator'] == 'online_labels_cropgen':
+        if self.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator']:
             steps = self.train_crop_generator.expected_steps
-        elif self.config['train']['model']['crop_generator'] == 'sampled_crop_generator':
-            steps = int((len(os.listdir(self.config['paths']['single_cell_sample'])) - 1)
-                         / self.config["train"]["model"]["params"]["batch_size"])
         else:
             steps = self.dset.steps_per_epoch
 
@@ -82,7 +80,7 @@ class DeepProfilerModel(abc.ABC):
 
         # Train model
         self.feature_model.fit_generator(
-            generator=self.train_crop_generator.generate(main_session),
+            generator=self.train_crop_generator.generator(main_session),
             steps_per_epoch=steps,
             epochs=epochs,
             callbacks=callbacks,
