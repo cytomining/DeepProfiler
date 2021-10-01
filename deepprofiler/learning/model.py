@@ -14,6 +14,7 @@ import deepprofiler.learning.validation
 tf.compat.v1.disable_v2_behavior()
 tf.config.run_functions_eagerly(False)
 
+
 ##################################################
 # This class should be used as an abstract base
 # class for plugin models.
@@ -146,7 +147,7 @@ def start_main_session():
 def load_validation_data(dpmodel, session):
     dpmodel.val_crop_generator.start(session)
 
-    if dpmodel.config['train']['model']['crop_generator'] == 'online_labels_cropgen':
+    if dpmodel.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator']:
         x_validation = []
         y_validation = []
 
@@ -186,7 +187,7 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
         save_best_only=save_best,
         period=period
     )
-    
+
     # CSV Log
     csv_output = dpmodel.config["paths"]["logs"] + "/log.csv"
     callback_csv = tf.compat.v1.keras.callbacks.CSVLogger(filename=csv_output)
@@ -201,9 +202,9 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
     # Collect all callbacks
     if lr_schedule_epochs:
         callback_lr_schedule = tf.compat.v1.keras.callbacks.LearningRateScheduler(lr_schedule, verbose=1)
-        callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule] 
+        callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule]
     else:
-        callbacks = [callback_model_checkpoint, callback_csv] 
+        callbacks = [callback_model_checkpoint, callback_csv]
 
     # Online labels callback
     if dpmodel.config["train"]["model"]["crop_generator"] == "online_labels_cropgen":
@@ -211,7 +212,7 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
                 on_epoch_end=lambda epoch, logs: dpmodel.train_crop_generator.update_online_labels(dpmodel.feature_model, epoch)
         )
         callbacks.append(update_labels)
-        
+
     return callbacks
 
 
