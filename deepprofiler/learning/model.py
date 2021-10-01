@@ -14,6 +14,7 @@ import deepprofiler.learning.validation
 tf.compat.v1.disable_v2_behavior()
 tf.config.run_functions_eagerly(False)
 
+
 ##################################################
 # This class should be used as an abstract base
 # class for plugin models.
@@ -28,11 +29,12 @@ class DeepProfilerModel(abc.ABC):
         self.optimizer = None
         self.config = config
         self.dset = dset
-        self.train_crop_generator = crop_generator(config, dset)
-        if self.config['train']['model']['crop_generator'] == 'online_labels_cropgen':
-            self.val_crop_generator = crop_generator(config, dset, mode="Validation")
-        else:
-            self.val_crop_generator = val_crop_generator(config, dset)
+        if is_training:
+            self.train_crop_generator = crop_generator(config, dset)
+            if self.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator']:
+                self.val_crop_generator = crop_generator(config, dset, mode="Validation")
+            else:
+                self.val_crop_generator = val_crop_generator(config, dset)
         self.random_seed = None
         self.is_training = is_training
 
@@ -66,11 +68,8 @@ class DeepProfilerModel(abc.ABC):
 
         # Get training parameters
         epochs, schedule_epochs, schedule_lr, freq = setup_params(self, experiment)
-        if self.config['train']['model']['crop_generator'] == 'online_labels_cropgen':
+        if self.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator']:
             steps = self.train_crop_generator.expected_steps
-        elif self.config['train']['model']['crop_generator'] == 'sampled_crop_generator':
-            steps = int((len(os.listdir(self.config['paths']['single_cell_sample'])) - 1)
-                         / self.config["train"]["model"]["params"]["batch_size"])
         else:
             steps = self.dset.steps_per_epoch
 
@@ -148,7 +147,7 @@ def start_main_session():
 def load_validation_data(dpmodel, session):
     dpmodel.val_crop_generator.start(session)
 
-    if dpmodel.config['train']['model']['crop_generator'] == 'online_labels_cropgen':
+    if dpmodel.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator']:
         x_validation = []
         y_validation = []
 
@@ -188,7 +187,7 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
         save_best_only=save_best,
         period=period
     )
-    
+
     # CSV Log
     csv_output = dpmodel.config["paths"]["logs"] + "/log.csv"
     callback_csv = tf.compat.v1.keras.callbacks.CSVLogger(filename=csv_output)
@@ -203,9 +202,9 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
     # Collect all callbacks
     if lr_schedule_epochs:
         callback_lr_schedule = tf.compat.v1.keras.callbacks.LearningRateScheduler(lr_schedule, verbose=1)
-        callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule] 
+        callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule]
     else:
-        callbacks = [callback_model_checkpoint, callback_csv] 
+        callbacks = [callback_model_checkpoint, callback_csv]
 
     # Online labels callback
     if dpmodel.config["train"]["model"]["crop_generator"] == "online_labels_cropgen":
@@ -213,7 +212,7 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
                 on_epoch_end=lambda epoch, logs: dpmodel.train_crop_generator.update_online_labels(dpmodel.feature_model, epoch)
         )
         callbacks.append(update_labels)
-        
+
     return callbacks
 
 

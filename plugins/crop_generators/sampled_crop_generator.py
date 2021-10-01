@@ -30,19 +30,24 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         self.mode = mode
 
         # Load metadata
-        self.all_cells = pd.read_csv(os.path.join(self.directory, "expanded_sc_metadata_tengenes.csv"))
-        self.target = config["train"]["partition"]["targets"][0]
+        self.all_cells = pd.read_csv(os.path.join(self.directory, "sc-metadata.csv"))
+        self.target = "Class_Name"#config["train"]["partition"]["targets"][0]
 
         # Index targets for one-hot encoded labels
-        self.split_data = self.all_cells[self.all_cells.Training_Status_TenGenes == self.mode].reset_index(drop=True)
-        self.classes = list(self.split_data[self.target].unique())
+        self.split_data = self.all_cells[self.all_cells[self.config["train"]["partition"]["split_field"]] ==
+                                         self.mode].reset_index(drop=True)
+
+
+
+        self.classes = list(self.all_cells[self.target].unique())
         self.num_classes = len(self.classes)
         self.classes.sort()
-        self.classes = {self.classes[i]:i for i in range(self.num_classes)}
+        self.classes = {self.classes[i]: i for i in range(self.num_classes)}
 
         # Identify targets and samples
         self.balanced_sample()
-        self.expected_steps = (self.samples.shape[0] // self.batch_size) + int(self.samples.shape[0] % self.batch_size > 0)
+        self.expected_steps = (self.samples.shape[0] // self.batch_size) + \
+                                   int(self.samples.shape[0] % self.batch_size > 0)
 
         # Report number of classes globally
         self.config["num_classes"] = self.num_classes

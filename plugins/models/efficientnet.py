@@ -73,7 +73,7 @@ class ModelClass(DeepProfilerModel):
             # 2. Create an output embedding for each target
             class_outputs = []
 
-            y = tf.compat.v1.keras.layers.Dense(len(dset.targets[0].values), activation="softmax", name="ClassProb")(features)
+            y = tf.compat.v1.keras.layers.Dense(self.config["num_classes"], activation="softmax", name="ClassProb")(features)
             class_outputs.append(y)
 
             # 4. Create and compile model
