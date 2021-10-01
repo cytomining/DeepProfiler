@@ -43,6 +43,7 @@
         },
         "model": {
             "name": "cnn",
+            "augmentations": false,
             "crop_generator": "crop_generator",
             "metrics": ["accuracy"],
             "epochs": 5,
