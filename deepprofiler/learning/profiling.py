@@ -23,9 +23,11 @@ class Profile(object):
             "plugins.crop_generators.{}".format(config["train"]["model"]["crop_generator"])
         ).SingleImageGeneratorClass
 
+        self.config["num_classes"] = self.dset.targets[0].shape[1]
+
         self.dpmodel = importlib.import_module(
             "plugins.models.{}".format(config["train"]["model"]["name"])
-        ).ModelClass(config, dset, self.crop_generator, self.profile_crop_generator, is_training=False)
+        ).ModelClass(self.config, dset, self.crop_generator, self.profile_crop_generator, is_training=False)
 
         self.profile_crop_generator = self.profile_crop_generator(config, dset)
 
