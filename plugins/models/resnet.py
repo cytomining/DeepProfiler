@@ -46,7 +46,9 @@ class ModelClass(DeepProfilerModel):
     ## Model definition
     def define_model(self, config, dset):
         # 1. Create ResNet architecture to extract features
-        loss_func = "categorical_crossentropy"
+        loss_func = tf.compat.v1.keras.losses.CategoricalCrossentropy(label_smoothing=
+                                                                      self.config["train"]["model"]["params"][
+                                                                          "label_smoothing"])
         optimizer = tf.compat.v1.keras.optimizers.SGD(learning_rate=config["train"]["model"]["params"]["learning_rate"],
                                                       momentum=0.9, nesterov=True)
         if "use_pretrained_input_size" in config["profile"].keys() and self.is_training is False:

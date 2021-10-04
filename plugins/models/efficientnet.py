@@ -54,7 +54,8 @@ class ModelClass(DeepProfilerModel):
 
         optimizer = tf.compat.v1.keras.optimizers.SGD(lr=config["train"]["model"]["params"]["learning_rate"], momentum=0.9,
                                          nesterov=True)
-        loss_func = tf.compat.v1.keras.losses.CategoricalCrossentropy(label_smoothing=0.2)  # TODO:parameterize?
+        loss_func = tf.compat.v1.keras.losses.CategoricalCrossentropy(label_smoothing=
+                                                                      self.config["train"]["model"]["params"]["label_smoothing"])
 
         if self.is_training is False and "use_pretrained_input_size" in config["profile"].keys():
             input_tensor = tf.compat.v1.keras.layers.Input(
