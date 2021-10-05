@@ -211,7 +211,7 @@ def read_dataset(config, mode = 'train'):
     print(metadata.data.info())
 
     # Split training data
-    if mode == 'train':
+    if mode == 'train' and config["train"]["model"]["crop_generator"] == 'crop_generator':
         split_field = config["train"]["partition"]["split_field"]
         trainingFilter = lambda df: df[split_field].isin(config["train"]["partition"]["training_values"])
         validationFilter = lambda df: df[split_field].isin(config["train"]["partition"]["validation_values"])
@@ -238,7 +238,8 @@ def read_dataset(config, mode = 'train'):
     if config["dataset"]["locations"]["mask_objects"]:
         dset.outlines = outlines
 
-    if mode == 'train':
+    # For training with sampled_crop_generator, no need to read locations again necessary.
+    if mode == 'train' and config["train"]["model"]["crop_generator"] == 'crop_generator':
         dset.prepare_training_locations()
 
     return dset

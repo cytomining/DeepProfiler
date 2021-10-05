@@ -43,6 +43,7 @@
         },
         "model": {
             "name": "cnn",
+            "augmentations": false,
             "crop_generator": "crop_generator",
             "metrics": ["accuracy"],
             "epochs": 5,
@@ -52,6 +53,7 @@
                 "learning_rate": 0.0001,
                 "batch_size": 2,
                 "conv_blocks": 1,
+                "label_smoothing": 0.0,
                 "feature_dim": 100,
                 "latent_dim": 100,
                 "epsilon_std": 1.0

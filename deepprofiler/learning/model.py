@@ -12,6 +12,8 @@ import deepprofiler.imaging.cropping
 import deepprofiler.learning.validation
 
 tf.compat.v1.disable_v2_behavior()
+tf.config.run_functions_eagerly(False)
+
 
 ##################################################
 # This class should be used as an abstract base
@@ -27,8 +29,12 @@ class DeepProfilerModel(abc.ABC):
         self.optimizer = None
         self.config = config
         self.dset = dset
-        self.train_crop_generator = crop_generator(config, dset)
-        self.val_crop_generator = val_crop_generator(config, dset)
+        if is_training:
+            self.train_crop_generator = crop_generator(config, dset)
+            if self.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator']:
+                self.val_crop_generator = crop_generator(config, dset, mode="Validation")
+            else:
+                self.val_crop_generator = val_crop_generator(config, dset)
         self.random_seed = None
         self.is_training = is_training
 
@@ -61,7 +67,11 @@ class DeepProfilerModel(abc.ABC):
         self.train_crop_generator.start(main_session)
 
         # Get training parameters
-        epochs, steps, schedule_epochs, schedule_lr, freq = setup_params(self, experiment)
+        epochs, schedule_epochs, schedule_lr, freq = setup_params(self, experiment)
+        if self.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator']:
+            steps = self.train_crop_generator.expected_steps
+        else:
+            steps = self.dset.steps_per_epoch
 
         # Load weights
         self.load_weights(epoch)
@@ -71,7 +81,7 @@ class DeepProfilerModel(abc.ABC):
 
         # Train model
         self.feature_model.fit_generator(
-            generator=self.train_crop_generator.generate(main_session),
+            generator=self.train_crop_generator.generator(main_session),
             steps_per_epoch=steps,
             epochs=epochs,
             callbacks=callbacks,
@@ -136,11 +146,28 @@ def start_main_session():
 
 def load_validation_data(dpmodel, session):
     dpmodel.val_crop_generator.start(session)
-    x_validation, y_validation = deepprofiler.learning.validation.load_validation_data(
-        dpmodel.config,
-        dpmodel.dset,
-        dpmodel.val_crop_generator,
-        session)
+
+    if dpmodel.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator']:
+        x_validation = []
+        y_validation = []
+
+        for batch in dpmodel.val_crop_generator.generate():
+            x_validation.append(batch[0])
+            y_validation.append(batch[1])
+
+        x_validation = np.concatenate(x_validation)
+        y_validation = np.concatenate(y_validation)
+
+    else:
+        x_validation, y_validation = deepprofiler.learning.validation.load_validation_data(
+            dpmodel.config,
+            dpmodel.dset,
+            dpmodel.val_crop_generator,
+            session
+        )
+
+    print("Validation data:", x_validation.shape, y_validation.shape)
+
     return x_validation, y_validation
 
 
@@ -160,16 +187,10 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
         save_best_only=save_best,
         period=period
     )
-    
+
     # CSV Log
     csv_output = dpmodel.config["paths"]["logs"] + "/log.csv"
     callback_csv = tf.compat.v1.keras.callbacks.CSVLogger(filename=csv_output)
-
-    # Queue stats
-    qstats = tf.compat.v1.keras.callbacks.LambdaCallback(
-        on_train_begin=lambda logs: dset.show_setup(),
-        on_epoch_end=lambda epoch, logs: experiment.log_metrics(dset.show_stats()) if experiment else dset.show_stats()
-    )
 
     # Learning rate schedule
     def lr_schedule(epoch, lr):
@@ -181,15 +202,22 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
     # Collect all callbacks
     if lr_schedule_epochs:
         callback_lr_schedule = tf.compat.v1.keras.callbacks.LearningRateScheduler(lr_schedule, verbose=1)
-        callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule, qstats]
+        callbacks = [callback_model_checkpoint, callback_csv, callback_lr_schedule]
     else:
-        callbacks = [callback_model_checkpoint, callback_csv, qstats]
+        callbacks = [callback_model_checkpoint, callback_csv]
+
+    # Online labels callback
+    if dpmodel.config["train"]["model"]["crop_generator"] == "online_labels_cropgen":
+        update_labels = tf.compat.v1.keras.callbacks.LambdaCallback(
+                on_epoch_end=lambda epoch, logs: dpmodel.train_crop_generator.update_online_labels(dpmodel.feature_model, epoch)
+        )
+        callbacks.append(update_labels)
+
     return callbacks
 
 
 def setup_params(dpmodel, experiment):
     epochs = dpmodel.config["train"]["model"]["epochs"]
-    steps = dpmodel.dset.steps_per_epoch
     lr_schedule_epochs = []
     lr_schedule_lr = []
     if 'comet_ml' in dpmodel.config["train"].keys():
@@ -218,7 +246,7 @@ def setup_params(dpmodel, experiment):
     else:
         freq = 1
 
-    return epochs, steps, lr_schedule_epochs, lr_schedule_lr, freq
+    return epochs, lr_schedule_epochs, lr_schedule_lr, freq
 
 
 def close(dpmodel, crop_session):

@@ -11,6 +11,7 @@ import deepprofiler.imaging.augmentations
 import deepprofiler.imaging.boxes
 
 tf.compat.v1.disable_v2_behavior()
+tf.config.run_functions_eagerly(False)
 
 
 def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False):
@@ -22,9 +23,12 @@ def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes
             mask_values = tf.ones_like(crops[:, :, :, -1], dtype=tf.float32) * tf.cast(mask_ind, dtype=tf.float32)
             masks = tf.compat.v1.to_float(tf.equal(crops[:, :, :, -1], mask_values))
             crops = crops[:, :, :, 0:-1] * tf.expand_dims(masks, -1)
-        mean = tf.math.reduce_mean(crops, axis=[1, 2], keepdims=True)
-        std = tf.math.reduce_std(crops, axis=[1, 2], keepdims=True)
-        crops = (crops - mean)/std
+        #mean = tf.math.reduce_mean(crops, axis=[1, 2], keepdims=True)
+        #std = tf.math.reduce_std(crops, axis=[1, 2], keepdims=True)
+        #crops = (crops - mean)/std
+        mini = tf.math.reduce_min(crops, axis=[1, 2], keepdims=True)
+        maxi = tf.math.reduce_max(crops, axis=[1, 2], keepdims=True)
+        crops = (crops - mini) / maxi
     return crops
 
 
@@ -43,11 +47,11 @@ def fold_channels(crop):
     # Expected input image shape: (h, w * c), with h = w
     # Output image shape: (h, w, c), with h = w
     output = np.reshape(crop, (crop.shape[0], crop.shape[0], -1), order="F").astype(np.float)
-    for i in range(output.shape[-1]):
-        mean = np.mean(output[:, :, i])
-        std = np.std(output[:, :, i])
-        output[:, :, i] = (output[:, :, i] - mean) / std
-    return output
+    #for i in range(output.shape[-1]):
+    #    mean = np.mean(output[:, :, i])
+    #    std = np.std(output[:, :, i])
+    #    output[:, :, i] = (output[:, :, i] - mean) / std
+    return output / 255.
 
 
 # TODO: implement abstract crop generator

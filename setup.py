@@ -20,6 +20,7 @@ setuptools.setup(
         "beautifulsoup4>=4.6",
         "click>=6.7",
         "comet_ml>=1.0",
+        "efficientnet==1.1.1",
         "gpyopt>=1.2",
         "lxml>=4.2",
         "numpy>=1.13",
@@ -28,7 +29,9 @@ setuptools.setup(
         "scikit-learn>=0.19.0",
         "scipy>=1.1",
         "comet-ml>=3.1.6",
-        "tensorflow_addons"
+        "tensorflow==2.5.*",
+        "tensorflow_addons",
+        "tqdm>=4.62",
     ],
     extras_require={
         "test": [

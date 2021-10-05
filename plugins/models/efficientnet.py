@@ -1,9 +1,12 @@
 import tensorflow as tf
+import numpy
+import efficientnet.tfkeras as efn
 
 from deepprofiler.learning.model import DeepProfilerModel
 from deepprofiler.imaging.augmentations import AugmentationLayer
 
-tf.compat.v1.disable_v2_behavior()
+#tf.compat.v1.disable_v2_behavior()
+#tf.config.run_functions_eagerly(False)
 
 
 class ModelClass(DeepProfilerModel):
@@ -14,14 +17,14 @@ class ModelClass(DeepProfilerModel):
     ## Define supported models
     def get_supported_models(self):
         return {
-            0: tf.compat.v1.keras.applications.EfficientNetB0,
-            1: tf.compat.v1.keras.applications.EfficientNetB1,
-            2: tf.compat.v1.keras.applications.EfficientNetB2,
-            3: tf.compat.v1.keras.applications.EfficientNetB3,
-            4: tf.compat.v1.keras.applications.EfficientNetB4,
-            5: tf.compat.v1.keras.applications.EfficientNetB5,
-            6: tf.compat.v1.keras.applications.EfficientNetB6,
-            7: tf.compat.v1.keras.applications.EfficientNetB7,
+            0: efn.EfficientNetB0,
+            1: efn.EfficientNetB1,
+            2: efn.EfficientNetB2,
+            3: efn.EfficientNetB3,
+            4: efn.EfficientNetB4,
+            5: efn.EfficientNetB5,
+            6: efn.EfficientNetB6,
+            7: efn.EfficientNetB7,
         }
 
     def get_model(self, config, input_image=None, weights=None, include_top=False):
@@ -31,7 +34,7 @@ class ModelClass(DeepProfilerModel):
         error_msg = str(num_layers) + " conv_blocks not in " + SM
         assert num_layers in supported_models.keys(), error_msg
 
-        if self.is_training and weights is None:
+        if self.is_training and weights is None and self.config["train"]['model'].get('augmentations') is True:
             input_image = AugmentationLayer()(input_image)
 
         model = supported_models[num_layers](
@@ -51,7 +54,9 @@ class ModelClass(DeepProfilerModel):
 
         optimizer = tf.compat.v1.keras.optimizers.SGD(lr=config["train"]["model"]["params"]["learning_rate"], momentum=0.9,
                                          nesterov=True)
-        loss_func = "categorical_crossentropy"
+        loss_func = tf.compat.v1.keras.losses.CategoricalCrossentropy(label_smoothing=
+                                                                      self.config["train"]["model"]["params"]["label_smoothing"])
+
         if self.is_training is False and "use_pretrained_input_size" in config["profile"].keys():
             input_tensor = tf.compat.v1.keras.layers.Input(
                 (config["profile"]["use_pretrained_input_size"], config["profile"]["use_pretrained_input_size"], 3),
@@ -61,8 +66,7 @@ class ModelClass(DeepProfilerModel):
             input_shape = (
                 config["dataset"]["locations"]["box_size"],  # height
                 config["dataset"]["locations"]["box_size"],  # width
-                len(config["dataset"]["images"][
-                        "channels"])  # channels
+                len(config["dataset"]["images"]["channels"])  # channels
             )
             input_image = tf.compat.v1.keras.layers.Input(input_shape)
             model = self.get_model(config, input_image=input_image)
@@ -70,15 +74,11 @@ class ModelClass(DeepProfilerModel):
             # 2. Create an output embedding for each target
             class_outputs = []
 
-            i = 0
-            for t in dset.targets:
-                y = tf.compat.v1.keras.layers.Dense(t.shape[1], activation="softmax", name=t.field_name)(features)
-                class_outputs.append(y)
-                i += 1
+            y = tf.compat.v1.keras.layers.Dense(self.config["num_classes"], activation="softmax", name="ClassProb")(features)
+            class_outputs.append(y)
 
             # 4. Create and compile model
             model = tf.compat.v1.keras.models.Model(inputs=input_image, outputs=class_outputs)
-
 
             ## Added weight decay following tricks reported in:
             ## https://github.com/keras-team/keras/issues/2717
@@ -87,22 +87,40 @@ class ModelClass(DeepProfilerModel):
                 if hasattr(layer, "kernel_regularizer"):
                     setattr(layer, "kernel_regularizer", regularizer)
 
-            model = tf.compat.v1.keras.models.model_from_json(
-                model.to_json(),
-                {'AugmentationLayer': AugmentationLayer}
-            )
+            if self.config["train"]["model"].get("augmentations") is True:
+                model = tf.compat.v1.keras.models.model_from_json(
+                    model.to_json(),
+                    {'AugmentationLayer': AugmentationLayer}
+                )
+            else:
+                model = tf.compat.v1.keras.models.model_from_json(model.to_json())
 
         return model, optimizer, loss_func
 
     def copy_pretrained_weights(self):
         base_model = self.get_model(self.config, weights="imagenet")
-        lshift = self.is_training  # Shift one layer to accommodate the AugmentationLayer
+        lshift = self.feature_model.layers[1].name == 'augmentation_layer'  # Shift one layer to accommodate the AugmentationLayer
 
         # => Transfer all weights except conv1.1
         total_layers = len(base_model.layers)
-        for i in range(3, total_layers):
+        for i in range(2, total_layers):
             if len(base_model.layers[i].weights) > 0:
                 print("Setting pre-trained weights: {:.2f}%".format((i / total_layers) * 100), end="\r")
                 self.feature_model.layers[i + lshift].set_weights(base_model.layers[i].get_weights())
+        
+        # => Replicate filters of first layer as needed
+        weights = base_model.layers[1].get_weights()
+        available_channels = weights[0].shape[2]
+        target_shape = self.feature_model.layers[1 + lshift].weights[0].shape
+        new_weights = numpy.zeros(target_shape)
 
+        for i in range(new_weights.shape[2]):
+            j = i % available_channels
+            new_weights[:, :, i, :] = weights[0][:, :, j, :]
+
+        weights_array = [new_weights]
+        if len(weights) > 1: 
+            weights_array += weights[1:]
+
+        self.feature_model.layers[1 + lshift].set_weights(weights_array)
         print("Network initialized with pretrained ImageNet weights")
