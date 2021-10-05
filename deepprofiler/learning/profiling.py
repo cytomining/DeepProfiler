@@ -53,7 +53,7 @@ class Profile(object):
         print("Extracting output from layer:", self.config["profile"]["feature_layer"])
 
     def check(self, meta):
-        output_file = self.config["paths"]["features"] + "/{}/{}/{}.npz"
+        output_file = self.config["paths"]["features"] + "/{}/{}_{}.npz"
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
 
         # Check if features were computed before
@@ -66,9 +66,9 @@ class Profile(object):
     # Function to process a single image
     def extract_features(self, key, image_array, meta):  # key is a placeholder
         start = tic()
-        output_file = self.config["paths"]["features"] + "/{}/{}/{}.npz"
+        output_file = self.config["paths"]["features"] + "/{}/{}_{}.npz"
         output_file = output_file.format( meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
-        os.makedirs(self.config["paths"]["features"] + "/{}/{}".format(meta["Metadata_Plate"], meta["Metadata_Well"]), exist_ok=True)
+        os.makedirs(self.config["paths"]["features"] + "/{}".format(meta["Metadata_Plate"]), exist_ok=True)
 
         batch_size = self.config["profile"]["batch_size"]
         image_key, image_names, outlines = self.dset.get_image_paths(meta)
