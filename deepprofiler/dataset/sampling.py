@@ -56,6 +56,8 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
         batch["targets"].append([t.get_values(meta) for t in self.dset.targets])
         crops, metadata = self.process_batch(batch)
         for j in range(crops.shape[0]):
+            plate, well, site, name = metadata.loc[j, "Image_Name"].split('/')
+            os.makedirs(os.path.join(outdir, plate, well, site), exist_ok=True)
             image = deepprofiler.imaging.cropping.unfold_channels(crops[j,:,:,:])
             skimage.io.imsave(os.path.join(outdir, metadata.loc[j, "Image_Name"]), image)
 
