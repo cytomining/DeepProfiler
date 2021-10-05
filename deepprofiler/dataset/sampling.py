@@ -3,6 +3,7 @@ import skimage.io
 import threading
 import tqdm
 import os
+import shutil
 
 import tensorflow as tf
 
@@ -22,23 +23,23 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
 
     def process_batch(self, batch):
         for i in range(len(batch["keys"])):
-            batch["locations"][i]["Key"] = batch["keys"][i]
+            batch["locations"][i]["Key"] = batch["keys"][i].replace('-', '/')
             batch["locations"][i]["Target"] = batch["targets"][i][0]
             batch["locations"][i]["Class_Name"] = self.dset.targets[0].values[batch["targets"][i][0]]
         metadata = pd.concat(batch["locations"])
         cols = ["Key", "Target", "Nuclei_Location_Center_X", "Nuclei_Location_Center_Y"]
-        seps = ["+", "@", "x", ".png"]
+        seps = ["/", "@", "x", ".png"]
         metadata["Image_Name"] = ""
         for c in range(len(cols)):
-            metadata["Image_Name"] += metadata[cols[c]].astype(str).str.replace("/","-") + seps[c]
-        
+            metadata["Image_Name"] += metadata[cols[c]].astype(str) + seps[c]
+
         boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
 
         feed_dict = {
-            self.input_variables["image_ph"]:batch["images"],
-            self.input_variables["boxes_ph"]:boxes,
-            self.input_variables["box_ind_ph"]:box_ind,
-            self.input_variables["mask_ind_ph"]:masks
+            self.input_variables["image_ph"]: batch["images"],
+            self.input_variables["boxes_ph"]: boxes,
+            self.input_variables["box_ind_ph"]: box_ind,
+            self.input_variables["mask_ind_ph"]: masks
         }
         for i in range(len(targets)):
             tname = "target_" + str(i)
@@ -84,8 +85,7 @@ def is_directory_empty(outdir):
             return False
         elif erase == "y":
             print("Removing previous sampled files")
-            for f in tqdm.tqdm(files):
-                os.remove(os.path.join(outdir, f))
+            shutil.rmtree(outdir)
     return True
 
 
@@ -114,6 +114,8 @@ def sample_dataset(config, dset):
         if len(batch["keys"]) > 0:
             crops, metadata = cropper.process_batch(batch)
             for j in range(crops.shape[0]):
+                plate, well, site, name = metadata.loc[j, "Image_Name"].split('/')
+                os.makedirs(os.path.join(outdir, plate, well, site), exist_ok=True)
                 image = deepprofiler.imaging.cropping.unfold_channels(crops[j, :, :, :])
                 skimage.io.imsave(os.path.join(outdir, metadata.loc[j, "Image_Name"]), image)
             all_metadata.append(metadata)
