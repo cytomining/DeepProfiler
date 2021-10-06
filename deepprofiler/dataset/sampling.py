@@ -25,7 +25,7 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
         for i in range(len(batch["keys"])):
             batch["locations"][i]["Key"] = batch["keys"][i].replace('-', '/')
             batch["locations"][i]["Target"] = batch["targets"][i][0]
-            batch["locations"][i]["Class_Name"] = self.dset.targets[0].values[batch["targets"][i][0]]
+            batch["locations"][i][self.dset.targets[0].field_name] = self.dset.targets[0].values[batch["targets"][i][0]]
             batch["locations"][i][self.config["train"]["partition"]["split_field"]] = batch["split"][i]
 
         metadata = pd.concat(batch["locations"])
