@@ -206,7 +206,7 @@ def learn_model(config, epoch):
     num_classes = len(pd.unique(single_cell_metadata["Class_Name"]))
     single_cell_metadata["Categorical"] = pd.Categorical(single_cell_metadata["Class_Name"]).codes
 
-    path = config["paths"]["single_cell_sample"]
+    path = config["paths"]["single_cell_set"]
     dataset, steps_per_epoch = make_dataset(path, BATCH_SIZE,
                                             single_cell_metadata[
                                                 single_cell_metadata["Training_Status_Alpha"] == "Training"],

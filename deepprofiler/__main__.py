@@ -36,8 +36,8 @@ import deepprofiler.download.normalize_bbbc021_metadata
 @click.option("--exp", default="results",
               help="Name of experiment",
               type=click.STRING)
-@click.option("--sample", default="single-cell-sample",
-              help="Name of single cell sample",
+@click.option("--single-cells", default="single-cells",
+              help="Name of single cell export folder",
               type=click.STRING)
 @click.option("--metadata", default='index.csv',
               help="Name of metadata file, default index.csv",
@@ -48,7 +48,7 @@ import deepprofiler.download.normalize_bbbc021_metadata
 
 
 @click.pass_context
-def cli(context, root, config, exp, cores, gpu, sample, metadata, logging):
+def cli(context, root, config, exp, cores, gpu, single_cells, metadata, logging):
     dirs = {
         "root": root,
         "locations": root + "/inputs/locations/",  # TODO: use os.path.join()
@@ -57,7 +57,7 @@ def cli(context, root, config, exp, cores, gpu, sample, metadata, logging):
         "metadata": root + "/inputs/metadata/",
         "intensities": root + "/outputs/intensities/",
         "compressed_images": root + "/outputs/compressed/images/",
-        "single_cell_sample": root + "/outputs/" + sample + "/",
+        "single_cell_set": root + "/outputs/" + single_cells + "/",
         "results": root + "/outputs/" + exp + "/",
         "checkpoints": root + "/outputs/" + exp + "/checkpoint/",
         "logs": root + "/outputs/" + exp + "/logs/",
@@ -91,6 +91,10 @@ def cli(context, root, config, exp, cores, gpu, sample, metadata, logging):
         # Update references
         params["experiment_name"] = exp
         params["paths"]["index"] = params["paths"]["metadata"] + metadata
+        if metadata != 'index.csv':
+            params["paths"]["sc_index"] = os.path.join(params["paths"]["single_cell_set"], metadata)
+        else:
+            params["paths"]["sc_index"] = os.path.join(params["paths"]["single_cell_set"], 'sc-metadata.csv')
         context.obj["config"] = params
         if logging:
             with open(os.path.join(dirs["config"], logging), "r") as f:
@@ -141,18 +145,14 @@ def prepare(context):
     print("Compression complete!")
 
 
-# Second tool: Sample single cells for training
+# Second tool: Export single cells for training
 @cli.command()
-@click.option("--mode", default="sample")
 @click.pass_context
-def sample_sc(context, mode):
+def export_sc(context):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
-    if mode == "sample":
-        deepprofiler.dataset.sampling.sample_dataset(context.obj["config"], dset)
-    elif mode == "export_all":
-        deepprofiler.dataset.sampling.export_dataset(context.obj["config"], dset)
+    deepprofiler.dataset.sampling.export_dataset(context.obj["config"], dset)
     print("Single-cell sampling complete.")
 
 
@@ -164,6 +164,7 @@ def sample_sc(context, mode):
 def train(context, epoch, seed):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
+
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='train')
     deepprofiler.learning.training.learn_model(context.obj["config"], dset, epoch, seed)
 
@@ -180,7 +181,7 @@ def traintf2(context, epoch):
 @cli.command()
 @click.pass_context
 @click.option("--part",
-               help="Part of index to process",
+              help="Part of index to process",
               default=-1, 
               type=click.INT)
 def profile(context, part):

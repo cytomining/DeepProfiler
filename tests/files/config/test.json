@@ -38,8 +38,8 @@
                 "Class"
             ],
             "split_field": "Split",
-            "training_values": [0],
-            "validation_values": [1]
+            "training": [0],
+            "validation": [1]
         },
         "model": {
             "name": "cnn",
