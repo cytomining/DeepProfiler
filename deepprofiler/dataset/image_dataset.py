@@ -213,8 +213,8 @@ def read_dataset(config, mode = 'train'):
     # Split training data
     if mode == 'train' and config["train"]["model"]["crop_generator"] == 'crop_generator':
         split_field = config["train"]["partition"]["split_field"]
-        trainingFilter = lambda df: df[split_field].isin(config["train"]["partition"]["training_values"])
-        validationFilter = lambda df: df[split_field].isin(config["train"]["partition"]["validation_values"])
+        trainingFilter = lambda df: df[split_field].isin(config["train"]["partition"]["training"])
+        validationFilter = lambda df: df[split_field].isin(config["train"]["partition"]["validation"])
         metadata.splitMetadata(trainingFilter, validationFilter)
 
 
