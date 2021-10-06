@@ -91,6 +91,10 @@ def cli(context, root, config, exp, cores, gpu, single_cells, metadata, logging)
         # Update references
         params["experiment_name"] = exp
         params["paths"]["index"] = params["paths"]["metadata"] + metadata
+        if metadata != 'index.csv':
+            params["paths"]["sc_index"] = os.path.join(params["paths"]["single_cell_set"], metadata)
+        else:
+            params["paths"]["sc_index"] = os.path.join(params["paths"]["single_cell_set"], 'sc-metadata.csv')
         context.obj["config"] = params
         if logging:
             with open(os.path.join(dirs["config"], logging), "r") as f:
