@@ -32,7 +32,7 @@ class DeepProfilerModel(abc.ABC):
         if is_training:
             self.train_crop_generator = crop_generator(config, dset)
             if self.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator']:
-                self.val_crop_generator = crop_generator(config, dset, mode="Validation")
+                self.val_crop_generator = crop_generator(config, dset, mode="validation")
             else:
                 self.val_crop_generator = val_crop_generator(config, dset)
         self.random_seed = None

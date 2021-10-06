@@ -36,8 +36,8 @@ import deepprofiler.download.normalize_bbbc021_metadata
 @click.option("--exp", default="results",
               help="Name of experiment",
               type=click.STRING)
-@click.option("--sample", default="single-cell-sample",
-              help="Name of single cell sample",
+@click.option("--single-cells", default="single-cells",
+              help="Name of single cell export folder",
               type=click.STRING)
 @click.option("--metadata", default='index.csv',
               help="Name of metadata file, default index.csv",
@@ -48,7 +48,7 @@ import deepprofiler.download.normalize_bbbc021_metadata
 
 
 @click.pass_context
-def cli(context, root, config, exp, cores, gpu, sample, metadata, logging):
+def cli(context, root, config, exp, cores, gpu, single_cells, metadata, logging):
     dirs = {
         "root": root,
         "locations": root + "/inputs/locations/",  # TODO: use os.path.join()
@@ -57,7 +57,7 @@ def cli(context, root, config, exp, cores, gpu, sample, metadata, logging):
         "metadata": root + "/inputs/metadata/",
         "intensities": root + "/outputs/intensities/",
         "compressed_images": root + "/outputs/compressed/images/",
-        "single_cell_sample": root + "/outputs/" + sample + "/",
+        "single_cell_set": root + "/outputs/" + single_cells + "/",
         "results": root + "/outputs/" + exp + "/",
         "checkpoints": root + "/outputs/" + exp + "/checkpoint/",
         "logs": root + "/outputs/" + exp + "/logs/",
@@ -141,11 +141,10 @@ def prepare(context):
     print("Compression complete!")
 
 
-# Second tool: Sample single cells for training
+# Second tool: Export single cells for training
 @cli.command()
-@click.option("--mode", default="sample")
 @click.pass_context
-def sample_sc(context, mode):
+def export_sc(context):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
@@ -161,10 +160,6 @@ def sample_sc(context, mode):
 def train(context, epoch, seed):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
-    if context.obj["config"]["train"]["model"]["crop_generator"] in ['online_labels_cropgen', 'sampled_crop_generator']:
-        context.obj["config"]["paths"]["metadata"] = context.obj["config"]["paths"]["single_cell_sample"]
-        if 'index.csv' in context.obj["config"]["paths"]["index"]:
-            context.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["single_cell_sample"] + 'sc-metadata.csv'
 
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='train')
     deepprofiler.learning.training.learn_model(context.obj["config"], dset, epoch, seed)
@@ -175,11 +170,6 @@ def train(context, epoch, seed):
 @click.option("--epoch", default=1)
 @click.pass_context
 def traintf2(context, epoch):
-    if context.obj["config"]["train"]["model"]["crop_generator"] in ['online_labels_cropgen', 'sampled_crop_generator']:
-        context.obj["config"]["paths"]["metadata"] = context.obj["config"]["paths"]["single_cell_sample"]
-        if 'index.csv' in context.obj["config"]["paths"]["index"]:
-            context.obj["config"]["paths"]["index"] = context.obj["config"]["paths"]["single_cell_sample"] + 'sc-metadata.csv'
-
     deepprofiler.learning.tf2train.learn_model(context.obj["config"], epoch)
 
 

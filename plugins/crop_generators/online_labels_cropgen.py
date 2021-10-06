@@ -22,7 +22,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
     def __init__(self, config, dset, mode="Training"):
         super(GeneratorClass, self).__init__(config, dset)
         #self.datagen = tf.keras.preprocessing.image.ImageDataGenerator()
-        self.directory = config["paths"]["single_cell_sample"]
+        self.directory = config["paths"]["single_cell_set"]
         self.num_channels = len(config["dataset"]["images"]["channels"])
         self.box_size = self.config["dataset"]["locations"]["box_size"]
         self.batch_size = self.config["train"]["model"]["params"]["batch_size"]

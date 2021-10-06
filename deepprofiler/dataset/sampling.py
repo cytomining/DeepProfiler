@@ -52,7 +52,7 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
         return output[0], metadata.reset_index(drop=True)
 
     def export_single_cells(self, key, image_array, meta):
-        outdir = self.config["paths"]["single_cell_sample"]
+        outdir = self.config["paths"]["single_cell_set"]
         key = self.dset.keyGen(meta)
         batch = {"keys": [key], "images": [image_array], "targets": [], "locations": [], "split": []}
         batch["locations"].append(deepprofiler.imaging.boxes.get_locations(key, self.config))
@@ -96,7 +96,7 @@ def is_directory_empty(outdir):
 
 
 def export_dataset(config, dset):
-    outdir = config["paths"]["single_cell_sample"]
+    outdir = config["paths"]["single_cell_set"]
     if not is_directory_empty(outdir):
         return
 

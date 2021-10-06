@@ -19,23 +19,21 @@ tf.config.run_functions_eagerly(False)
 
 class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
-    def __init__(self, config, dset, mode="Training"):
+    def __init__(self, config, dset, mode="training"):
         super(GeneratorClass, self).__init__(config, dset)
-        self.directory = config["paths"]["single_cell_sample"]
+        self.directory = config["paths"]["single_cell_set"]
         self.num_channels = len(config["dataset"]["images"]["channels"])
         self.box_size = self.config["dataset"]["locations"]["box_size"]
         self.batch_size = self.config["train"]["model"]["params"]["batch_size"]
         self.mode = mode
 
         # Load metadata
-        self.all_cells = pd.read_csv(config["paths"]["index"])
+        self.all_cells = pd.read_csv(config["paths"]["sc_index"])
         self.target = config["train"]["partition"]["targets"][0]
 
         # Index targets for one-hot encoded labels
-        self.split_data = self.all_cells[self.all_cells[self.config["train"]["partition"]["split_field"]] ==
-                                         self.mode].reset_index(drop=True)
-
-
+        self.split_data = self.all_cells[self.all_cells[self.config["train"]["partition"]["split_field"]].isin(
+                                         self.config["train"]["partition"][self.mode])].reset_index(drop=True)
 
         self.classes = list(self.all_cells[self.target].unique())
         self.num_classes = len(self.classes)
@@ -53,25 +51,24 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
 
     def start(self, session):
-        #self.all_cells = pd.read_csv(os.path.join(self.directory, "sc_metadata.csv"))
-        #self.all_cells = pd.read_csv(os.path.join(self.directory, "expanded_sc_metadata_tengenes.csv"))
-        #self.samples = self.samples.sample(frac=1.0).reset_index(drop=True)
         pass
 
     def balanced_sample(self):
         # Obtain distribution of single cells per class
-        counts = self.split_data.groupby("Class_Name").count().reset_index()[["Class_Name", "Key"]]
+        counts = self.split_data.groupby(self.target).count().reset_index()[[self.target, "Key"]]
+        print(counts)
         sample_size = int(counts.Key.median())
-        counts = {r.Class_Name: r.Key for k, r in counts.iterrows()}
+        counts = {r[self.target]: r.Key for k, r in counts.iterrows()}
 
         # Sample the same number of cells per class
         class_samples = []
-        for cls in self.split_data.Class_Name.unique():
-            class_samples.append(self.split_data[self.split_data.Class_Name == cls].sample(n=sample_size, replace=counts[cls] < sample_size))
+        for cls in self.split_data[self.target].unique():
+            class_samples.append(self.split_data[self.split_data[self.target] == cls].sample(
+                n=sample_size, replace=counts[cls] < sample_size))
         self.samples = pd.concat(class_samples)
 
         # Randomize order
-        if self.mode == "Training":
+        if self.mode == "training":
             print(" >> Shuffling training sample with",len(self.samples),"examples")
             self.samples = self.samples.sample(frac=1.0).reset_index()
         else:
