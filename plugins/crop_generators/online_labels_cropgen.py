@@ -120,7 +120,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
             yield x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
 
     def init_online_labels(self):
-        LABEL_SMOOTHING = 0.2
+        LABEL_SMOOTHING = self.config["train"]["model"]["params"]["online_label_smoothing"]
         self.soft_labels = np.zeros((self.split_data.shape[0], self.num_classes)) + LABEL_SMOOTHING/self.num_classes
         print("Soft labels:", self.soft_labels.shape)
         for k, r in self.split_data.iterrows():
@@ -132,7 +132,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
     def update_online_labels(self, model, epoch):
         # Prepare parameters and predictions
-        LAMBDA = 0.01
+        LAMBDA = self.config["train"]["model"]["params"]["online_lambda"]
         predictions = []
 
         # Get predictions with the model
