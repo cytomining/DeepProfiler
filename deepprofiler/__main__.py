@@ -1,3 +1,4 @@
+import tensorflow as tf
 import json
 import os
 import copy
@@ -174,6 +175,8 @@ def train(context, epoch, seed):
 @click.option("--epoch", default=1)
 @click.pass_context
 def traintf2(context, epoch):
+    tf.compat.v1.enable_v2_behavior()
+    tf.config.run_functions_eagerly(True)
     deepprofiler.learning.tf2train.learn_model(context.obj["config"], epoch)
 
 

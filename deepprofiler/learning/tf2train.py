@@ -6,11 +6,7 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 import efficientnet.tfkeras as efn
 
-tf.compat.v1.enable_v2_behavior()
-tf.config.run_functions_eagerly(True)
-
 AUTOTUNE = tf.data.AUTOTUNE
-
 
 def make_dataset(path, batch_size, single_cell_metadata, config, is_training):
     @tf.function
@@ -32,8 +28,7 @@ def make_dataset(path, batch_size, single_cell_metadata, config, is_training):
         return image
 
     def configure_for_performance(ds, is_training):
-
-        ds = ds.shuffle(buffer_size=323000)
+        ds = ds.shuffle(buffer_size=50000)
         if is_training:
             ds = augment(ds)
         ds = ds.batch(batch_size)
@@ -57,7 +52,6 @@ def make_dataset(path, batch_size, single_cell_metadata, config, is_training):
         # Recover multi-channel image
         result = tf.image.rgb_to_grayscale(result)
         result = tf.transpose(result[:, :, :, 0], [2, 1, 0])
-        # result = result / tf.math.reduce_max(result)
 
         return result
 
@@ -78,7 +72,6 @@ def make_dataset(path, batch_size, single_cell_metadata, config, is_training):
             return tf.image.resize(image, (w, h))
         else:
             return image
-
 
     def augment(ds):
         ds = ds.map(
@@ -147,7 +140,8 @@ def setup_callbacks(config):
             lr_schedule_lr += [0.5 * (1 + np.cos((np.pi * t) / epochs)) * init_lr for t in range(5, epochs)]
             callback_lr_schedule = tf.keras.callbacks.LearningRateScheduler(lr_schedule, verbose=1)
         elif config["train"]["model"]["lr_schedule"] == "plateau":
-            callback_lr_schedule = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, min_lr=0.0001)
+            callback_lr_schedule = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5,
+                                                                        min_lr=0.0001)
             config["train"]["validation"]["frequency"] = 1
         else:
             assert len(config["train"]["model"]["lr_schedule"]["epoch"]) == \
@@ -193,30 +187,25 @@ def learn_model(config, epoch):
     }
 
     BATCH_SIZE = config["train"]["model"]["params"]["batch_size"]
-    strategy_lr = config["train"]["model"]["params"]["learning_rate"]
+    base_lr = config["train"]["model"]["params"]["learning_rate"]
+    all_cells = pd.read_csv(config["paths"]["sc_index"])
+
+    target = config["train"]["partition"]["targets"][0]
+    classes = list(all_cells[target].unique())
+    num_classes = len(classes)
+    all_cells["Categorical"] = pd.Categorical(all_cells[target]).codes
+
+    split_field = config["train"]["partition"]["split_field"]
+    training_split_values = config["train"]["partition"]["training"]
+    validation_split_values = config["train"]["partition"]["validation"]
 
     experiment = setup_comet_ml(config)
 
-    single_cell_metadata = pd.read_csv(
-        os.path.join(config["paths"]["single_cell_sample"], "expanded_sc_metadata_alpha.csv"))
-    single_cell_metadata = single_cell_metadata[
-        ["Class_Name", "Image_Name", "Training_Status", "Training_Status_Alpha"]]
-    single_cell_metadata = single_cell_metadata[single_cell_metadata["Training_Status"] != "Unused"]
-
-    num_classes = len(pd.unique(single_cell_metadata["Class_Name"]))
-    single_cell_metadata["Categorical"] = pd.Categorical(single_cell_metadata["Class_Name"]).codes
-
-    path = config["paths"]["single_cell_set"]
-    dataset, steps_per_epoch = make_dataset(path, BATCH_SIZE,
-                                            single_cell_metadata[
-                                                single_cell_metadata["Training_Status_Alpha"] == "Training"],
-                                            config,
-                                            is_training=True)
-    validation_dataset, _ = make_dataset(path, BATCH_SIZE,
-                                         single_cell_metadata[
-                                             single_cell_metadata["Training_Status_Alpha"] == "Validation"],
-                                         config,
-                                         is_training=False)
+    directory = config["paths"]["single_cell_set"]
+    dataset, steps_per_epoch = make_dataset(directory, BATCH_SIZE, all_cells[all_cells[split_field].isin(
+        training_split_values)], config, is_training=True)
+    validation_dataset, _ = make_dataset(directory, BATCH_SIZE, all_cells[all_cells[split_field].isin(
+        validation_split_values)], config, is_training=False)
 
     input_shape = (config["dataset"]["locations"]["box_size"], config["dataset"]["locations"]["box_size"],
                    len(config["dataset"]["images"]["channels"]))
@@ -237,14 +226,16 @@ def learn_model(config, epoch):
             setattr(layer, "kernel_regularizer", regularizer)
 
     model = tf.keras.models.model_from_json(model.to_json())
-    optimizer = tf.keras.optimizers.SGD(learning_rate=strategy_lr)
-    loss_func = tf.keras.losses.CategoricalCrossentropy(from_logits=False)  # , label_smoothing = 0.6)
+    optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr)
+    loss_func = tf.keras.losses.CategoricalCrossentropy(
+        from_logits=False, label_smoothing=config["train"]["model"]["params"]["label_smoothing"])
 
-    model.compile(optimizer, loss_func,
-                  metrics=["accuracy", tfa.metrics.F1Score(num_classes=num_classes, average='macro'),
-                           tf.keras.metrics.TopKCategoricalAccuracy(k=5), tf.keras.metrics.Precision()])
+    model.compile(optimizer, loss_func, metrics=["accuracy",
+                                                 tfa.metrics.F1Score(num_classes=num_classes, average='macro'),
+                                                 tf.keras.metrics.TopKCategoricalAccuracy(k=5),
+                                                 tf.keras.metrics.Precision()])
 
-    callbacks = setup_callbacks(config, strategy_lr)
+    callbacks = setup_callbacks(config)
 
     if epoch == 1 and config["train"]["model"]["initialization"] == "ImageNet":
         base_model = efn.EfficientNetB0(weights='imagenet', include_top=False)
