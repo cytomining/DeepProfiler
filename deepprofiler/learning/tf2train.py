@@ -6,11 +6,7 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 import efficientnet.tfkeras as efn
 
-tf.compat.v1.enable_v2_behavior()
-tf.config.run_functions_eagerly(True)
-
 AUTOTUNE = tf.data.AUTOTUNE
-
 
 def make_dataset(path, batch_size, single_cell_metadata, config, is_training):
     @tf.function
