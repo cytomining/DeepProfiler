@@ -71,11 +71,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         self.samples = pd.concat(class_samples)
 
         # Randomize order
-        if self.mode == "training":
-            self.samples = self.samples.sample(frac=1.0).reset_index()
-        else:
-            self.samples = self.samples.sample(frac=0.1).reset_index()
-            print(self.samples[self.target].value_counts())
+        self.samples = self.samples.sample(frac=1.0).reset_index()
 
     def generator(self, sess, global_step=0):
         pointer = 0
