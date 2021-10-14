@@ -132,12 +132,8 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         predictions = []
 
         # Get predictions with the model
-        if model.layers[1].name == 'augmentation_layer':
-            model.get_layer("augmentation_layer").is_training = False
         for batch in self.generate(source="splits"):
             predictions.append(model.predict(batch[0]))
-        if model.layers[1].name == 'augmentation_layer':
-            model.get_layer("augmentation_layer").is_training = True
 
         # Update soft labels
         predictions = np.concatenate(predictions, axis=0)
