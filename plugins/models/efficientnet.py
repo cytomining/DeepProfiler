@@ -1,16 +1,19 @@
 import tensorflow as tf
 import numpy
+import inspect
 import efficientnet.tfkeras as efn
 
 from deepprofiler.learning.model import DeepProfilerModel
+from deepprofiler.learning.tf2train import DeepProfileModelV2
 from deepprofiler.imaging.augmentations import AugmentationLayer
 
-#tf.compat.v1.disable_v2_behavior()
-#tf.config.run_functions_eagerly(False)
 
-
-class ModelClass(DeepProfilerModel):
+class ModelClass(DeepProfilerModel if inspect.currentframe().f_back.f_code.co_name == 'learn_model'
+                 else DeepProfileModelV2):
     def __init__(self, config, dset, generator, val_generator, is_training):
+        if issubclass(type(self), DeepProfileModelV2):
+            tf.compat.v1.enable_v2_behavior()
+            tf.config.run_functions_eagerly(True)
         super(ModelClass, self).__init__(config, dset, generator, val_generator, is_training)
         self.feature_model, self.optimizer, self.loss = self.define_model(config, dset)
 
@@ -52,10 +55,10 @@ class ModelClass(DeepProfilerModel):
         assert num_layers in supported_models.keys(), error_msg
         # Set session
 
-        optimizer = tf.compat.v1.keras.optimizers.SGD(lr=config["train"]["model"]["params"]["learning_rate"], momentum=0.9,
-                                         nesterov=True)
+        optimizer = tf.compat.v1.keras.optimizers.SGD(lr=config["train"]["model"]["params"]["learning_rate"],
+                                                            momentum=0.9, nesterov=True)
         loss_func = tf.compat.v1.keras.losses.CategoricalCrossentropy(label_smoothing=
-                                                                      self.config["train"]["model"]["params"]["label_smoothing"])
+                                                            self.config["train"]["model"]["params"]["label_smoothing"])
 
         if self.is_training is False and "use_pretrained_input_size" in config["profile"].keys():
             input_tensor = tf.compat.v1.keras.layers.Input(

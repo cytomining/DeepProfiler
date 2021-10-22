@@ -1,4 +1,3 @@
-import tensorflow as tf
 import importlib
 
 #################################################
@@ -50,3 +49,9 @@ def learn_model(config, dset, epoch=1, seed=None, verbose=1):
     else:
         model.train(epoch, metrics, verbose=verbose)
         return None
+
+
+def learn_model_v2(config, epoch=1):
+    model_module = importlib.import_module("plugins.models.{}".format(config["train"]["model"]["name"]))
+    model = model_module.ModelClass(config, None, None, None, is_training=True)
+    model.train(epoch)

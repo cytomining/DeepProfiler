@@ -1,9 +1,10 @@
 import numpy as np
 import tensorflow as tf
-from deepprofiler.learning.model import DeepProfilerModel
-from deepprofiler.imaging.augmentations import AugmentationLayer
+import inspect
 
-tf.compat.v1.disable_v2_behavior()
+from deepprofiler.learning.model import DeepProfilerModel
+from deepprofiler.learning.tf2train import DeepProfileModelV2
+from deepprofiler.imaging.augmentations import AugmentationLayer
 
 
 ##################################################
@@ -14,8 +15,12 @@ tf.compat.v1.disable_v2_behavior()
 ##################################################
 
 
-class ModelClass(DeepProfilerModel):
+class ModelClass(DeepProfilerModel if inspect.currentframe().f_back.f_code.co_name == 'learn_model'
+                 else DeepProfileModelV2):
     def __init__(self, config, dset, generator, val_generator, is_training):
+        if issubclass(type(self), DeepProfileModelV2):
+            tf.compat.v1.enable_v2_behavior()
+            tf.config.run_functions_eagerly(True)
         super(ModelClass, self).__init__(config, dset, generator, val_generator, is_training)
         self.feature_model, self.optimizer, self.loss = self.define_model(config, dset)
 
