@@ -166,8 +166,11 @@ def train(context, epoch, seed):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
 
-    dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='train')
-    deepprofiler.learning.training.learn_model(context.obj["config"], dset, epoch, seed)
+    if context.parent.obj["config"]["train"]["model"]["crop_generator"] == 'crop_generator':
+        dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='train')
+        deepprofiler.learning.training.learn_model(context.obj["config"], dset, epoch, seed)
+    else:
+        deepprofiler.learning.training.learn_model(context.obj["config"], None, epoch, seed)
 
 
 # Third tool (b): Train a network with TF dataset
