@@ -12,7 +12,7 @@ AUTOTUNE = tf.data.AUTOTUNE
 tf.compat.v1.enable_v2_behavior()
 tf.config.run_functions_eagerly(True)
 
-class DeepProfileModelV2(abc.ABC):
+class DeepProfilerModelV2(abc.ABC):
     def __init__(self, config, dset, generator, val_generator, is_training):  # CG and dset params to match signatures
         self.loss = None
         self.optimizer = None
