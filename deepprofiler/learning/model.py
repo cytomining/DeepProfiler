@@ -80,8 +80,8 @@ class DeepProfilerModel(abc.ABC):
         callbacks = setup_callbacks(self, schedule_epochs, schedule_lr, self.dset, experiment)
 
         # Train model
-        self.feature_model.fit_generator(
-            generator=self.train_crop_generator.generator(main_session),
+        self.feature_model.fit(
+            self.train_crop_generator.generator(main_session),
             steps_per_epoch=steps,
             epochs=epochs,
             callbacks=callbacks,
@@ -89,7 +89,7 @@ class DeepProfilerModel(abc.ABC):
             initial_epoch=epoch - 1,
             validation_data=(x_validation, y_validation),
             validation_freq=freq
-        ) 
+        )
             
         # Stop threads and close sessions
         close(self, main_session)
