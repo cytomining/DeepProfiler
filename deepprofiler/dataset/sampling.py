@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import skimage.io
 import threading
 import tqdm
@@ -60,6 +61,9 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
         batch["split"].append(meta[self.config["train"]["partition"]["split_field"]])
         crops, metadata = self.process_batch(batch)
         for j in range(crops.shape[0]):
+            if np.isnan(crops[j, :, :, :]).any():
+                print('The image {} was empty, skipping'.format(metadata.loc[j, "Image_Name"]))
+                continue
             plate, well, site, name = metadata.loc[j, "Image_Name"].split('/')
             os.makedirs(os.path.join(outdir, plate, well, site), exist_ok=True)
             image = deepprofiler.imaging.cropping.unfold_channels(crops[j, :, :, :])
