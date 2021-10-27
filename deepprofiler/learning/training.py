@@ -1,4 +1,3 @@
-import tensorflow as tf
 import importlib
 
 #################################################
@@ -39,7 +38,7 @@ def learn_model(config, dset, epoch=1, seed=None, verbose=1):
 
     crop_generator = crop_module.GeneratorClass
     val_crop_generator = crop_module.SingleImageGeneratorClass
-    model = model_module.ModelClass(config, dset, crop_generator, val_crop_generator, is_training=True)
+    model = model_module.model_factory(config, dset, crop_generator, val_crop_generator, True)
 
     if seed is not None:
         model.seed(seed)
@@ -50,3 +49,9 @@ def learn_model(config, dset, epoch=1, seed=None, verbose=1):
     else:
         model.train(epoch, metrics, verbose=verbose)
         return None
+
+
+def learn_model_v2(config, epoch=1):
+    model_module = importlib.import_module("plugins.models.{}".format(config["train"]["model"]["name"]))
+    model = model_module.model_factory(config, None, None, None, True)
+    model.train(epoch)
