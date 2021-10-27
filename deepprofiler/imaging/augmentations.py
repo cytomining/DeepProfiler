@@ -1,6 +1,5 @@
 import tensorflow as tf
 
-
 #################################################
 # CROPPING AND TRANSFORMATION OPERATIONS
 #################################################
@@ -66,32 +65,31 @@ def augment_multiple(crops, parallel=None):
 
 
 # A layer for GPU accelerated augmentations
-
 class AugmentationLayer(tf.compat.v1.keras.layers.Layer):
     def __init__(self, **kwargs):
-        self.is_training = True
         super(AugmentationLayer, self).__init__(**kwargs)
 
     def build(self, input_shape):
         return
 
     def call(self, input_tensor):
-        if self.is_training:
-            return augment_multiple(input_tensor)
+        training = tf.compat.v1.keras.backend.learning_phase()
+        if training:
+            input_tensor = augment_multiple(input_tensor)
+            return input_tensor
         else:
             return input_tensor
 
 
 class AugmentationLayerV2(tf.keras.layers.Layer):
     def __init__(self, **kwargs):
-        self.is_training = True
         super(AugmentationLayerV2, self).__init__(**kwargs)
 
     def build(self, input_shape):
         return
 
-    def call(self, input_tensor):
-        if self.is_training:
+    def call(self, input_tensor, training=None):
+        if training:
             return augment_multiple(input_tensor)
         else:
             return input_tensor
