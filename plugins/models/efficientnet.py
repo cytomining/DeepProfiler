@@ -9,12 +9,12 @@ from deepprofiler.learning.tf2train import DeepProfilerModelV2
 
 
 def model_factory(config, dset, crop_generator, val_crop_generator, is_training):
-    if inspect.currentframe().f_back.f_code.co_name == 'learn_model':
-        return createModelClass(DeepProfilerModel, config, dset, crop_generator, val_crop_generator, is_training)
-    else:
+    if inspect.currentframe().f_back.f_code.co_name == 'learn_model_v2':
         tf.compat.v1.enable_v2_behavior()
         tf.config.run_functions_eagerly(True)
         return createModelClass(DeepProfilerModelV2, config, dset, crop_generator, val_crop_generator, is_training)
+    else:
+        return createModelClass(DeepProfilerModel, config, dset, crop_generator, val_crop_generator, is_training)
 
 
 def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_training):
