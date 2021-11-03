@@ -6,11 +6,13 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import tensorflow_addons as tfa
+from plugins.crop_generators.sampled_crop_generator import GeneratorClass
 
 AUTOTUNE = tf.data.AUTOTUNE
 
 tf.compat.v1.enable_v2_behavior()
 tf.config.run_functions_eagerly(True)
+
 
 class DeepProfilerModelV2(abc.ABC):
     def __init__(self, config, dset, generator, val_generator, is_training):  # CG and dset params to match signatures
@@ -24,44 +26,6 @@ class DeepProfilerModelV2(abc.ABC):
         self.target = self.config["train"]["partition"]["targets"][0]
         self.classes = list(self.all_cells[self.target].unique())
         self.config["num_classes"] = len(self.classes)
-
-    def make_dataset(self, path, batch_size, single_cell_metadata):
-        @tf.function
-        def fold_channels(crop):
-            assert tf.executing_eagerly()
-            crop = crop.numpy()
-            output = np.reshape(crop, (crop.shape[0], crop.shape[0], -1), order="F").astype(np.float32)
-            output = output / 255.
-            for i in range(output.shape[-1]):
-                mean = np.mean(output[:, :, i])
-                std = np.std(output[:, :, i])
-                output[:, :, i] = (output[:, :, i] - mean) / std
-            return tf.convert_to_tensor(output, dtype=tf.float32)
-
-        def parse_image(filename):
-            image = tf.io.read_file(filename)
-            image = tf.image.decode_png(image, channels=0)
-            image = tf.py_function(func=fold_channels, inp=[image], Tout=tf.float32)
-            return image
-
-        def configure_for_performance(ds):
-            ds = ds.shuffle(buffer_size=50000)
-            ds = ds.batch(batch_size)
-            ds = ds.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
-            return ds
-
-        filenames = single_cell_metadata["Image_Name"].tolist()
-        for i in range(len(filenames)):
-            filenames[i] = os.path.join(path, filenames[i])
-
-        steps = np.math.ceil(len(filenames) / batch_size)
-        filenames_ds = tf.data.Dataset.from_tensor_slices(filenames)
-        images_ds = filenames_ds.map(parse_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        labels = tf.keras.utils.to_categorical(single_cell_metadata["Categorical"])
-        labels_ds = tf.data.Dataset.from_tensor_slices(labels)
-        ds = tf.data.Dataset.zip((images_ds, labels_ds))
-        ds = configure_for_performance(ds)
-        return ds, steps
 
     def setup_callbacks(self, config):
         callbacks = []
@@ -163,42 +127,50 @@ class DeepProfilerModelV2(abc.ABC):
         batch_size = self.config["train"]["model"]["params"]["batch_size"]
         self.all_cells["Categorical"] = pd.Categorical(self.all_cells[self.target]).codes
 
-        split_field = self.config["train"]["partition"]["split_field"]
-        training_split_values = self.config["train"]["partition"]["training"]
-        validation_split_values = self.config["train"]["partition"]["validation"]
-
         experiment = self.setup_comet_ml(self.config)
 
-        directory = self.config["paths"]["single_cell_set"]
-        dataset, steps_per_epoch = self.make_dataset(directory, batch_size, self.all_cells[
-            self.all_cells[split_field].isin(training_split_values)])
-        validation_dataset, _ = self.make_dataset(directory, batch_size, self.all_cells[
-            self.all_cells[split_field].isin(validation_split_values)])
+        crop_generator = GeneratorClass(self.config)
+        dataset = tf.data.Dataset.from_generator(crop_generator.generator, output_signature=(
+            tf.TensorSpec(shape=(96, 96, 3), dtype=tf.float32),
+            tf.TensorSpec(shape=(3,), dtype=tf.int32)
+        )).batch(batch_size)
+
+        val_crop_generator = GeneratorClass(self.config, mode="validation")
+        validation_dataset = tf.data.Dataset.from_generator(val_crop_generator.generate, output_signature=(
+            tf.TensorSpec(shape=(self.config['dataset']['locations']['box_size'],
+                                 self.config['dataset']['locations']['box_size'],
+                                 len(self.config['dataset']['images']['channels'])),
+                          dtype=tf.float32),
+            tf.TensorSpec(shape=(len(self.classes),), dtype=tf.int32)
+        )).batch(batch_size)
 
         self.feature_model.compile(self.optimizer, self.loss, metrics=["accuracy",
-                                        tfa.metrics.F1Score(num_classes=self.config["num_classes"], average='macro'),
-                                        tf.keras.metrics.TopKCategoricalAccuracy(k=5),
-                                        tf.keras.metrics.Precision()])
+                                                                       tfa.metrics.F1Score(
+                                                                           num_classes=self.config["num_classes"],
+                                                                           average='macro'),
+                                                                       tf.keras.metrics.TopKCategoricalAccuracy(k=5),
+                                                                       tf.keras.metrics.Precision()])
         print(self.feature_model.summary())
         callbacks = self.setup_callbacks(self.config)
-
 
         if experiment:
             with experiment.train():
                 self.feature_model.fit(dataset,
-                          epochs=self.config["train"]["model"]["epochs"],
-                          callbacks=callbacks,
-                          verbose=1,
-                          validation_data=validation_dataset,
-                          validation_freq=self.config["train"]["validation"]["frequency"],
-                          initial_epoch=epoch - 1
-                          )
+                                       epochs=self.config["train"]["model"]["epochs"],
+                                       callbacks=callbacks,
+                                       verbose=1,
+                                       validation_data=validation_dataset,
+                                       validation_freq=self.config["train"]["validation"]["frequency"],
+                                       initial_epoch=epoch - 1,
+                                       steps_per_epoch=crop_generator.expected_steps
+                                       )
         else:
             self.feature_model.fit(dataset,
-                      epochs=self.config["train"]["model"]["epochs"],
-                      callbacks=callbacks,
-                      verbose=1,
-                      validation_data=validation_dataset,
-                      validation_freq=self.config["train"]["validation"]["frequency"],
-                      initial_epoch=epoch - 1
-                      )
+                                   epochs=self.config["train"]["model"]["epochs"],
+                                   callbacks=callbacks,
+                                   verbose=1,
+                                   validation_data=validation_dataset,
+                                   validation_freq=self.config["train"]["validation"]["frequency"],
+                                   initial_epoch=epoch - 1,
+                                   steps_per_epoch=crop_generator.expected_steps
+                                   )
