@@ -65,25 +65,9 @@ def augment_multiple(crops, parallel=None):
 
 
 # A layer for GPU accelerated augmentations
-class AugmentationLayer(tf.compat.v1.keras.layers.Layer):
+class AugmentationLayer(tf.keras.layers.Layer):
     def __init__(self, **kwargs):
         super(AugmentationLayer, self).__init__(**kwargs)
-
-    def build(self, input_shape):
-        return
-
-    def call(self, input_tensor):
-        training = tf.compat.v1.keras.backend.learning_phase()
-        if training:
-            input_tensor = augment_multiple(input_tensor)
-            return input_tensor
-        else:
-            return input_tensor
-
-
-class AugmentationLayerV2(tf.keras.layers.Layer):
-    def __init__(self, **kwargs):
-        super(AugmentationLayerV2, self).__init__(**kwargs)
 
     def build(self, input_shape):
         return
