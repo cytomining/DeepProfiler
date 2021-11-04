@@ -1,4 +1,5 @@
-import tensorflow as tf
+import importlib
+
 import json
 import os
 import copy
@@ -14,8 +15,6 @@ import deepprofiler.dataset.metadata
 import deepprofiler.dataset.utils
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.sampling
-import deepprofiler.learning.training
-import deepprofiler.learning.tf2train
 import deepprofiler.learning.profiling
 import deepprofiler.download.normalize_bbbc021_metadata
 
@@ -159,26 +158,16 @@ def export_sc(context):
 
 # Third tool: Train a network
 @cli.command()
-@click.option("--epoch", default=1)
-@click.option("--seed", default=None)
 @click.pass_context
-def train(context, epoch, seed):
-    if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-        context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
-
-    if context.parent.obj["config"]["train"]["model"]["crop_generator"] == 'crop_generator':
-        dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='train')
-        deepprofiler.learning.training.learn_model(context.obj["config"], dset, epoch, seed)
-    else:
-        deepprofiler.learning.training.learn_model(context.obj["config"], None, epoch, seed)
-
-
-# Third tool (b): Train a network with TF dataset
-@cli.command()
 @click.option("--epoch", default=1)
-@click.pass_context
-def traintf2(context, epoch):
-    deepprofiler.learning.training.learn_model_v2(context.obj["config"], epoch)
+def train(context, epoch):
+    model_module = importlib.import_module("plugins.models.{}".format(context.obj["config"]["train"]["model"]["name"]))
+    crop_module = importlib.import_module(
+        "plugins.crop_generators.{}".format(context.obj["config"]["train"]["model"]["crop_generator"]))
+    crop_generator = crop_module.GeneratorClass(context.obj["config"], mode='training')
+    val_crop_generator = crop_module.GeneratorClass(context.obj["config"], mode='validation')
+    model = model_module.ModelClass(context.obj["config"], crop_generator, val_crop_generator, is_training=True)
+    model.train(epoch)
 
 
 # Fourth tool: Profile cells and extract features
