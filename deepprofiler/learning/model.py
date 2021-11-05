@@ -134,8 +134,11 @@ class DeepProfilerModel(abc.ABC):
 
         crop_generator = GeneratorClass(self.config)
         dataset = tf.data.Dataset.from_generator(crop_generator.generator, output_signature=(
-            tf.TensorSpec(shape=(96, 96, 3), dtype=tf.float32),
-            tf.TensorSpec(shape=(3,), dtype=tf.int32)
+            tf.TensorSpec(shape=(self.config['dataset']['locations']['box_size'],
+                                 self.config['dataset']['locations']['box_size'],
+                                 len(self.config['dataset']['images']['channels'])),
+                          dtype=tf.float32),
+            tf.TensorSpec(shape=(len(self.classes),), dtype=tf.int32)
         )).batch(batch_size)
 
         val_crop_generator = GeneratorClass(self.config, mode="validation")
