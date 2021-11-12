@@ -1,10 +1,11 @@
+import comet_ml
+
 import tensorflow as tf
 import json
 import os
 import copy
 import click
 
-import comet_ml
 
 import deepprofiler.dataset.compression
 import deepprofiler.dataset.image_dataset
