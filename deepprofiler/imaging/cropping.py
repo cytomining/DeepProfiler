@@ -14,21 +14,27 @@ tf.compat.v1.disable_v2_behavior()
 tf.config.run_functions_eagerly(False)
 
 
-def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False):
+def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False, export_masks=False):
     with tf.compat.v1.variable_scope("cropping"):
         crop_size_ph = tf.constant([box_size, box_size], name="crop_size")
         crops = tf.image.crop_and_resize(image_ph, boxes_ph, box_ind_ph, crop_size_ph)
-        if mask_boxes:
+        if export_masks or mask_boxes:
             mask_ind = tf.expand_dims(tf.expand_dims(mask_ind_ph, -1), -1)
             mask_values = tf.ones_like(crops[:, :, :, -1], dtype=tf.float32) * tf.cast(mask_ind, dtype=tf.float32)
             masks = tf.compat.v1.to_float(tf.equal(crops[:, :, :, -1], mask_values))
+        if mask_boxes:
             crops = crops[:, :, :, 0:-1] * tf.expand_dims(masks, -1)
+
         #mean = tf.math.reduce_mean(crops, axis=[1, 2], keepdims=True)
         #std = tf.math.reduce_std(crops, axis=[1, 2], keepdims=True)
         #crops = (crops - mean)/std
         mini = tf.math.reduce_min(crops, axis=[1, 2], keepdims=True)
         maxi = tf.math.reduce_max(crops, axis=[1, 2], keepdims=True)
         crops = (crops - mini) / maxi
+
+        if export_masks:
+            crops = tf.concat((crops[:, :, :, 0:-1], tf.expand_dims(masks, axis=-1)), axis=3)
+
     return crops
 
 
@@ -65,14 +71,19 @@ class CropGenerator(object):
     ## INPUT GRAPH DEFINITION
     #################################################
 
-    def build_input_graph(self):
+    def build_input_graph(self, export_masks=False):
         # Identify number of channels
         mask_objects = self.config["dataset"]["locations"]["mask_objects"]
         if mask_objects:
             img_channels = len(self.config["dataset"]["images"]["channels"]) + 1
         else:
             img_channels = len(self.config["dataset"]["images"]["channels"])
-        crop_channels = len(self.config["dataset"]["images"]["channels"])
+
+        if export_masks:
+            crop_channels = len(self.config["dataset"]["images"]["channels"]) + 1
+            mask_objects = False
+        else:
+            crop_channels = len(self.config["dataset"]["images"]["channels"])
 
         # Identify image and box sizes
         box_size = self.config["dataset"]["locations"]["box_size"]
@@ -103,7 +114,8 @@ class CropGenerator(object):
             box_ind_ph,
             mask_ind_ph,
             box_size,
-            mask_objects
+            mask_objects,
+            export_masks
         )
         labeled_crops = tf.tuple([crop_op] + [targets_phs[t] for t in targets_phs.keys()])
 

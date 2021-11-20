@@ -20,7 +20,7 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
         # Define input data batches
         with tf.compat.v1.variable_scope("train_inputs"):
             self.config["train"]["model"]["params"]["batch_size"] = self.config["train"]["validation"]["batch_size"]
-            self.build_input_graph()
+            self.build_input_graph(export_masks=True)
 
     def process_batch(self, batch):
         for i in range(len(batch["keys"])):
@@ -91,10 +91,10 @@ def is_directory_empty(outdir):
             erase = input("Delete " + str(len(files)) + " existing files in " + outdir + "? (y/n) ")
             print(erase)
         if erase == "n":
-            print("Terminating sampling.")
+            print("Terminating export.")
             return False
         elif erase == "y":
-            print("Removing previous sampled files")
+            print("Removing previous files")
             shutil.rmtree(outdir)
     return True
 
