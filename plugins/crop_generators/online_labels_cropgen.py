@@ -27,6 +27,12 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         self.batch_size = self.config["train"]["model"]["params"]["batch_size"]
         self.mode = mode
 
+        # Object masking mode and number of channels
+        if self.config["dataset"]["locations"]["mask_objects"]:
+            self.last_channel = 0
+        else:
+            self.last_channel = self.num_channels
+
         # Load metadata
         self.all_cells = pd.read_csv(config["paths"]["sc_index"])
         self.target = config["train"]["partition"]["targets"][0]
@@ -84,7 +90,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                     pointer = 0
                 filename = os.path.join(self.directory, self.samples.loc[pointer, "Image_Name"])
                 im = skimage.io.imread(filename).astype(np.float32)
-                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im, self.config["dataset"]["locations"]["mask_objects"])
+                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im, last_channel=self.last_channel)
                 y.append([self.soft_labels[self.samples.loc[pointer, "index"], :]])
                 pointer += 1
             yield x, np.concatenate(y, axis=0)
@@ -108,7 +114,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                     break
                 filename = os.path.join(self.directory, dataframe.loc[pointer, "Image_Name"])
                 im = skimage.io.imread(filename).astype(np.float32)
-                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im, self.config["dataset"]["locations"]["mask_objects"])
+                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im, last_channel=self.last_channel)
                 y.append(self.classes[dataframe.loc[pointer, self.target]])
                 pointer += 1
             if len(y) < x.shape[0]:

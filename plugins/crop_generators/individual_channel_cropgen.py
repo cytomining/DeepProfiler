@@ -28,6 +28,12 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         self.batch_size = self.config["train"]["model"]["params"]["batch_size"]
         self.mode = mode
 
+        # Object masking mode and number of channels
+        if self.config["dataset"]["locations"]["mask_objects"]:
+            self.last_channel = 0
+        else:
+            self.last_channel = self.num_channels
+
         # Load metadata
         self.all_cells = pd.read_csv(os.path.join(self.directory, "expanded_sc_metadata_tengenes.csv"))
         # ALPHA SET HACK:
@@ -94,7 +100,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         filename = os.path.join(self.directory, self.samples.loc[pointer, "Image_Name"])
         im = skimage.io.imread(filename).astype(np.float32)
         channel = self.samples.loc[pointer, "Channel"]
-        folded = deepprofiler.imaging.cropping.fold_channels(im, self.config["dataset"]["locations"]["mask_objects"])
+        folded = deepprofiler.imaging.cropping.fold_channels(im, last_channel=self.last_channel)
         return folded[:,:,channel]
 
 
