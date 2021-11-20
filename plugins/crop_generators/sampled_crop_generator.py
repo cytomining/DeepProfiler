@@ -21,15 +21,15 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
     def __init__(self, config, dset, mode="training"):
         super(GeneratorClass, self).__init__(config, dset)
-        self.directory = config["paths"]["single_cell_set"]
-        self.num_channels = len(config["dataset"]["images"]["channels"])
+        self.directory = self.config["paths"]["single_cell_set"]
+        self.num_channels = len(self.config["dataset"]["images"]["channels"])
         self.box_size = self.config["dataset"]["locations"]["box_size"]
         self.batch_size = self.config["train"]["model"]["params"]["batch_size"]
         self.mode = mode
 
         # Load metadata
-        self.all_cells = pd.read_csv(config["paths"]["sc_index"])
-        self.target = config["train"]["partition"]["targets"][0]
+        self.all_cells = pd.read_csv(self.config["paths"]["sc_index"])
+        self.target = self.config["train"]["partition"]["targets"][0]
 
         # Index targets for one-hot encoded labels
         self.split_data = self.all_cells[self.all_cells[self.config["train"]["partition"]["split_field"]].isin(
@@ -86,7 +86,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                     pointer = 0
                 filename = os.path.join(self.directory, self.samples.loc[pointer, "Image_Name"])
                 im = skimage.io.imread(filename).astype(np.float32)
-                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im)
+                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im, self.config["dataset"]["locations"]["mask_objects"])
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
                 pointer += 1
             yield(x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
@@ -102,7 +102,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                     break
                 filename = os.path.join(self.directory, self.samples.loc[pointer, "Image_Name"])
                 im = skimage.io.imread(filename).astype(np.float32)
-                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im)
+                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im, self.config["dataset"]["locations"]["mask_objects"])
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
                 pointer += 1
             if len(y) < x.shape[0]:

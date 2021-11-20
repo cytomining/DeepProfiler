@@ -94,7 +94,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         filename = os.path.join(self.directory, self.samples.loc[pointer, "Image_Name"])
         im = skimage.io.imread(filename).astype(np.float32)
         channel = self.samples.loc[pointer, "Channel"]
-        folded = deepprofiler.imaging.cropping.fold_channels(im)
+        folded = deepprofiler.imaging.cropping.fold_channels(im, self.config["dataset"]["locations"]["mask_objects"])
         return folded[:,:,channel]
 
 

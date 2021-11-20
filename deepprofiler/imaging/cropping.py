@@ -49,10 +49,12 @@ def unfold_channels(crop, mode=0):
     return unfolded
 
 
-def fold_channels(crop):
+def fold_channels(crop, mask_objects=False):
     # Expected input image shape: (h, w * c), with h = w
     # Output image shape: (h, w, c), with h = w
     output = np.reshape(crop, (crop.shape[0], crop.shape[0], -1), order="F").astype(np.float)
+    if mask_objects:
+        output = output[:, :, 0:-1] * (output[:, :, -1] / 255.)
     #for i in range(output.shape[-1]):
     #    mean = np.mean(output[:, :, i])
     #    std = np.std(output[:, :, i])

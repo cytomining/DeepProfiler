@@ -84,7 +84,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                     pointer = 0
                 filename = os.path.join(self.directory, self.samples.loc[pointer, "Image_Name"])
                 im = skimage.io.imread(filename).astype(np.float32)
-                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im)
+                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im, self.config["dataset"]["locations"]["mask_objects"])
                 y.append([self.soft_labels[self.samples.loc[pointer, "index"], :]])
                 pointer += 1
             yield x, np.concatenate(y, axis=0)
@@ -108,7 +108,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                     break
                 filename = os.path.join(self.directory, dataframe.loc[pointer, "Image_Name"])
                 im = skimage.io.imread(filename).astype(np.float32)
-                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im)
+                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im, self.config["dataset"]["locations"]["mask_objects"])
                 y.append(self.classes[dataframe.loc[pointer, self.target]])
                 pointer += 1
             if len(y) < x.shape[0]:
