@@ -41,7 +41,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         self.split_data = self.all_cells[self.all_cells[self.config["train"]["partition"]["split_field"]].isin(
                                          self.config["train"]["partition"][self.mode])].reset_index(drop=True)
 
-        self.classes = list(self.all_cells[self.target].unique())
+        self.classes = list(self.split_data[self.target].unique())
         self.num_classes = len(self.classes)
         self.classes.sort()
         self.classes = {self.classes[i]: i for i in range(self.num_classes)}
@@ -71,14 +71,28 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         for cls in self.split_data[self.target].unique():
             class_samples.append(self.split_data[self.split_data[self.target] == cls].sample(
                 n=sample_size, replace=counts[cls] < sample_size))
-        self.samples = pd.concat(class_samples)
+        samples = pd.concat(class_samples)
 
         # Randomize order
-        self.samples = self.samples.sample(frac=1.0).reset_index()
+        samples = samples.sample(frac=1.0).reset_index(drop=True)
+
+        if False: # TODO: Remove mock conditional to activate batching by plates permanently
+            # Group batches by Plate
+            samples["Plate"] = samples["Key"].str.split("/", expand=True)[0]
+            samples["BatchID"] = 0
+            for k,r in samples.groupby("Plate").count().iterrows():
+                samples.loc[samples.Plate == k, "BatchID"] = range(r.Key)
+    
+            samples["BatchID"] = samples["BatchID"] // self.batch_size
+            self.samples = samples.sort_values(by=["BatchID", "Plate"]).reset_index(drop=True)
+        else:
+            self.samples = samples
+
+        # Report numbers
         if self.mode == "training":
             print(" >> Shuffling training sample with", len(self.samples), "examples")
         else:
-            print(self.samples[self.target].value_counts())
+            print(" >> Validation samples per class:", np.mean(self.samples[self.target].value_counts()))
 
 
     def generator(self, sess, global_step=0):

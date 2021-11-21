@@ -62,7 +62,7 @@ def fold_channels(crop, last_channel=-1):
         output = output[:, :, 0:last_channel]
     elif last_channel == 0:
         # Use last channel as a binary mask
-        output = output[:, :, 0:-1] * (output[:, :, -1] / 255.)
+        output = output[:, :, 0:-1] * (output[:, :, -1:] / 255.)
 
     #for i in range(output.shape[-1]):
     #    mean = np.mean(output[:, :, i])
