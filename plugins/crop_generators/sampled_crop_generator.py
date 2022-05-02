@@ -41,7 +41,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         self.split_data = self.all_cells[self.all_cells[self.config["train"]["partition"]["split_field"]].isin(
                                          self.config["train"]["partition"][self.mode])].reset_index(drop=True)
 
-        self.classes = list(self.split_data[self.target].unique())
+        self.classes = list(self.all_cells[self.target].unique())
         self.num_classes = len(self.classes)
         self.classes.sort()
         self.classes = {self.classes[i]: i for i in range(self.num_classes)}
