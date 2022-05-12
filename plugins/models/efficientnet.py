@@ -48,6 +48,15 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
             error_msg = str(num_layers) + " conv_blocks not in " + SM
             assert num_layers in supported_models.keys(), error_msg
 
+            # Rescaling images in full_image mode
+            if config["dataset"]["locations"]["mode"] == "full_image":
+                bs = config["train"]["model"]["params"]["batch_size"]
+                boxes = numpy.asarray([[0,0,1,1]]*bs)
+                box_ind = numpy.arange(bs)
+                crop_size = (config["dataset"]["locations"]["box_size"], config["dataset"]["locations"]["box_size"])
+                input_image = tf.image.crop_and_resize(input_image, boxes, box_ind, crop_size)
+
+            # Adding augmentations
             if self.is_training and weights is None and self.config["train"]['model'].get('augmentations') is True:
                 input_image = AugmentationLayer()(input_image)
 
@@ -77,12 +86,24 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
                     name="input")
                 model = self.get_model(config, input_image=input_tensor, weights='imagenet', include_top=True)
             elif self.is_training is True or "use_pretrained_input_size" not in config["profile"].keys():
-                input_shape = (
-                    config["dataset"]["locations"]["box_size"],  # height
-                    config["dataset"]["locations"]["box_size"],  # width
-                    len(config["dataset"]["images"]["channels"])  # channels
-                )
-                input_image = tf.compat.v1.keras.layers.Input(input_shape)
+                if config["dataset"]["locations"]["mode"] == "single_cell":
+                    input_shape = (
+                        config["dataset"]["locations"]["box_size"],  # height
+                        config["dataset"]["locations"]["box_size"],  # width
+                        len(config["dataset"]["images"]["channels"])  # channels
+                    )
+                    input_image = tf.compat.v1.keras.layers.Input(input_shape)
+                elif config["dataset"]["locations"]["mode"] == "full_image":
+                    input_shape = (
+                            config["dataset"]["locations"]["view_size"],
+                            config["dataset"]["locations"]["view_size"],
+                            len(config["dataset"]["images"]["channels"])
+                    )
+                    bs = config["train"]["model"]["params"]["batch_size"]
+                    input_image = tf.compat.v1.keras.layers.Input(input_shape, batch_size=bs)
+                else:
+                    print("Incorrect locations mode. Use single_cell or full_image")
+                    
                 model = self.get_model(config, input_image=input_image)
                 features = tf.compat.v1.keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-1].output)
                 # 2. Create an output embedding for each target

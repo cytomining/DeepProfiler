@@ -22,6 +22,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
         self.num_channels = len(self.config["dataset"]["images"]["channels"])
         self.box_size = self.config["dataset"]["locations"]["box_size"]
+        self.view_size = self.config["dataset"]["locations"]["view_size"]
         self.batch_size = self.config["train"]["model"]["params"]["batch_size"]
         self.mode = mode
 
@@ -86,14 +87,12 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
             q = np.random.randint(0, H - vs)
         else:
             q = (H - vs)//2
-        region = image[q:q+vs, q:q+vs, :]
-        crop = skimage.transform.resize(region, (self.box_size, self.box_size), preserve_range=True)
-        return crop
+        return image[q:q+vs, q:q+vs, :]
 
     def generator(self, sess, global_step=0):
         pointer = 0
         while True:
-            x = np.zeros([self.batch_size, self.box_size, self.box_size, self.num_channels])
+            x = np.zeros([self.batch_size, self.view_size, self.view_size, self.num_channels])
             y = []
             for i in range(self.batch_size):
                 if pointer >= len(self.samples):
@@ -111,7 +110,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         pointer = 0
         from tqdm import tqdm
         for k in tqdm(range(self.expected_steps), desc="Loading validation data"):
-            x = np.zeros([self.batch_size, self.box_size, self.box_size, self.num_channels])
+            x = np.zeros([self.batch_size, self.view_size, self.view_size, self.num_channels])
             y = []
             for i in range(self.batch_size):
                 if pointer >= len(self.samples):
