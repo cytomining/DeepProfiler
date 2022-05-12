@@ -77,17 +77,16 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
 
     def get_image_paths(self, r):
-        # TODO: extension replace should not happen here!
-        return [os.path.join(self.directory, r[ch].replace('.tif', '.png')) for ch in self.config["dataset"]["images"]["channels"]]
+        return [os.path.join(self.directory, r[ch]) for ch in self.config["dataset"]["images"]["channels"]]
 
     def get_crop(self, image, random=False):
         H, W, C = image.shape
-        s = int(H*self.config["dataset"]["locations"]["area_coverage"])
+        vs = self.config["dataset"]["locations"]["view_size"]
         if random:
-            q = np.random.randint(0, H - s)
+            q = np.random.randint(0, H - vs)
         else:
-            q = (H - s)//2
-        region = image[q:q+s, q:q+s, :]
+            q = (H - vs)//2
+        region = image[q:q+vs, q:q+vs, :]
         crop = skimage.transform.resize(region, (self.box_size, self.box_size), preserve_range=True)
         return crop
 

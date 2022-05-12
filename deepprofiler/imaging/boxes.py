@@ -51,9 +51,10 @@ def get_single_cell_locations(image_key, config, random_sample=None, seed=None):
 def get_full_image_locations(image_key, config, random_sample, seed):
     cols = config["dataset"]["images"]["width"]
     rows = config["dataset"]["images"]["height"]
-    coverage = config["dataset"]["locations"]["area_coverage"]
-    cols_margin = cols - int(cols * coverage)
-    rows_margin = rows - int(rows * coverage)
+    view = config["dataset"]["locations"]["view_size"]
+    assert (view < cols) and (view < rows)
+    cols_margin = cols - view
+    rows_margin = rows - view
  
     data = None
     if coverage == 1.0:
@@ -86,10 +87,8 @@ def prepare_boxes(batch, config):
         return get_cropping_regions(batch, config, config["dataset"]["locations"]["box_size"])
 
     elif config["dataset"]["locations"]["mode"] == "full_image":
-        # Use the minimum side of the image to define bounding boxes
-        side = min(config["dataset"]["images"]["width"], config["dataset"]["images"]["height"])
-        coverage = config["dataset"]["locations"]["area_coverage"]
-        return get_cropping_regions(batch, config, int(side * coverage))
+        view = config["dataset"]["locations"]["view_size"]
+        return get_cropping_regions(batch, config, view)
 
     else:
         return None

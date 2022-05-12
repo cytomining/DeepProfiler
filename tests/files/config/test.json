@@ -18,7 +18,7 @@
         "locations": {
             "mode": "single_cells",
             "box_size": 16,
-            "area_coverage": 1.0,
+            "view_size": 64,
             "mask_objects": false
         }
     },
