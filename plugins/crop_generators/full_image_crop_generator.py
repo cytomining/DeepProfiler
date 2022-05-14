@@ -3,9 +3,11 @@ import numpy as np
 import pandas as pd
 import skimage.io
 import tensorflow as tf
+import multiprocessing
 
 import deepprofiler.imaging.cropping
 import deepprofiler.dataset.pixels
+import deepprofiler.dataset.utils
 
 tf.compat.v1.disable_v2_behavior()
 tf.config.run_functions_eagerly(False)
@@ -53,8 +55,6 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
     def balanced_sample(self):
         # Obtain distribution of images per class
-        #self.split_data['Key'] = self.split_data.Metadata_Plate + '/' + \
-        #                         self.split_data.Metadata_Well + '/' + self.split_data.Metadata_Site
         counts = self.split_data.groupby(self.target).count().reset_index()[[self.target, 'Metadata_Site']]
         sample_size = int(counts.Metadata_Site.median())
         counts = {r[self.target]: r.Metadata_Site for k, r in counts.iterrows()}
@@ -80,53 +80,83 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
     def get_image_paths(self, r):
         return [os.path.join(self.directory, r[ch]) for ch in self.config["dataset"]["images"]["channels"]]
 
-    def get_crop(self, image, random=False):
-        H, W, C = image.shape
-        vs = self.config["dataset"]["locations"]["view_size"]
-        if random:
-            q = np.random.randint(0, H - vs)
-        else:
-            q = (H - vs)//2
-        return image[q:q+vs, q:q+vs, :]
 
     def generator(self, sess, global_step=0):
         pointer = 0
+        image_loader = deepprofiler.dataset.utils.Parallel(
+                [self.config["dataset"]["locations"]["view_size"], True],
+                self.config["train"]["sampling"]["workers"]
+        )
         while True:
-            x = np.zeros([self.batch_size, self.view_size, self.view_size, self.num_channels])
+            # Prepare batch metadata
             y = []
+            batch_paths = []
             for i in range(self.batch_size):
                 if pointer >= len(self.samples):
                     self.balanced_sample()
                     pointer = 0
 
-                paths = self.get_image_paths(self.samples.iloc[pointer])
-                im = deepprofiler.dataset.pixels.openImage(paths, None)
-                x[i, :, :, :] = self.get_crop(im, random=True)
+                batch_paths.append( self.get_image_paths(self.samples.iloc[pointer]) )
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
                 pointer += 1
-            yield (x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
+
+            # Load batch images
+            x = np.zeros([self.batch_size, self.view_size, self.view_size, self.num_channels])
+            images = image_loader.compute(load_and_crop, batch_paths)
+            for i in range(len(batch_paths)):
+                x[i, :, :, :] = images[i]
+
+            inputs = [x, np.asarray([[0,0,1,1]]*len(y)), np.arange(0, len(y))]
+            yield (inputs, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
+
+        image_loader.close()
 
     def generate(self):
         pointer = 0
         from tqdm import tqdm
+        image_loader = deepprofiler.dataset.utils.Parallel(
+                [self.config["dataset"]["locations"]["view_size"], False], 
+                self.config["train"]["sampling"]["workers"]
+        )
         for k in tqdm(range(self.expected_steps), desc="Loading validation data"):
-            x = np.zeros([self.batch_size, self.view_size, self.view_size, self.num_channels])
+            # Prepare metadata
             y = []
+            batch_paths = []
             for i in range(self.batch_size):
                 if pointer >= len(self.samples):
                     break
 
-                paths = self.get_image_paths(self.samples.iloc[pointer])
-                im = deepprofiler.dataset.pixels.openImage(paths, None)
-                x[i, :, :, :] = self.get_crop(im, random=False)
+                batch_paths.append( self.get_image_paths(self.samples.iloc[pointer]) )
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
                 pointer += 1
+
+            # Load images
+            x = np.zeros([self.batch_size, self.view_size, self.view_size, self.num_channels])
+            images = image_loader.compute(load_and_crop, batch_paths)
+            for i in range(len(images)):
+                x[i, :, :, :] = images[i] 
+
             if len(y) < x.shape[0]:
                 x = x[0:len(y), ...]
-            yield (x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
+
+            inputs = [x, np.asarray([[0,0,1,1]]*len(y)), np.arange(0, len(y))]
+            yield (inputs, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
+
+        image_loader.close()
 
     def stop(self, session):
         pass
+
+def load_and_crop(params):
+    paths, others = params
+    view_size, random = others
+    im = deepprofiler.dataset.pixels.openImage(paths, None)
+    H, W, C = im.shape
+    if random:
+        q = np.random.randint(0, H - view_size)
+    else:
+        q = (H - view_size)//2
+    return im[q:q+view_size, q:q+view_size, :]
 
 
 ## Reusing the Single Image Crop Generator. No changes needed

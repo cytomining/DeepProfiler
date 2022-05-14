@@ -49,12 +49,12 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
             assert num_layers in supported_models.keys(), error_msg
 
             # Rescaling images in full_image mode
-            if config["dataset"]["locations"]["mode"] == "full_image":
-                bs = config["train"]["model"]["params"]["batch_size"]
-                boxes = numpy.asarray([[0,0,1,1]]*bs)
-                box_ind = numpy.arange(bs)
+            if config["dataset"]["locations"]["mode"] == "full_image" and input_image is not None:
+                input_view = input_image
                 crop_size = (config["dataset"]["locations"]["box_size"], config["dataset"]["locations"]["box_size"])
-                input_image = tf.image.crop_and_resize(input_image, boxes, box_ind, crop_size)
+                boxes = tf.compat.v1.keras.layers.Input(shape=(4,))
+                box_ind = tf.compat.v1.keras.layers.Input(shape=(), dtype="int32")
+                input_image = tf.image.crop_and_resize(input_view, boxes, box_ind, crop_size)
 
             # Adding augmentations
             if self.is_training and weights is None and self.config["train"]['model'].get('augmentations') is True:
@@ -65,6 +65,11 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
                 include_top=include_top,
                 weights=weights
             )
+
+            # Enable multiple inputs if in full_image mode
+            if config["dataset"]["locations"]["mode"] == "full_image" and input_image is not None:
+                model = tf.compat.v1.keras.Model(inputs=[input_view, boxes, box_ind], outputs=model.output)
+
             return model
 
         def define_model(self, config, dset):
@@ -99,8 +104,7 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
                             config["dataset"]["locations"]["view_size"],
                             len(config["dataset"]["images"]["channels"])
                     )
-                    bs = config["train"]["model"]["params"]["batch_size"]
-                    input_image = tf.compat.v1.keras.layers.Input(input_shape, batch_size=bs)
+                    input_image = tf.compat.v1.keras.layers.Input(input_shape)
                 else:
                     print("Incorrect locations mode. Use single_cell or full_image")
                     
@@ -113,7 +117,7 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
                 class_outputs.append(y)
 
                 # 4. Create and compile model
-                model = tf.compat.v1.keras.models.Model(inputs=input_image, outputs=class_outputs)
+                model = tf.compat.v1.keras.models.Model(inputs=model.input, outputs=class_outputs)
 
                 ## Added weight decay following tricks reported in:
                 ## https://github.com/keras-team/keras/issues/2717
@@ -134,7 +138,13 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
 
         def copy_pretrained_weights(self):
             base_model = self.get_model(self.config, weights="imagenet")
-            lshift = self.feature_model.layers[1].name == 'augmentation_layer_1'  # Shift one layer to accommodate the AugmentationLayer
+            # Shift layers to accommodate crop_and_resize + AugmentationLayer
+            layers = self.feature_model.layers
+            lshift = 0
+            if layers[1].name == 'augmentation_layer_1' or layers[4].name == "augmentation_layer_1":
+                lshift += 1
+            if layers[1].name == 'input_2' and layers[2].name == 'input_3':
+                lshift += 3
 
             # => Transfer all weights except conv1.1
             total_layers = len(base_model.layers)

@@ -155,7 +155,16 @@ def load_validation_data(dpmodel, session):
             x_validation.append(batch[0])
             y_validation.append(batch[1])
 
-        x_validation = np.concatenate(x_validation)
+        if dpmodel.config['train']['model']['crop_generator'] == "full_image_crop_generator":
+            images = np.concatenate([x_validation[i][0] for i in range(len(x_validation))])
+            boxes = np.concatenate([x_validation[i][1] for i in range(len(x_validation))])
+            box_ind = np.concatenate([x_validation[i][2] for i in range(len(x_validation))])
+            x_validation = [images, boxes, box_ind]
+            x_shape = images.shape
+        else:
+            x_validation = np.concatenate(x_validation)
+            x_shape = x_validation.shape
+
         y_validation = np.concatenate(y_validation)
 
     else:
@@ -166,7 +175,7 @@ def load_validation_data(dpmodel, session):
             session
         )
 
-    print("Validation data:", x_validation.shape, y_validation.shape)
+    print("Validation data:", x_shape, y_validation.shape)
 
     return x_validation, y_validation
 
