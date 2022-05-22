@@ -104,7 +104,8 @@ class CropGenerator(object):
         # Data shapes
         num_targets = len(self.dset.targets)
         crop_shape = [(box_size, box_size, crop_channels)] + [()]*num_targets
-        imgs_shape = [None, img_height, img_width, img_channels]
+        #imgs_shape = [None, img_height, img_width, img_channels]
+        imgs_shape = [None, None, None, img_channels]
         batch_shape = (-1, img_height, img_width, img_channels)
 
         # Inputs to cropping graph
@@ -322,7 +323,8 @@ class SingleImageCropGenerator(CropGenerator):
 
         has_orientation = "Orientation" in batch["locations"][0].columns
         boxes, box_ind, targets, mask_ind = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
-        batch["images"] = np.reshape(image_array, self.input_variables["shapes"]["batch"])
+        #batch["images"] = np.reshape(image_array, self.input_variables["shapes"]["batch"])
+        batch["images"] = image_array[np.newaxis, ...]
         feed_dict = {
             self.input_variables["image_ph"]: batch["images"],
             self.input_variables["boxes_ph"]: boxes,
