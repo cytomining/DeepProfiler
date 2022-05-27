@@ -151,6 +151,7 @@ def load_and_crop(params):
     paths, others = params
     view_size, random = others
     im = deepprofiler.dataset.pixels.openImage(paths, None)
+    im = im / 255.
     H, W, C = im.shape
     if random:
         q = np.random.randint(0, H - view_size)
