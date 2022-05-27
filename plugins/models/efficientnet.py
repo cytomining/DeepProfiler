@@ -48,6 +48,15 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
             error_msg = str(num_layers) + " conv_blocks not in " + SM
             assert num_layers in supported_models.keys(), error_msg
 
+            # Rescaling images in full_image mode
+            if self.is_training and config["dataset"]["locations"]["mode"] == "full_image" and input_image is not None:
+                input_view = input_image
+                crop_size = (config["dataset"]["locations"]["box_size"], config["dataset"]["locations"]["box_size"])
+                boxes = tf.compat.v1.keras.layers.Input(shape=(4,))
+                box_ind = tf.compat.v1.keras.layers.Input(shape=(), dtype="int32")
+                input_image = tf.image.crop_and_resize(input_view, boxes, box_ind, crop_size)
+
+            # Adding augmentations
             if self.is_training and weights is None and self.config["train"]['model'].get('augmentations') is True:
                 input_image = AugmentationLayer()(input_image)
 
@@ -56,6 +65,11 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
                 include_top=include_top,
                 weights=weights
             )
+
+            # Enable multiple inputs if in full_image mode
+            if self.is_training and config["dataset"]["locations"]["mode"] == "full_image" and input_image is not None:
+                model = tf.compat.v1.keras.Model(inputs=[input_view, boxes, box_ind], outputs=model.output)
+
             return model
 
         def define_model(self, config, dset):
@@ -71,18 +85,21 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
             loss_func = tf.compat.v1.keras.losses.CategoricalCrossentropy(label_smoothing=
                                                                 self.config["train"]["model"]["params"]["label_smoothing"])
 
-            if self.is_training is False and "use_pretrained_input_size" in config["profile"].keys():
+            if not self.is_training and "use_pretrained_input_size" in config["profile"].keys():
                 input_tensor = tf.compat.v1.keras.layers.Input(
                     (config["profile"]["use_pretrained_input_size"], config["profile"]["use_pretrained_input_size"], 3),
                     name="input")
                 model = self.get_model(config, input_image=input_tensor, weights='imagenet', include_top=True)
-            elif self.is_training is True or "use_pretrained_input_size" not in config["profile"].keys():
-                input_shape = (
-                    config["dataset"]["locations"]["box_size"],  # height
-                    config["dataset"]["locations"]["box_size"],  # width
-                    len(config["dataset"]["images"]["channels"])  # channels
-                )
+            elif self.is_training or "use_pretrained_input_size" not in config["profile"].keys():
+                if self.is_training and config["dataset"]["locations"]["mode"] == "full_image":
+                    width = height = config["dataset"]["locations"]["view_size"]
+                else:
+                    width = height = config["dataset"]["locations"]["box_size"]
+
+                input_shape = (height, width, len(config["dataset"]["images"]["channels"]))
                 input_image = tf.compat.v1.keras.layers.Input(input_shape)
+
+                    
                 model = self.get_model(config, input_image=input_image)
                 features = tf.compat.v1.keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-1].output)
                 # 2. Create an output embedding for each target
@@ -92,7 +109,7 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
                 class_outputs.append(y)
 
                 # 4. Create and compile model
-                model = tf.compat.v1.keras.models.Model(inputs=input_image, outputs=class_outputs)
+                model = tf.compat.v1.keras.models.Model(inputs=model.input, outputs=class_outputs)
 
                 ## Added weight decay following tricks reported in:
                 ## https://github.com/keras-team/keras/issues/2717
@@ -113,7 +130,13 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
 
         def copy_pretrained_weights(self):
             base_model = self.get_model(self.config, weights="imagenet")
-            lshift = self.feature_model.layers[1].name == 'augmentation_layer_1'  # Shift one layer to accommodate the AugmentationLayer
+            # Shift layers to accommodate crop_and_resize + AugmentationLayer
+            layers = self.feature_model.layers
+            lshift = 0
+            if layers[1].name == 'augmentation_layer_1' or layers[4].name == "augmentation_layer_1":
+                lshift += 1
+            if layers[1].name == 'input_2' and layers[2].name == 'input_3':
+                lshift += 3
 
             # => Transfer all weights except conv1.1
             total_layers = len(base_model.layers)

@@ -31,7 +31,7 @@ class DeepProfilerModel(abc.ABC):
         self.dset = dset
         if is_training:
             self.train_crop_generator = crop_generator(config, dset)
-            if self.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator']:
+            if self.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator', 'full_image_crop_generator']:
                 self.val_crop_generator = crop_generator(config, dset, mode="validation")
             else:
                 self.val_crop_generator = val_crop_generator(config, dset)
@@ -68,7 +68,7 @@ class DeepProfilerModel(abc.ABC):
 
         # Get training parameters
         epochs, schedule_epochs, schedule_lr, freq = setup_params(self, experiment)
-        if self.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator']:
+        if self.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator', 'full_image_crop_generator']:
             steps = self.train_crop_generator.expected_steps
         else:
             steps = self.dset.steps_per_epoch
@@ -90,7 +90,7 @@ class DeepProfilerModel(abc.ABC):
             validation_data=(x_validation, y_validation),
             validation_freq=freq
         )
-            
+
         # Stop threads and close sessions
         close(self, main_session)
 
@@ -147,7 +147,7 @@ def start_main_session():
 def load_validation_data(dpmodel, session):
     dpmodel.val_crop_generator.start(session)
 
-    if dpmodel.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator']:
+    if dpmodel.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator', 'full_image_crop_generator']:
         x_validation = []
         y_validation = []
 
@@ -155,7 +155,16 @@ def load_validation_data(dpmodel, session):
             x_validation.append(batch[0])
             y_validation.append(batch[1])
 
-        x_validation = np.concatenate(x_validation)
+        if dpmodel.config['train']['model']['crop_generator'] == "full_image_crop_generator":
+            images = np.concatenate([x_validation[i][0] for i in range(len(x_validation))])
+            boxes = np.concatenate([x_validation[i][1] for i in range(len(x_validation))])
+            box_ind = np.concatenate([x_validation[i][2] for i in range(len(x_validation))])
+            x_validation = [images, boxes, box_ind]
+            x_shape = images.shape
+        else:
+            x_validation = np.concatenate(x_validation)
+            x_shape = x_validation.shape
+
         y_validation = np.concatenate(y_validation)
 
     else:
@@ -166,7 +175,7 @@ def load_validation_data(dpmodel, session):
             session
         )
 
-    print("Validation data:", x_validation.shape, y_validation.shape)
+    print("Validation data:", x_shape, y_validation.shape)
 
     return x_validation, y_validation
 
@@ -176,9 +185,11 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
     output_file = dpmodel.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
     period = 1
     save_best = False
-    if "checkpoint_policy" in dpmodel.config["train"]["model"] and isinstance(dpmodel.config["train"]["model"]["checkpoint_policy"], int):
+    if "checkpoint_policy" in dpmodel.config["train"]["model"] and isinstance(
+            dpmodel.config["train"]["model"]["checkpoint_policy"], int):
         period = int(dpmodel.config["train"]["model"]["checkpoint_policy"])
-    elif "checkpoint_policy" in dpmodel.config["train"]["model"] and dpmodel.config["train"]["model"]["checkpoint_policy"] == 'best':
+    elif "checkpoint_policy" in dpmodel.config["train"]["model"] and dpmodel.config["train"]["model"][
+        "checkpoint_policy"] == 'best':
         save_best = True
 
     callback_model_checkpoint = tf.compat.v1.keras.callbacks.ModelCheckpoint(
@@ -209,7 +220,8 @@ def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experimen
     # Online labels callback
     if dpmodel.config["train"]["model"]["crop_generator"] == "online_labels_cropgen":
         update_labels = tf.compat.v1.keras.callbacks.LambdaCallback(
-                on_epoch_end=lambda epoch, logs: dpmodel.train_crop_generator.update_online_labels(dpmodel.feature_model, epoch)
+            on_epoch_end=lambda epoch, logs: dpmodel.train_crop_generator.update_online_labels(dpmodel.feature_model,
+                                                                                               epoch)
         )
         callbacks.append(update_labels)
 
@@ -228,7 +240,7 @@ def setup_params(dpmodel, experiment):
             lr_schedule_epochs = [x for x in range(epochs)]
             init_lr = dpmodel.config["train"]["model"]["params"]["learning_rate"]
             # Linear warm up
-            lr_schedule_lr = [init_lr/(5-t) for t in range(5)]
+            lr_schedule_lr = [init_lr / (5 - t) for t in range(5)]
             # Cosine decay
             lr_schedule_lr += [0.5 * (1 + np.cos((np.pi * t) / epochs)) * init_lr for t in range(5, epochs)]
         else:
@@ -255,4 +267,3 @@ def close(dpmodel, crop_session):
     crop_session.close()
     print("All set.")
     gc.collect()
-

@@ -3,13 +3,13 @@ import setuptools
 
 setuptools.setup(
     name="deepprofiler",
-    version="0.1.0",
-    author="Juan Caicedo",
-    author_email="jcaicedo@gmail.com",
+    version="0.3.1",
+    author="Juan C. Caicedo",
+    author_email="jcaicedo@broad.mit.edu",
     description=("Tools for representation learning in high throughput image collections"),
     license="BSD",
     keywords="",
-    url="https://github.com/jccaicedo/DeepProfiler",
+    url="https://github.com/cytomining/DeepProfiler",
     packages=["deepprofiler"],
     classifiers=[
         "Development Status :: 4 - Beta",

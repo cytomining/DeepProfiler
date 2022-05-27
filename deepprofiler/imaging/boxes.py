@@ -51,13 +51,14 @@ def get_single_cell_locations(image_key, config, random_sample=None, seed=None):
 def get_full_image_locations(image_key, config, random_sample, seed):
     cols = config["dataset"]["images"]["width"]
     rows = config["dataset"]["images"]["height"]
-    coverage = config["dataset"]["locations"]["area_coverage"]
-    cols_margin = cols - int(cols * coverage)
-    rows_margin = rows - int(rows * coverage)
+    view = config["dataset"]["locations"]["view_size"]
+    assert (view <= cols) and (view <= rows)
+    cols_margin = cols - view
+    rows_margin = rows - view
  
     data = None
-    if coverage == 1.0:
-        # If the area coverage is all the image use the center of the image
+    if view == cols:
+        # If the view is all the image use the center of the image
         data = [[cols/2, rows/2]]
     else:
         # Otherwise, generate multiple regions
@@ -67,10 +68,14 @@ def get_full_image_locations(image_key, config, random_sample, seed):
             rows_pos = np.random.randint(low=-rows_margin/2, high=rows_margin/2, size=random_sample) + rows/2
             data = [[cols_pos[i], rows_pos[i]] for i in range(random_sample)]
         elif random_sample is None:
-            # Generate five regions that cover the corners and center of the image for validation and profiling
-            cols_pos = [cols/2 - cols_margin/2, cols/2 - cols_margin/2, cols/2 + cols_margin/2, cols/2 + cols_margin/2, cols/2]
-            rows_pos = [rows/2 - rows_margin/2, rows/2 + rows_margin/2, rows/2 - rows_margin/2, rows/2 + rows_margin/2, rows/2]
-            data = [[cols_pos[i], rows_pos[i]] for i in range(5)]
+            # Generate a regular grid
+            cols_pos = np.linspace(view/2, cols-view/2, int(np.ceil(cols/view)))
+            rows_pos = np.linspace(view/2, rows-view/2, int(np.ceil(rows/view)))
+            grid = np.meshgrid(rows_pos, cols_pos)
+            rows_pos = grid[0].flatten()
+            cols_pos = grid[1].flatten()
+            data = [[rows_pos[i], cols_pos[i]] for i in range(len(cols_pos))]
+
 
     return pd.DataFrame(data=data, columns=[X_KEY, Y_KEY])
 
@@ -86,10 +91,8 @@ def prepare_boxes(batch, config):
         return get_cropping_regions(batch, config, config["dataset"]["locations"]["box_size"])
 
     elif config["dataset"]["locations"]["mode"] == "full_image":
-        # Use the minimum side of the image to define bounding boxes
-        side = min(config["dataset"]["images"]["width"], config["dataset"]["images"]["height"])
-        coverage = config["dataset"]["locations"]["area_coverage"]
-        return get_cropping_regions(batch, config, int(side * coverage))
+        view = config["dataset"]["locations"]["view_size"]
+        return get_cropping_regions(batch, config, view)
 
     else:
         return None

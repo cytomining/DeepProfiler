@@ -87,6 +87,7 @@ class ImageDataset():
         self.sample_images = int(np.median(self.training_images.groupby("Target").count()["ID"]))
         # Number of classes
         targets = len(self.training_images["Target"].unique())
+        self.config["num_classes"] = targets
         # Median number of single cells per image (column ID has counts as a result of groupby above)
         self.sample_locations = int(np.median(self.training_images["ID"]))
         # Set the target of single cells per epoch asuming a balanced set
