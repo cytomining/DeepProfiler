@@ -39,7 +39,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
         # Index targets for one-hot encoded labels
         self.split_data = self.all_cells[self.all_cells[self.config["train"]["partition"]["split_field"]].isin(
-                                         self.config["train"]["partition"][self.mode])].reset_index(drop=True)
+            self.config["train"]["partition"][self.mode])].reset_index(drop=True)
 
         self.classes = list(self.all_cells[self.target].unique())
         self.num_classes = len(self.classes)
@@ -49,12 +49,11 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         # Identify targets and samples
         self.balanced_sample()
         self.expected_steps = (self.samples.shape[0] // self.batch_size) + \
-                                   int(self.samples.shape[0] % self.batch_size > 0)
+                              int(self.samples.shape[0] % self.batch_size > 0)
 
         # Report number of classes globally
         self.config["num_classes"] = self.num_classes
         print(" >> Number of classes:", self.num_classes)
-
 
     def start(self, session):
         pass
@@ -76,13 +75,13 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         # Randomize order
         samples = samples.sample(frac=1.0).reset_index(drop=True)
 
-        if False: # TODO: Remove mock conditional to activate batching by plates permanently
+        if False:  # TODO: Remove mock conditional to activate batching by plates permanently
             # Group batches by Plate
             samples["Plate"] = samples["Key"].str.split("/", expand=True)[0]
             samples["BatchID"] = 0
-            for k,r in samples.groupby("Plate").count().iterrows():
+            for k, r in samples.groupby("Plate").count().iterrows():
                 samples.loc[samples.Plate == k, "BatchID"] = range(r.Key)
-    
+
             samples["BatchID"] = samples["BatchID"] // self.batch_size
             self.samples = samples.sort_values(by=["BatchID", "Plate"]).reset_index(drop=True)
         else:
@@ -94,45 +93,69 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         else:
             print(" >> Validation samples per class:", np.mean(self.samples[self.target].value_counts()))
 
-
     def generator(self, sess, global_step=0):
         pointer = 0
+        image_loader = deepprofiler.dataset.utils.Parallel(
+            self.config["train"]["sampling"]["workers"]
+        )
         while True:
-            x = np.zeros([self.batch_size, self.box_size, self.box_size, self.num_channels])
             y = []
+            batch_paths = []
             for i in range(self.batch_size):
                 if pointer >= len(self.samples):
                     self.balanced_sample()
                     pointer = 0
-                filename = os.path.join(self.directory, self.samples.loc[pointer, "Image_Name"])
-                im = skimage.io.imread(filename).astype(np.float32)
-                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im, last_channel=self.last_channel)
+
+                batch_paths.append(os.path.join(self.directory, self.samples.iloc[pointer].Image_Name))
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
                 pointer += 1
-            yield(x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
 
+            x = np.zeros([self.batch_size, self.box_size, self.box_size, self.num_channels])
+            images = image_loader.compute(load_and_crop, batch_paths)
+            for i in range(len(batch_paths)):
+                x[i, :, :, :] = images[i]
+
+            yield (x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
+
+        image_loader.close()
 
     def generate(self):
         pointer = 0
+        image_loader = deepprofiler.dataset.utils.Parallel(
+            self.config["train"]["sampling"]["workers"]
+        )
         for k in range(self.expected_steps):
-            x = np.zeros([self.batch_size, self.box_size, self.box_size, self.num_channels])
             y = []
+            batch_paths = []
             for i in range(self.batch_size):
                 if pointer >= len(self.samples):
                     break
-                filename = os.path.join(self.directory, self.samples.loc[pointer, "Image_Name"])
-                im = skimage.io.imread(filename).astype(np.float32)
-                x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im, last_channel=self.last_channel)
+
+                batch_paths.append(os.path.join(self.directory, self.samples.iloc[pointer].Image_Name))
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
                 pointer += 1
+
+            x = np.zeros([self.batch_size, self.box_size, self.box_size, self.num_channels])
+            images = image_loader.compute(load_and_crop, batch_paths)
+            for i in range(len(batch_paths)):
+                x[i, :, :, :] = images[i]
+
             if len(y) < x.shape[0]:
                 x = x[0:len(y), ...]
-            yield(x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
-
+            yield (x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
+        image_loader.close()
 
     def stop(self, session):
         pass
 
-## Reusing the Single Image Crop Generator. No changes needed
+
+def load_and_crop(params):
+    paths, others = params
+    im = skimage.io.imread(paths).astype(np.float32)
+    im = deepprofiler.imaging.cropping.fold_channels(im, last_channel=5)
+    return im
+
+# Reusing the Single Image Crop Generator. No changes needed
+
 
 SingleImageGeneratorClass = deepprofiler.imaging.cropping.SingleImageCropGenerator
