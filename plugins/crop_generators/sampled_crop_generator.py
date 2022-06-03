@@ -96,7 +96,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
     def generator(self, sess, global_step=0):
         pointer = 0
         image_loader = deepprofiler.dataset.utils.Parallel(
-            self.config["train"]["sampling"]["workers"]
+            (self.config["train"]["sampling"]["workers"], self.last_channel)
         )
         while True:
             y = []
@@ -122,7 +122,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
     def generate(self):
         pointer = 0
         image_loader = deepprofiler.dataset.utils.Parallel(
-            self.config["train"]["sampling"]["workers"]
+            (self.config["train"]["sampling"]["workers"], self.last_channel)
         )
         for k in range(self.expected_steps):
             y = []
@@ -152,7 +152,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 def load_and_crop(params):
     paths, others = params
     im = skimage.io.imread(paths).astype(np.float32)
-    im = deepprofiler.imaging.cropping.fold_channels(im, last_channel=5)
+    im = deepprofiler.imaging.cropping.fold_channels(im, last_channel=others[1])
     return im
 
 # Reusing the Single Image Crop Generator. No changes needed
