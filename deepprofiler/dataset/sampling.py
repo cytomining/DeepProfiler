@@ -20,7 +20,10 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
         # Define input data batches
         with tf.compat.v1.variable_scope("train_inputs"):
             self.config["train"]["model"]["params"]["batch_size"] = self.config["train"]["validation"]["batch_size"]
-            self.build_input_graph(export_masks=True)
+            if self.config["prepare"].get("outlines") is not None:
+                self.build_input_graph(export_masks=True)
+            else:
+                self.build_input_graph(export_masks=False)
 
     def process_batch(self, batch):
         for i in range(len(batch["keys"])):
