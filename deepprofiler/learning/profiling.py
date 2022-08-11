@@ -87,14 +87,15 @@ class Profile(object):
         # Extract features
         crops = next(self.profile_crop_generator.generate(tf.compat.v1.keras.backend.get_session()))[0]  # single image crop generator yields one batch
         feats = self.feat_extractor.predict(crops, batch_size=batch_size)
+        
+        while len(feats.shape) > 2:  # 2D mean spatial pooling
+            feats = np.mean(feats, axis=1)
+        
         if repeats:
             feats = np.reshape(feats, (self.num_channels, total_crops, -1))
             feats = np.concatenate(feats, axis=-1)
             
         # Save features
-        while len(feats.shape) > 2:  # 2D mean spatial pooling
-            feats = np.mean(feats, axis=1)
-
         key_values = {k:meta[k] for k in meta.keys()}
         key_values["Metadata_Model"] = self.config["train"]["model"]["name"]
         np.savez_compressed(output_file, features=feats, metadata=key_values, locations=crop_locations)
