@@ -119,17 +119,17 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
         image_loader.close()
 
-    def generate(self):
+    def generate(self, sess):
         pointer = 0
         image_loader = deepprofiler.dataset.utils.Parallel(
             (self.config["train"]["sampling"]["workers"], self.last_channel)
         )
-        for k in range(self.expected_steps):
+        while True:
             y = []
             batch_paths = []
             for i in range(self.batch_size):
                 if pointer >= len(self.samples):
-                    break
+                    pointer = 0
 
                 batch_paths.append(os.path.join(self.directory, self.samples.iloc[pointer].Image_Name))
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
@@ -155,7 +155,6 @@ def load_and_crop(params):
     im = deepprofiler.imaging.cropping.fold_channels(im, last_channel=others[1])
     return im
 
+
 # Reusing the Single Image Crop Generator. No changes needed
-
-
 SingleImageGeneratorClass = deepprofiler.imaging.cropping.SingleImageCropGenerator

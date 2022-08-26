@@ -44,7 +44,7 @@ class DeepProfilerModel(abc.ABC):
         np.random.seed(seed)
         tf.compat.v1.set_random_seed(seed)
 
-    def train(self, epoch=1, metrics=["accuracy"], verbose=1):
+    def train(self, epoch=1, metrics=["accuracy"]):
         # Raise ValueError if feature model isn't properly defined
         check_feature_model(self)
 
@@ -60,16 +60,16 @@ class DeepProfilerModel(abc.ABC):
         # Create main session
         main_session = start_main_session()
 
-        # Start val crop generator
-        x_validation, y_validation = load_validation_data(self, main_session)
-
-        # Start train crop generator
+        # Start crop generators
         self.train_crop_generator.start(main_session)
+        self.val_crop_generator.start(main_session)
 
         # Get training parameters
         epochs, schedule_epochs, schedule_lr, freq = setup_params(self, experiment)
-        if self.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator', 'full_image_crop_generator']:
+        if self.config['train']['model']['crop_generator'] in \
+                ['online_labels_cropgen', 'sampled_crop_generator', 'full_image_crop_generator']:
             steps = self.train_crop_generator.expected_steps
+            val_steps = self.val_crop_generator.expected_steps
         else:
             steps = self.dset.steps_per_epoch
 
@@ -85,9 +85,10 @@ class DeepProfilerModel(abc.ABC):
             steps_per_epoch=steps,
             epochs=epochs,
             callbacks=callbacks,
-            verbose=verbose,
+            verbose=1,
             initial_epoch=epoch - 1,
-            validation_data=(x_validation, y_validation),
+            validation_data=self.val_crop_generator.generate(main_session),
+            validation_steps=val_steps,
             validation_freq=freq
         )
 
@@ -95,7 +96,7 @@ class DeepProfilerModel(abc.ABC):
         close(self, main_session)
 
         # Return the feature model and validation data
-        return self.feature_model, x_validation, y_validation
+        return self.feature_model#, x_validation, y_validation
 
     def copy_pretrained_weights(self):
         # Override this method if the model can load pretrained weights
@@ -142,42 +143,6 @@ def start_main_session():
     main_session = tf.compat.v1.Session(config=configuration)
     tf.compat.v1.keras.backend.set_session(main_session)
     return main_session
-
-
-def load_validation_data(dpmodel, session):
-    dpmodel.val_crop_generator.start(session)
-
-    if dpmodel.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator', 'full_image_crop_generator']:
-        x_validation = []
-        y_validation = []
-
-        for batch in dpmodel.val_crop_generator.generate():
-            x_validation.append(batch[0])
-            y_validation.append(batch[1])
-
-        if dpmodel.config['train']['model']['crop_generator'] == "full_image_crop_generator":
-            images = np.concatenate([x_validation[i][0] for i in range(len(x_validation))])
-            boxes = np.concatenate([x_validation[i][1] for i in range(len(x_validation))])
-            box_ind = np.concatenate([x_validation[i][2] for i in range(len(x_validation))])
-            x_validation = [images, boxes, box_ind]
-            x_shape = images.shape
-        else:
-            x_validation = np.concatenate(x_validation)
-            x_shape = x_validation.shape
-
-        y_validation = np.concatenate(y_validation)
-
-    else:
-        x_validation, y_validation = deepprofiler.learning.validation.load_validation_data(
-            dpmodel.config,
-            dpmodel.dset,
-            dpmodel.val_crop_generator,
-            session
-        )
-
-    print("Validation data:", x_shape, y_validation.shape)
-
-    return x_validation, y_validation
 
 
 def setup_callbacks(dpmodel, lr_schedule_epochs, lr_schedule_lr, dset, experiment):

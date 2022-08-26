@@ -76,10 +76,8 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         else:
             print(" >> Validation samples per class:", np.mean(self.samples[self.target].value_counts()))
 
-
     def get_image_paths(self, r):
         return [os.path.join(self.directory, r[ch]) for ch in self.config["dataset"]["images"]["channels"]]
-
 
     def generator(self, sess, global_step=0):
         pointer = 0
@@ -96,7 +94,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                     self.balanced_sample()
                     pointer = 0
 
-                batch_paths.append( self.get_image_paths(self.samples.iloc[pointer]) )
+                batch_paths.append(self.get_image_paths(self.samples.iloc[pointer]))
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
                 pointer += 1
 
@@ -107,18 +105,17 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                 x[i, :, :, :] = images[i]
 
             inputs = [x, np.asarray([[0,0,1,1]]*len(y)), np.arange(0, len(y))]
-            yield (inputs, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
+            yield inputs, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
 
         image_loader.close()
 
-    def generate(self):
+    def generate(self, sess):
         pointer = 0
-        from tqdm import tqdm
         image_loader = deepprofiler.dataset.utils.Parallel(
                 [self.config["dataset"]["locations"]["view_size"], False], 
                 self.config["train"]["sampling"]["workers"]
         )
-        for k in tqdm(range(self.expected_steps), desc="Loading validation data"):
+        while True:
             # Prepare metadata
             y = []
             batch_paths = []
@@ -126,7 +123,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                 if pointer >= len(self.samples):
                     break
 
-                batch_paths.append( self.get_image_paths(self.samples.iloc[pointer]) )
+                batch_paths.append(self.get_image_paths(self.samples.iloc[pointer]))
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
                 pointer += 1
 
@@ -139,13 +136,14 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
             if len(y) < x.shape[0]:
                 x = x[0:len(y), ...]
 
-            inputs = [x, np.asarray([[0,0,1,1]]*len(y)), np.arange(0, len(y))]
-            yield (inputs, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
+            inputs = [x, np.asarray([[0, 0, 1, 1]]*len(y)), np.arange(0, len(y))]
+            yield inputs, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
 
         image_loader.close()
 
     def stop(self, session):
         pass
+
 
 def load_and_crop(params):
     paths, others = params
@@ -160,6 +158,5 @@ def load_and_crop(params):
     return im[q:q+view_size, q:q+view_size, :]
 
 
-## Reusing the Single Image Crop Generator. No changes needed
-
+# Reusing the Single Image Crop Generator. No changes needed
 SingleImageGeneratorClass = deepprofiler.imaging.cropping.SingleImageCropGenerator

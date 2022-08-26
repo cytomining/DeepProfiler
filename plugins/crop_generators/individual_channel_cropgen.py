@@ -37,7 +37,8 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         # Load metadata
         self.all_cells = pd.read_csv(os.path.join(self.directory, "expanded_sc_metadata_tengenes.csv"))
         # ALPHA SET HACK:
-        self.all_cells.loc[(self.all_cells.Training_Status == "Unused") & self.all_cells.Metadata_Plate.isin([41756,41757]), "Training_Status_Alpha"] = "Validation"
+        self.all_cells.loc[(self.all_cells.Training_Status == "Unused") &
+                           self.all_cells.Metadata_Plate.isin([41756, 41757]), "Training_Status_Alpha"] = "Validation"
         self.target = config["train"]["partition"]["targets"][0]
 
         # Keep track of the real number of channels for internal object use
@@ -64,12 +65,15 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
         # Identify targets and samples
         self.balanced_sample()
-        self.expected_steps = (self.samples.shape[0] // self.batch_size) + int(self.samples.shape[0] % self.batch_size > 0)
+        self.expected_steps = (self.samples.shape[0] // self.batch_size) + \
+                              int(self.samples.shape[0] % self.batch_size > 0)
 
         # Report number of classes and channels globally
         self.config["num_classes"] = self.num_classes
-        self.config["dataset"]["images"]["channels"] = ["Individual"] # Alter the number of channels for the rest of the program!
-        print(" >> Number of classes:", self.num_classes, ". Number of channels:", len(self.config["dataset"]["images"]["channels"]))
+        # Alter the number of channels for the rest of the program!
+        self.config["dataset"]["images"]["channels"] = ["Individual"]
+        print(" >> Number of classes:", self.num_classes,
+              ". Number of channels:", len(self.config["dataset"]["images"]["channels"]))
 
 
     def start(self, session):
@@ -95,14 +99,12 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
             self.samples = self.samples.sample(frac=0.005).reset_index()
             print(self.samples[self.target].value_counts())
 
-
     def load_sample_image(self, pointer):
         filename = os.path.join(self.directory, self.samples.loc[pointer, "Image_Name"])
         im = skimage.io.imread(filename).astype(np.float32)
         channel = self.samples.loc[pointer, "Channel"]
         folded = deepprofiler.imaging.cropping.fold_channels(im, last_channel=self.last_channel)
-        return folded[:,:,channel]
-
+        return folded[:, :, channel]
 
     def generator(self, sess, global_step=0):
         pointer = 0
@@ -113,33 +115,32 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                 if pointer >= len(self.samples):
                     self.balanced_sample()
                     pointer = 0
-                x[i,:,:,0] = self.load_sample_image(pointer) 
+                x[i, :, :, 0] = self.load_sample_image(pointer)
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
                 pointer += 1
-            yield(x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
-
+            yield x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
 
     def generate(self):
         pointer = 0
-        for k in range(self.expected_steps):
+        while True:
             x = np.zeros([self.batch_size, self.box_size, self.box_size, 1])
             y = []
             for i in range(self.batch_size):
                 if pointer >= len(self.samples):
+                    pointer = 0
                     break
-                x[i,:,:,0] = self.load_sample_image(pointer) 
+                x[i, :, :, 0] = self.load_sample_image(pointer)
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
                 pointer += 1
             if len(y) < x.shape[0]:
                 x = x[0:len(y),...]
-            yield(x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
-
+            yield x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
 
     def stop(self, session):
         pass
 
-## Class for generating crops from single images with separated channels
 
+# Class for generating crops from single images with separated channels
 def separate_channels(crops, network_input_size):
     #resized_crops = tf.compat.v1.image.resize_images(crops, size=(network_input_size, network_input_size))
     reordered_channels = tf.transpose(crops, [3, 0, 1, 2])
@@ -168,10 +169,7 @@ class SingleImageGeneratorClass(deepprofiler.imaging.cropping.SingleImageCropGen
         self.resized = separate_channels(self.crop_ph, width)
 
     def generate(self, session, global_step=0):
-        crops = session.run(self.resized, feed_dict={self.crop_ph:self.image_pool})
-        labels = np.tile(self.label_pool, [3,1])
-
+        crops = session.run(self.resized, feed_dict={self.crop_ph: self.image_pool})
+        labels = np.tile(self.label_pool, [3, 1])
         global_step += 1
-
         yield crops, labels
-

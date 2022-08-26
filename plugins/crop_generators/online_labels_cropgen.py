@@ -95,23 +95,45 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                 pointer += 1
             yield x, np.concatenate(y, axis=0)
 
-    def generate(self, source="samples"):
+    def generate(self, sess, global_step=0):
         pointer = 0
-        if source == "splits":
-            dataframe = self.split_data
-            steps = (len(self.split_data) // self.batch_size) + int(len(self.split_data) % self.batch_size > 0)
-            msg = "Predicting soft labels"
-        else:
-            dataframe = self.samples
-            steps = self.expected_steps
-            msg = "Loading validation data"
+        image_loader = deepprofiler.dataset.utils.Parallel(
+            (self.config["train"]["sampling"]["workers"], self.last_channel)
+        )
+        while True:
+            y = []
+            batch_paths = []
+            for i in range(self.batch_size):
+                if pointer >= len(self.samples):
+                    pointer = 0
 
+                batch_paths.append(os.path.join(self.directory, self.samples.iloc[pointer].Image_Name))
+                y.append(self.classes[self.samples.loc[pointer, self.target]])
+                pointer += 1
+
+            x = np.zeros([self.batch_size, self.box_size, self.box_size, self.num_channels])
+            images = image_loader.compute(load_and_crop, batch_paths)
+            for i in range(len(batch_paths)):
+                x[i, :, :, :] = images[i]
+
+            if len(y) < x.shape[0]:
+                x = x[0:len(y), ...]
+            yield x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
+        image_loader.close()
+
+    def generate_to_predict(self):
+        pointer = 0
+        dataframe = self.split_data
+        steps = (len(self.split_data) // self.batch_size) + int(len(self.split_data) % self.batch_size > 0)
+        msg = "Predicting soft labels"
         for k in tqdm.tqdm(range(steps), desc=msg):
             x = np.zeros([self.batch_size, self.box_size, self.box_size, self.num_channels])
             y = []
             for i in range(self.batch_size):
                 if pointer >= len(dataframe):
+                    pointer = 0
                     break
+
                 filename = os.path.join(self.directory, dataframe.loc[pointer, "Image_Name"])
                 im = skimage.io.imread(filename).astype(np.float32)
                 x[i, :, :, :] = deepprofiler.imaging.cropping.fold_channels(im, last_channel=self.last_channel)
@@ -138,7 +160,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         predictions = []
 
         # Get predictions with the model
-        for batch in self.generate(source="splits"):
+        for batch in self.generate_to_predict():
             predictions.append(model.predict(batch[0]))
 
         # Update soft labels
@@ -153,6 +175,13 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
     def stop(self, session):
         pass
 
-## Reusing the Single Image Crop Generator. No changes needed
 
+def load_and_crop(params):
+    paths, others = params
+    im = skimage.io.imread(paths).astype(np.float32)
+    im = deepprofiler.imaging.cropping.fold_channels(im, last_channel=others[1])
+    return im
+
+
+# Reusing the Single Image Crop Generator. No changes needed
 SingleImageGeneratorClass = deepprofiler.imaging.cropping.SingleImageCropGenerator

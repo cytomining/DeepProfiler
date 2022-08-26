@@ -33,7 +33,6 @@ def learn_model(config, dset, epoch=1, seed=None, verbose=1):
     else:
         metrics = ["accuracy"]
 
-
     importlib.invalidate_caches()
 
     crop_generator = crop_module.GeneratorClass
@@ -42,13 +41,9 @@ def learn_model(config, dset, epoch=1, seed=None, verbose=1):
 
     if seed is not None:
         model.seed(seed)
-    if verbose == 0:
-        trained_model, x_validation, y_validation = model.train(epoch, metrics, verbose=verbose)
-        evaluation = trained_model.evaluate(x_validation, y_validation, batch_size=config["train"]["validation"]["batch_size"], verbose=verbose)
-        return evaluation
-    else:
-        model.train(epoch, metrics, verbose=verbose)
-        return None
+
+    model.train(epoch, metrics)
+    return None
 
 
 def learn_model_v2(config, epoch=1):
