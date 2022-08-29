@@ -115,7 +115,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
             for i in range(len(batch_paths)):
                 x[i, :, :, :] = images[i]
 
-            yield (x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
+            yield x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
 
         image_loader.close()
 
@@ -130,6 +130,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
             for i in range(self.batch_size):
                 if pointer >= len(self.samples):
                     pointer = 0
+                    break
 
                 batch_paths.append(os.path.join(self.directory, self.samples.iloc[pointer].Image_Name))
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
@@ -142,7 +143,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
             if len(y) < x.shape[0]:
                 x = x[0:len(y), ...]
-            yield (x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
+            yield x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
         image_loader.close()
 
     def stop(self, session):

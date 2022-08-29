@@ -121,6 +121,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
             batch_paths = []
             for i in range(self.batch_size):
                 if pointer >= len(self.samples):
+                    pointer = 0
                     break
 
                 batch_paths.append(self.get_image_paths(self.samples.iloc[pointer]))

@@ -75,7 +75,6 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         print(" >> Number of classes:", self.num_classes,
               ". Number of channels:", len(self.config["dataset"]["images"]["channels"]))
 
-
     def start(self, session):
         pass
 
@@ -88,12 +87,13 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         # Sample the same number of cells per class
         class_samples = []
         for cls in self.split_data.Class_Name.unique():
-            class_samples.append(self.split_data[self.split_data.Class_Name == cls].sample(n=sample_size, replace=counts[cls] < sample_size))
+            class_samples.append(self.split_data[self.split_data.Class_Name == cls].sample(
+                n=sample_size, replace=counts[cls] < sample_size))
         self.samples = pd.concat(class_samples)
 
         # Randomize order
         if self.mode == "Training":
-            print(" >> Shuffling training sample with",len(self.samples),"examples")
+            print(" >> Shuffling training sample with", len(self.samples), "examples")
             self.samples = self.samples.sample(frac=1.0).reset_index()
         else:
             self.samples = self.samples.sample(frac=0.005).reset_index()
@@ -129,11 +129,12 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                 if pointer >= len(self.samples):
                     pointer = 0
                     break
+
                 x[i, :, :, 0] = self.load_sample_image(pointer)
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
                 pointer += 1
             if len(y) < x.shape[0]:
-                x = x[0:len(y),...]
+                x = x[0:len(y), ...]
             yield x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
 
     def stop(self, session):
