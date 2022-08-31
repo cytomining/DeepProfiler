@@ -18,7 +18,6 @@ import deepprofiler.dataset.sampling
 import deepprofiler.learning.training
 import deepprofiler.learning.tf2train
 import deepprofiler.learning.profiling
-import deepprofiler.download.normalize_bbbc021_metadata
 
 
 # Main interaction point
@@ -123,15 +122,6 @@ def setup(context):
             print("Directory exists: ", path)
     context.obj["config"] = {}
     context.obj["config"]["paths"] = context.obj["dirs"]
-
-
-# Optional tool: Download and prepare the BBBC021 dataset
-@cli.command()
-@click.pass_context
-def download_bbbc021(context):
-    context.invoke(setup)
-    deepprofiler.download.normalize_bbbc021_metadata.normalize_bbbc021_metadata(context)
-    print("BBBC021 download and preparation complete!")
 
 
 # First tool: Compute illumination statistics and compress images
