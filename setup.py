@@ -22,6 +22,7 @@ setuptools.setup(
         "comet_ml>=1.0",
         "efficientnet==1.1.1",
         "gpyopt>=1.2",
+        "imagecodecs",
         "lxml>=4.2",
         "numpy>=1.13",
         "pandas>=0.23.0",
@@ -30,7 +31,7 @@ setuptools.setup(
         "scipy>=1.1",
         "comet-ml>=3.1.6",
         "tensorflow==2.5.*",
-        "tensorflow_addons",
+        "tensorflow_addons==0.13.0",
         "tqdm>=4.62",
     ],
     extras_require={
