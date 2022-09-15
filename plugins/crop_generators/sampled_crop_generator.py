@@ -115,20 +115,21 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
             for i in range(len(batch_paths)):
                 x[i, :, :, :] = images[i]
 
-            yield (x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
+            yield x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
 
         image_loader.close()
 
-    def generate(self):
+    def generate(self, sess):
         pointer = 0
         image_loader = deepprofiler.dataset.utils.Parallel(
             (self.config["train"]["sampling"]["workers"], self.last_channel)
         )
-        for k in range(self.expected_steps):
+        while True:
             y = []
             batch_paths = []
             for i in range(self.batch_size):
                 if pointer >= len(self.samples):
+                    pointer = 0
                     break
 
                 batch_paths.append(os.path.join(self.directory, self.samples.iloc[pointer].Image_Name))
@@ -142,7 +143,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
             if len(y) < x.shape[0]:
                 x = x[0:len(y), ...]
-            yield (x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes))
+            yield x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
         image_loader.close()
 
     def stop(self, session):
@@ -155,7 +156,6 @@ def load_and_crop(params):
     im = deepprofiler.imaging.cropping.fold_channels(im, last_channel=others[1])
     return im
 
+
 # Reusing the Single Image Crop Generator. No changes needed
-
-
 SingleImageGeneratorClass = deepprofiler.imaging.cropping.SingleImageCropGenerator
