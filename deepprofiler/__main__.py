@@ -65,6 +65,9 @@ def cli(context, root, config, exp, cores, gpu, single_cells, metadata, logging)
         "summaries": root + "/outputs/" + exp + "/summaries/",
         "features": root + "/outputs/" + exp + "/features/"
     }
+    if context.invoked_subcommand == 'setup':
+        context.obj["dirs"] = dirs
+        return 
 
     config = dirs["config"] + "/" + config
     context.obj["cores"] = cores
@@ -104,7 +107,7 @@ def cli(context, root, config, exp, cores, gpu, single_cells, metadata, logging)
                     context.obj["config"]["train"]["comet_ml"] = {}
                     context.obj["config"]["train"]["comet_ml"]["api_key"] = logging_params["api_key"]
                     context.obj["config"]["train"]["comet_ml"]["project_name"] = logging_params["project_name"]
-    elif context.invoked_subcommand != 'setup':
+    else:
         raise Exception("Config does not exists; make sure that the file exists in /inputs/config/")
 
     context.obj["dirs"] = dirs
