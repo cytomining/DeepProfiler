@@ -6,7 +6,6 @@ import os
 import copy
 import click
 
-
 import deepprofiler.dataset.compression
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.indexing
@@ -26,28 +25,29 @@ import deepprofiler.learning.profiling
               help="Root directory for DeepProfiler experiment",
               type=click.Path("r"))
 @click.option("--config", default=None,
-              help="Path to existing config file",
+              help="Path to existing config file (filename in project_root/inputs/config/)",
               type=click.STRING)
 @click.option("--cores", default=0,
-              help="Number of CPU cores for parallel processing (all=0)",
+              help="Number of CPU cores for parallel processing (all=0) for prepare command",
               type=click.INT)
 @click.option("--gpu", default="0",
-              help="GPU device id",
+              help="GPU device id (the id can be checked with nvidia-smi)",
               type=click.STRING)
 @click.option("--exp", default="results",
-              help="Name of experiment",
+              help="Name of experiment, this folder will be created in project_root/outputs/",
               type=click.STRING)
 @click.option("--single-cells", default="single-cells",
-              help="Name of single cell export folder",
+              help="Name of the folder with single-cell dataset (output for export-sc command, "
+                   "input for training with sampled crop generator or online labels crop generator)",
               type=click.STRING)
 @click.option("--metadata", default='index.csv',
-              help="Name of metadata file, default index.csv",
+              help="data filename, for exporting or profiling it is a filename for project_root/inputs/metadata/, "
+                   "for training with sampled crop generator or online labels crop generator "
+                   "the filename in project_root/outputs/<single-cell-dataset>/",
               type=click.STRING)
 @click.option("--logging", default=None,
-              help="Path to file with comet.ml API key",
+              help="Path to file with comet.ml API key (filename in project_root/inputs/config/)",
               type=click.STRING)
-
-
 @click.pass_context
 def cli(context, root, config, exp, cores, gpu, single_cells, metadata, logging):
     dirs = {
@@ -111,7 +111,7 @@ def cli(context, root, config, exp, cores, gpu, single_cells, metadata, logging)
 
 
 # Optional tool: Create the support file and folder structure in a root directory
-@cli.command()
+@cli.command(help='initialize folder structure of DeepProfiler project')
 @click.pass_context
 def setup(context):
     for path in context.obj["dirs"].values():
@@ -125,20 +125,21 @@ def setup(context):
 
 
 # First tool: Compute illumination statistics and compress images
-@cli.command()
+@cli.command(help='Run illumination correction and compression')
 @click.pass_context
 def prepare(context):
     metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["paths"]["index"])
     process = deepprofiler.dataset.utils.Parallel(context.obj["config"], numProcs=context.obj["cores"])
     process.compute(deepprofiler.dataset.illumination_statistics.calculate_statistics, metadata)
     print("Illumination complete!")
-    metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["paths"]["index"])  # reinitialize generator
+    metadata = deepprofiler.dataset.metadata.read_plates(
+        context.obj["config"]["paths"]["index"])  # reinitialize generator
     process.compute(deepprofiler.dataset.compression.compress_plate, metadata)
     print("Compression complete!")
 
 
 # Second tool: Export single cells for training
-@cli.command()
+@cli.command(help='export crops of single-cells for training')
 @click.pass_context
 def export_sc(context):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
@@ -149,7 +150,7 @@ def export_sc(context):
 
 
 # Third tool: Train a network
-@cli.command()
+@cli.command(help='train a model')
 @click.option("--epoch", default=1)
 @click.option("--seed", default=None)
 @click.pass_context
@@ -165,7 +166,7 @@ def train(context, epoch, seed):
 
 
 # Third tool (b): Train a network with TF dataset
-@cli.command()
+@cli.command(help='train a model with TensorFlow 2 dataset')
 @click.option("--epoch", default=1)
 @click.pass_context
 def traintf2(context, epoch):
@@ -173,11 +174,11 @@ def traintf2(context, epoch):
 
 
 # Fourth tool: Profile cells and extract features
-@cli.command()
+@cli.command(help='run feature extraction')
 @click.pass_context
 @click.option("--part",
               help="Part of index to process",
-              default=-1, 
+              default=-1,
               type=click.INT)
 def profile(context, part):
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
@@ -188,12 +189,12 @@ def profile(context, part):
         config["paths"]["index"] = context.obj["config"]["paths"]["index"].replace("index.csv", partfile)
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='profile')
     deepprofiler.learning.profiling.profile(context.obj["config"], dset)
-    
+
 
 # Auxiliary tool: Split index in multiple parts
-@cli.command()
+@cli.command(help='split metadata into multiple parts')
 @click.pass_context
-@click.option("--parts", 
+@click.option("--parts",
               help="Number of parts to split the index",
               type=click.INT)
 def split(context, parts):
