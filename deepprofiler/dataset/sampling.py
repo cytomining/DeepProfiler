@@ -63,8 +63,10 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
         batch["targets"].append([t.get_values(meta) for t in self.dset.targets])
         batch["split"].append(meta[self.config["train"]["partition"]["split_field"]])
         crops, metadata = self.process_batch(batch)
+        empty_crops_indices = []
         for j in range(crops.shape[0]):
             if np.isnan(crops[j, :, :, :]).any():
+                empty_crops_indices.append(j)
                 print('The image {} was empty, skipping'.format(metadata.loc[j, "Image_Name"]))
                 continue
             plate, well, site, name = metadata.loc[j, "Image_Name"].split('/')
@@ -72,6 +74,8 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
             image = deepprofiler.imaging.cropping.unfold_channels(crops[j, :, :, :])
             skimage.io.imsave(os.path.join(outdir, metadata.loc[j, "Image_Name"]), image)
 
+        metadata.drop(empty_crops_indices, inplace=True)
+        metadata.reset_index(inplace=True)
         self.all_metadata.append(metadata)
         print("{}: {} single cells".format(key, crops.shape[0]))
 
