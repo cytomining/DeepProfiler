@@ -145,6 +145,7 @@ def prepare(context):
 @cli.command(help='export crops of single-cells for training')
 @click.pass_context
 def export_sc(context):
+    os.environ["CUDA_VISIBLE_DEVICES"] = ""
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
