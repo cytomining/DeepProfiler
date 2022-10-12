@@ -17,11 +17,6 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
     def __init__(self, config, dset, mode="training"):
         super(GeneratorClass, self).__init__(config, dset)
-        if self.config['prepare']['compression']['implement']:
-            self.directory = self.config["paths"]["compressed_images"]
-        else:
-            self.directory = self.config["paths"]["images"]
-
         self.num_channels = len(self.config["dataset"]["images"]["channels"])
         self.box_size = self.config["dataset"]["locations"]["box_size"]
         self.view_size = self.config["dataset"]["locations"]["view_size"]
@@ -30,6 +25,12 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
         # Load metadata
         self.all_images = pd.read_csv(self.config["paths"]["index"])
+        if self.config['prepare']['compression']['implement']:
+            self.directory = self.config["paths"]["compressed_images"]
+            self.all_images.replace({'.tiff': '.png', '.tif': '.png'}, inplace=True, regex=True)
+        else:
+            self.directory = self.config["paths"]["images"]
+
         self.target = self.config["train"]["partition"]["targets"][0]
 
         # Index targets for one-hot encoded labels
@@ -104,7 +105,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
             for i in range(len(batch_paths)):
                 x[i, :, :, :] = images[i]
 
-            inputs = [x, np.asarray([[0,0,1,1]]*len(y)), np.arange(0, len(y))]
+            inputs = [x, np.asarray([[0, 0, 1, 1]]*len(y)), np.arange(0, len(y))]
             yield inputs, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
 
         image_loader.close()
