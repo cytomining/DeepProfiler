@@ -16,9 +16,9 @@ Checkout our [preprint](https://doi.org/10.1101/2022.08.12.503783) on bioRxiv.
 
 # Cell Painting CNN-1
 
-<div style="text-align:center">
+<p align="center">
 <img src="figures/cell_painting_cnn.png" width="650"/>
-</div>
+</p>
 
 [_**Cell Painting CNN weights are available on Zenodo.**_](https://doi.org/10.5281/zenodo.7114558)
 
@@ -28,9 +28,9 @@ trained to process the 5 channels of the Cell Painting assay and produce single-
 be aggregated to profile treatments in large-scale experiments. Features obtained with the Cell Painting CNN-1 are more 
 robust and improve performance.
 
-<div style="text-align:center">
+<p align="center">
 <img src="figures/cell_painting_cnn_perf.png" width="350"/>
-</div>
+</p>
 
 # Quick Guide
 
@@ -65,7 +65,7 @@ To profile experimental data, just an experiment folder, for example, `cell_pain
 then `checkpoint` folder inside the created experiment folder. Copy model file `Cell_Painting_CNN_v1.hdf5` into `checkpoint` folder.
 
 [Download an example configuration file](https://github.com/broadinstitute/DeepProfilerExperiments/blob/master/resources/config/cell_painting_cnn_profiling_example.json) 
-and put it in your `example_data/inputs/config/`.
+and put it in `example_data/inputs/config/`.
 
 Now you can start profiling the example data:
 ```
