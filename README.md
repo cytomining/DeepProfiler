@@ -34,6 +34,14 @@ robust and improve performance.
 
 # Quick Guide
 
+## System requirements
+
+DeepProfiler works best with Linux operating systems (Ubuntu 18+).
+- Python 3.6+ is required.
+- Tensorflow 2.5.3 (tested). 
+- For GPU-acceleration a CUDA-compatible (CUDA 11.2) graphic card is required. 
+  Also see [Tensorflow-CUDA-Python compatibility table](https://www.tensorflow.org/install/source#gpu). 
+
 ## Clone and install DeepProfiler
 
 First, clone or fork this repository with example data (example data is stored with `git-lfs`):
@@ -58,6 +66,8 @@ To do this, unpack `example_data.tar.gz` with the command:
 ```
 tar -xzf example_data.tar.gz
 ```
+Profiling of the example data with GPU-acceleration is expected to take ~1 minute. 
+Single-cell export and training are expected to take 5-10 minutes. 
 
 ## Profiling with the Cell Painting CNN-1
 
