@@ -30,7 +30,7 @@ setuptools.setup(
         "scikit-learn>=0.19.0",
         "scipy>=1.1",
         "comet-ml>=3.1.6",
-        "tensorflow==2.5.*",
+        "tensorflow==2.5",
         "tensorflow_addons==0.13.0",
         "tqdm>=4.62",
     ],
