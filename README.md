@@ -2,7 +2,8 @@
 -----------------
 [![Python 3.6+](https://img.shields.io/badge/python-3.6%2B-blue)](https://www.python.org/downloads/release/python-360/)
 [![Tensorflow 2.5+](https://img.shields.io/badge/tensorflow-2.5%2B-brightgreen)](https://www.tensorflow.org/install/pip)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7114558.svg)](https://doi.org/10.5281/zenodo.7114558)
+[![Cell Painting CNN-1 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7114558.svg)](https://doi.org/10.5281/zenodo.7114558)
+[![Example data DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7515132.svg)](https://doi.org/10.5281/zenodo.7515132)
 [![CometML](https://img.shields.io/badge/comet.ml-track-brightgreen.svg)](https://www.comet.ml)
 
 # Image-based profiling using deep learning 
@@ -48,6 +49,7 @@ First, clone or fork this repository with example data (example data is stored w
 ```
 git clone https://github.com/broadinstitute/DeepProfiler.git
 ```
+Alternativly, you can [download example data from Zenodo](https://doi.org/10.5281/zenodo.7515132). 
 
 If you don't need example data, you can clone without it:
 ```
