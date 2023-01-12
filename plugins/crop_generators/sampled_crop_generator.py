@@ -26,6 +26,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         self.box_size = self.config["dataset"]["locations"]["box_size"]
         self.batch_size = self.config["train"]["model"]["params"]["batch_size"]
         self.mode = mode
+        self.GRL = self.config["train"]["model"]["params"].get("GRL")
 
         # Object masking mode and number of channels
         if self.config["dataset"]["locations"]["mask_objects"]:
@@ -45,6 +46,15 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         self.num_classes = len(self.classes)
         self.classes.sort()
         self.classes = {self.classes[i]: i for i in range(self.num_classes)}
+
+        if self.GRL:
+            self.domain_target = self.config["train"]["partition"]["domain_targets"][0]
+            self.domain_classes = list(self.all_cells[self.domain_target].unique())
+            self.num_domain_classes = len(self.domain_classes)
+            self.domain_classes.sort()
+            self.domain_classes = {self.domain_classes[i]: i for i in range(self.num_domain_classes)}
+            self.config['num_domain_classes'] = self.num_domain_classes
+            print(" >> Using GRL, number of domain classes", self.num_domain_classes)
 
         # Identify targets and samples
         self.balanced_sample()
@@ -101,6 +111,8 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         while True:
             y = []
             batch_paths = []
+            if self.GRL:
+                dy = []
             for i in range(self.batch_size):
                 if pointer >= len(self.samples):
                     self.balanced_sample()
@@ -108,6 +120,8 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
                 batch_paths.append(os.path.join(self.directory, self.samples.iloc[pointer].Image_Name))
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
+                if self.GRL:
+                    dy.append(self.domain_classes[self.samples.loc[pointer, self.domain_target]])
                 pointer += 1
 
             x = np.zeros([self.batch_size, self.box_size, self.box_size, self.num_channels])
@@ -115,7 +129,12 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
             for i in range(len(batch_paths)):
                 x[i, :, :, :] = images[i]
 
-            yield x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
+            if self.GRL:
+                yield x, {'ClassProb': tf.keras.utils.to_categorical(y, num_classes=self.num_classes),
+                          'DomainProb': tf.keras.utils.to_categorical(dy, num_classes=self.num_domain_classes)}
+
+            else:
+                yield x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes),
 
         image_loader.close()
 
@@ -126,6 +145,8 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         )
         while True:
             y = []
+            if self.GRL:
+                dy = []
             batch_paths = []
             for i in range(self.batch_size):
                 if pointer >= len(self.samples):
@@ -134,6 +155,8 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
                 batch_paths.append(os.path.join(self.directory, self.samples.iloc[pointer].Image_Name))
                 y.append(self.classes[self.samples.loc[pointer, self.target]])
+                if self.GRL:
+                    dy.append(self.domain_classes[self.samples.loc[pointer, self.domain_target]])
                 pointer += 1
 
             x = np.zeros([self.batch_size, self.box_size, self.box_size, self.num_channels])
@@ -143,7 +166,12 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
             if len(y) < x.shape[0]:
                 x = x[0:len(y), ...]
-            yield x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
+
+            if self.GRL:
+                yield x, {'ClassProb': tf.keras.utils.to_categorical(y, num_classes=self.num_classes),
+                          'DomainProb': tf.keras.utils.to_categorical(dy, num_classes=self.num_domain_classes)}
+            else:
+                yield x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes),
         image_loader.close()
 
     def stop(self, session):

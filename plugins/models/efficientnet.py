@@ -7,6 +7,7 @@ from deepprofiler.imaging.augmentations import AugmentationLayer
 from deepprofiler.imaging.augmentations import AugmentationLayerV2
 from deepprofiler.learning.model import DeepProfilerModel
 from deepprofiler.learning.tf2train import DeepProfilerModelV2
+from deepprofiler.learning.gradient_reversal_layer import GradientReversal
 
 
 def model_factory(config, dset, crop_generator, val_crop_generator, is_training):
@@ -18,17 +19,19 @@ def model_factory(config, dset, crop_generator, val_crop_generator, is_training)
                                 val_crop_generator, is_training, augmentation_base)
     else:
         augmentation_base = AugmentationLayer()
+        gradient_reversal = GradientReversal()
         return createModelClass(DeepProfilerModel, config, dset, crop_generator,
-                                val_crop_generator, is_training, augmentation_base)
+                                val_crop_generator, is_training, augmentation_base, gradient_reversal)
 
 
-def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_training, augmentation_base):
+def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_training, augmentation_base,
+                     gradient_reversal):
     class ModelClass(base):
         def __init__(self, config, dset, crop_generator, val_crop_generator, is_training):
             super(ModelClass, self).__init__(config, dset, crop_generator, val_crop_generator, is_training)
             self.feature_model, self.optimizer, self.loss = self.define_model(config, dset)
 
-        ## Define supported models
+        # Define supported models
         def get_supported_models(self):
             return {
                 0: efn.EfficientNetB0,
@@ -79,11 +82,13 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
             error_msg = str(num_layers) + " conv_blocks not in " + SM
             assert num_layers in supported_models.keys(), error_msg
             # Set session
-
+            loss_funcs = []
             optimizer = tf.compat.v1.keras.optimizers.SGD(lr=config["train"]["model"]["params"]["learning_rate"],
                                                                 momentum=0.9, nesterov=True)
-            loss_func = tf.compat.v1.keras.losses.CategoricalCrossentropy(label_smoothing=
-                                                                self.config["train"]["model"]["params"]["label_smoothing"])
+            loss_funcs.append(tf.compat.v1.keras.losses.CategoricalCrossentropy(label_smoothing=
+                                                                self.config["train"]["model"]["params"]["label_smoothing"]))
+
+
 
             if not self.is_training and "use_pretrained_input_size" in config["profile"].keys():
                 input_tensor = tf.compat.v1.keras.layers.Input(
@@ -105,11 +110,21 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
                 # 2. Create an output embedding for each target
                 class_outputs = []
 
-                y = tf.compat.v1.keras.layers.Dense(self.config["num_classes"], activation="softmax", name="ClassProb")(features)
+                y = tf.compat.v1.keras.layers.Dense(self.config["num_classes"], activation="softmax",
+                                                    name="ClassProb")(features)
                 class_outputs.append(y)
+                if self.config["train"]["model"]["params"]["GRL"]:
+                    loss_funcs.append(tf.compat.v1.keras.losses.CategoricalCrossentropy())
 
-                # 4. Create and compile model
-                model = tf.compat.v1.keras.models.Model(inputs=model.input, outputs=class_outputs)
+                    gradient_reversal_layer = GradientReversal()(features)
+                    dense = tf.compat.v1.keras.layers.Dense(1024, activation='relu')(gradient_reversal_layer)
+                    dy = tf.compat.v1.keras.layers.Dense(self.config["num_domain_classes"], activation="softmax",
+                                                         name="DomainProb")(dense)
+                    class_outputs.append(dy)
+                    # 4. Create and compile model
+                    model = tf.compat.v1.keras.models.Model(inputs=model.input, outputs=[[y], [dy]])
+                else:
+                    model = tf.compat.v1.keras.models.Model(inputs=model.input, outputs=class_outputs)
 
                 ## Added weight decay following tricks reported in:
                 ## https://github.com/keras-team/keras/issues/2717
@@ -117,16 +132,25 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
                 for layer in model.layers:
                     if hasattr(layer, "kernel_regularizer"):
                         setattr(layer, "kernel_regularizer", regularizer)
-
-                if self.config["train"]["model"].get("augmentations") is True:
+                if self.config["train"]["model"].get("augmentations") is True and self.config["train"]["model"]["params"].get("GRL") is False:
                     model = tf.compat.v1.keras.models.model_from_json(
                         model.to_json(),
                         {'AugmentationLayer': augmentation_base}
                     )
+                elif self.config["train"]["model"].get("augmentations") is True and self.config["train"]["model"]["params"].get("GRL") is True:
+                    model = tf.compat.v1.keras.models.model_from_json(
+                        model.to_json(),
+                        {'AugmentationLayer': augmentation_base, 'GradientReversal': gradient_reversal},
+                    )
+                elif self.config["train"]["model"].get("augmentations") is False and self.config["train"]["model"]["params"].get("GRL") is True:
+                    model = tf.compat.v1.keras.models.model_from_json(
+                        model.to_json(),
+                        {'GradientReversal': gradient_reversal}
+                    )
                 else:
                     model = tf.compat.v1.keras.models.model_from_json(model.to_json())
 
-            return model, optimizer, loss_func
+            return model, optimizer, loss_funcs
 
         def copy_pretrained_weights(self):
             base_model = self.get_model(self.config, weights="imagenet")
