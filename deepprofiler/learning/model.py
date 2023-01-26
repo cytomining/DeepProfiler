@@ -31,7 +31,8 @@ class DeepProfilerModel(abc.ABC):
         self.dset = dset
         if is_training:
             self.train_crop_generator = crop_generator(config, dset)
-            if self.config['train']['model']['crop_generator'] in ['online_labels_cropgen', 'sampled_crop_generator', 'full_image_crop_generator']:
+            if self.config['train']['model']['crop_generator'] in \
+                    ['MIL_crop_generator', 'online_labels_crop_generator', 'sampled_crop_generator', 'full_image_crop_generator']:
                 self.val_crop_generator = crop_generator(config, dset, mode="validation")
             else:
                 self.val_crop_generator = val_crop_generator(config, dset)
@@ -52,6 +53,7 @@ class DeepProfilerModel(abc.ABC):
         self.feature_model.summary()
 
         # Compile model
+
         self.feature_model.compile(self.optimizer, self.loss, metrics)
 
         # Create comet ml experiment
@@ -67,7 +69,7 @@ class DeepProfilerModel(abc.ABC):
         # Get training parameters
         epochs, schedule_epochs, schedule_lr, freq = setup_params(self, experiment)
         if self.config['train']['model']['crop_generator'] in \
-                ['online_labels_cropgen', 'sampled_crop_generator', 'full_image_crop_generator']:
+                ['MIL_crop_generator', 'online_labels_cropgen', 'sampled_crop_generator', 'full_image_crop_generator']:
             steps = self.train_crop_generator.expected_steps
             val_steps = self.val_crop_generator.expected_steps
         else:
