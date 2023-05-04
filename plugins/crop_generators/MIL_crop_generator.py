@@ -72,7 +72,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         counts = self.split_data[self.split_data[self.target] != self.config["dataset"]["metadata"][
             "control_value"]].groupby(self.target).count().reset_index()[[self.target, "Key"]]
 
-        sample_size = int(counts.Key.median())
+        sample_size = int(counts.Key.median() / self.bag_size)
         for c in tqdm(self.classes, desc="Creating bags"):
             if c == self.config["dataset"]["metadata"]["control_value"]:
                 for __ in range(sample_size):

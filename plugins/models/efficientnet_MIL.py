@@ -1,13 +1,10 @@
 import tensorflow as tf
 import numpy
-import inspect
 import efficientnet.tfkeras as efn
 
 from deepprofiler.imaging.augmentations import AugmentationLayer
-from deepprofiler.imaging.augmentations import AugmentationLayerV2
 from deepprofiler.learning.MILAttentionLayer import MILAttentionLayer
 from deepprofiler.learning.model import DeepProfilerModel
-from deepprofiler.learning.tf2train import DeepProfilerModelV2
 from deepprofiler.learning.MILSoftmax import MILSoftmax
 
 
