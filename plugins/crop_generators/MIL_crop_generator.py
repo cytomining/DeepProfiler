@@ -81,7 +81,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
                     self.bags_labels.append(self.classes[c])
             else:
                 for __ in range(sample_size):
-                    positive_samples_count = random.randint(1, self.bag_size-1)
+                    positive_samples_count = random.randint(self.bag_size*0.25, self.bag_size*0.75)
                     negative_samples_count = self.bag_size-positive_samples_count
                     positive_samples = self.split_data[self.split_data[self.target] == c].sample(
                         positive_samples_count, replace=False)

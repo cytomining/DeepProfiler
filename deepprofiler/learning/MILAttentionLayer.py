@@ -21,7 +21,7 @@ class MILAttentionLayer(tf.compat.v1.keras.layers.Layer):
         self,
         weight_params_dim=256,
         kernel_initializer="glorot_uniform",
-        kernel_regularizer=tf.compat.v1.keras.regularizers.l2(0.01),
+        kernel_regularizer=None,
         use_gated=True,
         **kwargs
     ):

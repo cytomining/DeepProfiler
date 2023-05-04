@@ -8,16 +8,10 @@ from deepprofiler.imaging.augmentations import AugmentationLayerV2
 from deepprofiler.learning.MILAttentionLayer import MILAttentionLayer
 from deepprofiler.learning.model import DeepProfilerModel
 from deepprofiler.learning.tf2train import DeepProfilerModelV2
+from deepprofiler.learning.MILSoftmax import MILSoftmax
 
 
 def model_factory(config, dset, crop_generator, val_crop_generator, is_training):
-    if inspect.currentframe().f_back.f_code.co_name == 'learn_model_v2':
-        tf.compat.v1.enable_v2_behavior()
-        tf.config.run_functions_eagerly(True)
-        augmentation_base = AugmentationLayerV2()
-        return createModelClass(DeepProfilerModelV2, config, dset, crop_generator,
-                                val_crop_generator, is_training, augmentation_base)
-    else:
         augmentation_base = AugmentationLayer()
         mil_attention_base = MILAttentionLayer()
         return createModelClass(DeepProfilerModel, config, dset, crop_generator,
@@ -128,8 +122,8 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator,
                 #]
                 multiply_layer = tf.compat.v1.keras.layers.multiply([MILattention, features])
                 #concat = tf.compat.v1.keras.layers.concatenate(multiply_layers, axis=1)
-                y = tf.compat.v1.keras.layers.Dense(self.config["num_classes"], activation="softmax", name="ClassProb")(
-                    multiply_layer)
+
+                y = MILSoftmax(output_dim=self.config["num_classes"], name="ClassProb")(multiply_layer)
 
                 class_outputs = [y]
                 # 4. Create and compile model
@@ -146,7 +140,8 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator,
                     model = tf.compat.v1.keras.models.model_from_json(
                         model.to_json(),
                         {'AugmentationLayer': augmentation_base,
-                         'MILAttentionLayer': mil_attention_base}
+                         'MILAttentionLayer': mil_attention_base,
+                         'MILSoftmax': MILSoftmax(output_dim=self.config["num_classes"])}
                     )
                 else:
                     model = tf.compat.v1.keras.models.model_from_json(model.to_json())
