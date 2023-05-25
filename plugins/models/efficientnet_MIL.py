@@ -93,38 +93,32 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator,
 
                 input_shape = (height, width, len(config["dataset"]["images"]["channels"]))
                 input_image = tf.compat.v1.keras.layers.Input(input_shape)
+                input_image = AugmentationLayer()(input_image)
+                input_shape_2 = (self.config["train"]["model"]["params"]["bag_size"], height, width, len(config["dataset"]["images"]["channels"]))
+                input_image_2 = tf.compat.v1.keras.layers.Input(input_shape)
 
-                model = self.get_model(config, input_image=input_image)
-                features = tf.compat.v1.keras.layers.GlobalAveragePooling2D(name="pool5")(model.layers[-1].output)
-                #input_image = tf.compat.v1.keras.layers.Input(shape=input_shape)
-                #model = self.get_model(config, input_image=input_image)
-                #features = tf.compat.v1.keras.layers.GlobalAveragePooling2D(name="pool5")
-                #inputs, features_bag = [], []
-                #for _ in range(self.config["train"]["model"]["params"]["bag_size"]):
-                #    input_image_ = input_image
-                #    model_ = model(input_image)
-                #    features_ = features(model_)
-                #    inputs.append(input_image_)
-                #    features_bag.append(features_)
+                model = efn.EfficientNetB0(include_top=False, weights=None, input_tensor=input_image)
 
-                MILattention = MILAttentionLayer(
+                seq = tf.compat.v1.keras.Sequential()
+                seq.add(tf.compat.v1.keras.layers.TimeDistributed(model, input_shape=input_shape_2))
+                seq.add(tf.compat.v1.keras.layers.TimeDistributed(tf.compat.v1.keras.layers.GlobalAveragePooling2D(name="pool5")))
+
+                seq.add(tf.compat.v1.keras.layers.TimeDistributed(MILAttentionLayer(
                     weight_params_dim=256,
+                    output_dim=1,
                     kernel_regularizer=tf.compat.v1.keras.regularizers.l2(0.001),
                     use_gated=True,
                     name="MILattention",
-                )(features)
+                )))
 
-                #multiply_layers = [
-                #    tf.compat.v1.keras.layers.multiply([MILattention[i], features_bag[i]]) for i in range(len(MILattention))
-                #]
-                multiply_layer = tf.compat.v1.keras.layers.multiply([MILattention, features])
-                #concat = tf.compat.v1.keras.layers.concatenate(multiply_layers, axis=1)
+                multiply_layer = tf.compat.v1.keras.layers.TimeDistributed(
+                    tf.compat.v1.keras.layers.Multiply())([seq.layers[-1].output, seq.layers[-2].output])
 
                 y = MILSoftmax(output_dim=self.config["num_classes"], name="ClassProb")(multiply_layer)
 
                 class_outputs = [y]
                 # 4. Create and compile model
-                model = tf.compat.v1.keras.models.Model(inputs=model.input, outputs=class_outputs)
+                model_final = tf.compat.v1.keras.models.Model(inputs=seq.input, outputs=class_outputs)
 
                 ## Added weight decay following tricks reported in:
                 ## https://github.com/keras-team/keras/issues/2717
@@ -134,38 +128,34 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator,
                         setattr(layer, "kernel_regularizer", regularizer)
 
                 if self.config["train"]["model"].get("augmentations") is True:
-                    model = tf.compat.v1.keras.models.model_from_json(
-                        model.to_json(),
+                    model_final = tf.compat.v1.keras.models.model_from_json(
+                        model_final.to_json(),
                         {'AugmentationLayer': augmentation_base,
                          'MILAttentionLayer': mil_attention_base,
                          'MILSoftmax': MILSoftmax(output_dim=self.config["num_classes"])}
                     )
                 else:
-                    model = tf.compat.v1.keras.models.model_from_json(model.to_json())
+                    model_final = tf.compat.v1.keras.models.model_from_json(model_final.to_json())
 
-            return model, optimizer, loss_func
+            return model_final, optimizer, loss_func
 
         def copy_pretrained_weights(self):
             base_model = self.get_model(self.config, weights="imagenet")
-            # Shift layers to accommodate crop_and_resize + AugmentationLayer
-            layers = self.feature_model.layers
-            lshift = 0
-            if layers[1].name == 'augmentation_layer_1' or layers[4].name == "augmentation_layer_1":
-                lshift += 1
-            if layers[1].name == 'input_2' and layers[2].name == 'input_3':
-                lshift += 3
-
             # => Transfer all weights except conv1.1
             total_layers = len(base_model.layers)
+            layers = self.feature_model.layers[1].layer.layers
+            lshift = 0
+            if layers[1].name == 'augmentation_layer_1':
+                lshift += 1
             for i in range(2, total_layers):
                 if len(base_model.layers[i].weights) > 0:
                     print("Setting pre-trained weights: {:.2f}%".format((i / total_layers) * 100), end="\r")
-                    self.feature_model.layers[i + lshift].set_weights(base_model.layers[i].get_weights())
+                    self.feature_model.layers[1].layer.layers[i+lshift].set_weights(base_model.layers[i].get_weights())
 
             # => Replicate filters of first layer as needed
             weights = base_model.layers[1].get_weights()
             available_channels = weights[0].shape[2]
-            target_shape = self.feature_model.layers[1 + lshift].weights[0].shape
+            target_shape = self.feature_model.layers[1].layer.layers[1+lshift].weights[0].shape
             new_weights = numpy.zeros(target_shape)
 
             for i in range(new_weights.shape[2]):
@@ -176,7 +166,7 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator,
             if len(weights) > 1:
                 weights_array += weights[1:]
 
-            self.feature_model.layers[1 + lshift].set_weights(weights_array)
+            self.feature_model.layers[1].layer.layers[1+lshift].set_weights(weights_array)
             print("Network initialized with pretrained ImageNet weights")
 
     return ModelClass(config, dset, crop_generator, val_crop_generator, is_training)

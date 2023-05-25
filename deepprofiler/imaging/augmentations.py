@@ -80,6 +80,8 @@ class AugmentationLayer(tf.compat.v1.keras.layers.Layer):
         else:
             return input_tensor
 
+    def compute_output_shape(self, input_shape):
+        return tf.TensorShape(input_shape)
 
 class AugmentationLayerV2(tf.keras.layers.Layer):
     def __init__(self, **kwargs):

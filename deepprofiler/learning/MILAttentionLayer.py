@@ -1,5 +1,4 @@
-# Code from https://keras.io/examples/vision/attention_mil_classification/
-
+# Code adopted from https://github.com/utayao/Atten_Deep_MIL/blob/master/utl/custom_layers.py
 import tensorflow as tf
 
 
@@ -17,110 +16,76 @@ class MILAttentionLayer(tf.compat.v1.keras.layers.Layer):
       The tensors are the attention scores after softmax with shape `(batch_size, 1)`.
     """
 
-    def __init__(
-        self,
-        weight_params_dim=256,
-        kernel_initializer="glorot_uniform",
-        kernel_regularizer=None,
-        use_gated=True,
-        **kwargs
-    ):
-
-        super().__init__(**kwargs)
-
+    def __init__(self, weight_params_dim=256, output_dim=1, kernel_initializer='glorot_uniform',
+                 kernel_regularizer=None, use_bias=True, use_gated=False, **kwargs):
         self.weight_params_dim = weight_params_dim
+        self.output_dim = output_dim
+        self.use_bias = use_bias
         self.use_gated = use_gated
 
-        self.kernel_initializer = tf.compat.v1.keras.initializers.get(kernel_initializer)
-        self.kernel_regularizer = tf.compat.v1.keras.regularizers.get(kernel_regularizer)
+        self.v_init = tf.compat.v1.keras.initializers.get(kernel_initializer)
+        self.w_init = tf.compat.v1.keras.initializers.get(kernel_initializer)
+        self.u_init = tf.compat.v1.keras.initializers.get(kernel_initializer)
 
-        self.v_init = self.kernel_initializer
-        self.w_init = self.kernel_initializer
-        self.u_init = self.kernel_initializer
+        self.v_regularizer = tf.compat.v1.keras.regularizers.get(kernel_regularizer)
+        self.w_regularizer = tf.compat.v1.keras.regularizers.get(kernel_regularizer)
+        self.u_regularizer = tf.compat.v1.keras.regularizers.get(kernel_regularizer)
 
-        self.v_regularizer = self.kernel_regularizer
-        self.w_regularizer = self.kernel_regularizer
-        self.u_regularizer = self.kernel_regularizer
+        super(MILAttentionLayer, self).__init__(**kwargs)
 
     def build(self, input_shape):
 
-        # Input shape.
-        # List of 2D tensors with shape: (batch_size, input_dim).
+        assert len(input_shape) == 2
+        print(input_shape)
         input_dim = input_shape[1]
 
-        self.v_weight_params = self.add_weight(
-            shape=(input_dim, self.weight_params_dim),
-            initializer=self.v_init,
-            name="v",
-            regularizer=self.v_regularizer,
-            trainable=True,
-        )
+        self.V = self.add_weight(shape=(input_dim, self.weight_params_dim),
+                                      initializer=self.v_init,
+                                      name='v',
+                                      regularizer=self.v_regularizer,
+                                      trainable=True)
 
-        self.w_weight_params = self.add_weight(
-            shape=(self.weight_params_dim, 1),
-            initializer=self.w_init,
-            name="w",
-            regularizer=self.w_regularizer,
-            trainable=True,
-        )
+        self.w = self.add_weight(shape=(self.weight_params_dim, 1),
+                                    initializer=self.w_init,
+                                    name='w',
+                                    regularizer=self.w_regularizer,
+                                    trainable=True)
 
         if self.use_gated:
-            self.u_weight_params = self.add_weight(
-                shape=(input_dim, self.weight_params_dim),
-                initializer=self.u_init,
-                name="u",
-                regularizer=self.u_regularizer,
-                trainable=True,
-            )
+            self.U = self.add_weight(shape=(input_dim, self.weight_params_dim),
+                                     initializer=self.u_init,
+                                     name='U',
+                                     regularizer=self.u_regularizer,
+                                     trainable=True)
         else:
-            self.u_weight_params = None
+            self.U = None
 
         self.input_built = True
 
-    def call(self, inputs):
-
-        n, d = inputs.shape
-        ori_x = inputs
+    def call(self, x, mask=None):
+        n, d = x.shape
+        ori_x = x
         # do Vhk^T
-        x = tf.math.tanh(tf.tensordot(inputs, self.v_weight_params, axes=1))  # (2,64)
+        x = tf.math.tanh(tf.tensordot(x, self.V, axes=1)) # (2,64)
 
         if self.use_gated:
-            gate_x = tf.math.sigmoid(tf.tensordot(ori_x, self.u_weight_params, axes=1))
+            gate_x = tf.math.sigmoid(tf.tensordot(ori_x, self.U, axes=1))
             ac_x = x * gate_x
         else:
-            ac_x = inputs
+            ac_x = x
 
         # do w^T x
-        soft_x = tf.tensordot(ac_x, self.w_weight_params, axes=1)  # (2,64) * (64, 1) = (2,1)
-        alpha = tf.math.softmax(tf.transpose(soft_x))  # (2,1)
+        soft_x = tf.tensordot(ac_x, self.w, axes=1)  # (2,64) * (64, 1) = (2,1)
+        alpha = tf.math.softmax(tf.transpose(soft_x)) # (2,1)
         alpha = tf.transpose(alpha)
+        print('Attention output shape', alpha.shape)
         return alpha
 
-        # Assigning variables from the number of inputs.
-        #instances = [self.compute_attention_scores(instance) for instance in inputs]
-
-        # Apply softmax over instances such that the output summation is equal to 1.
-        #alpha = tf.math.softmax(instances, axis=0)
-
-        #return [alpha[i] for i in range(alpha.shape[0])]
-
-    # def compute_attention_scores(self, instance):
-    #
-    #     # Reserve in-case "gated mechanism" used.
-    #     original_instance = instance
-    #
-    #     # tanh(v*h_k^T)
-    #     instance = tf.math.tanh(tf.tensordot(instance, self.v_weight_params, axes=1))
-    #
-    #     # for learning non-linear relations efficiently.
-    #     if self.use_gated:
-    #
-    #         instance = instance * tf.math.sigmoid(
-    #             tf.tensordot(original_instance, self.u_weight_params, axes=1)
-    #         )
-    #
-    #     # w^T*(tanh(v*h_k^T)) / w^T*(tanh(v*h_k^T)*sigmoid(u*h_k^T))
-    #     return tf.tensordot(instance, self.w_weight_params, axes=1)
+    def compute_output_shape(self, input_shape):
+        shape = list(input_shape)
+        assert len(shape) == 2
+        shape[1] = self.output_dim
+        return tuple(shape)
 
     def get_config(self):
         cfg = super().get_config()

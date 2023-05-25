@@ -72,7 +72,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         counts = self.split_data[self.split_data[self.target] != self.config["dataset"]["metadata"][
             "control_value"]].groupby(self.target).count().reset_index()[[self.target, "Key"]]
 
-        sample_size = int(counts.Key.median() / self.bag_size)
+        sample_size = int(counts.Key.median())
         for c in tqdm(self.classes, desc="Creating bags"):
             if c == self.config["dataset"]["metadata"]["control_value"]:
                 for __ in range(sample_size):
@@ -104,23 +104,24 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         while True:
             y = []
             bag_paths = []
-            for i in range(1):
+            for i in range(self.batch_size):
                 if pointer >= len(self.bags):
                     self.create_bags()
                     pointer = 0
 
                 for j in range(len(self.bags[pointer])):
                     bag_paths.append(os.path.join(self.directory, self.bags[pointer].iloc[j].Image_Name))
-                    y.append(self.bags_labels[pointer])
+
+                y.append(self.bags_labels[pointer])
 
                 pointer += 1
 
-            x = np.zeros([self.bag_size, self.box_size, self.box_size, self.num_channels])
+            x = np.zeros([self.batch_size, self.bag_size, self.box_size, self.box_size, self.num_channels])
             images = image_loader.compute(load_and_crop, bag_paths)
-            print(len(self.bags_labels), len(self.bags), pointer)
-            for i in range(len(bag_paths)):
-                x[i, :, :, :] = images[i]
-            yield x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
+            for i in range(self.batch_size):
+                for j in range(self.bag_size):
+                    x[i, j, :, :, :] = images[self.bag_size*i + j]
+            yield x[:, :, :, :, :], tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
 
         image_loader.close()
 
@@ -132,25 +133,28 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
         while True:
             y = []
             bag_paths = []
-            for i in range(1):
+            for i in range(self.batch_size):
                 if pointer >= len(self.bags):
                     self.create_bags()
                     pointer = 0
 
                 for j in range(len(self.bags[pointer])):
                     bag_paths.append(os.path.join(self.directory, self.bags[pointer].iloc[j].Image_Name))
-                    y.append(self.bags_labels[pointer])
+
+                y.append(self.bags_labels[pointer])
 
                 pointer += 1
 
-            x = np.zeros([self.bag_size, self.box_size, self.box_size, self.num_channels])
+            x = np.zeros([self.batch_size, self.bag_size, self.box_size, self.box_size, self.num_channels])
             images = image_loader.compute(load_and_crop, bag_paths)
-            for i in range(len(bag_paths)):
-                x[i, :, :, :] = images[i]
+            for i in range(self.batch_size):
+                for j in range(self.bag_size):
+                    x[i, j, :, :, :] = images[self.bag_size*i + j]
+            yield x[:, :, :, :, :], tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
 
             if len(y) < x.shape[0]:
                 x = x[0:len(y), ...]
-            yield x, tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
+            yield x[:, :, :, :, :], tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
         image_loader.close()
 
     def stop(self, session):
