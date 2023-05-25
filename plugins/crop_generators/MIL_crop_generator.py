@@ -150,7 +150,6 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
             for i in range(self.batch_size):
                 for j in range(self.bag_size):
                     x[i, j, :, :, :] = images[self.bag_size*i + j]
-            yield x[:, :, :, :, :], tf.keras.utils.to_categorical(y, num_classes=self.num_classes)
 
             if len(y) < x.shape[0]:
                 x = x[0:len(y), ...]
