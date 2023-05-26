@@ -54,7 +54,7 @@ class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):
 
         # Identify targets and samples
         self.create_bags()
-        self.expected_steps = len(self.bags)
+        self.expected_steps = (len(self.bags) // self.batch_size) + int(len(self.bags) % self.batch_size > 0)
         shuffle = list(zip(self.bags, self.bags_labels))
         random.shuffle(shuffle)
         self.bags, self.bags_labels = zip(*shuffle)
