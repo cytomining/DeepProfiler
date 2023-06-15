@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import os
 
 import deepprofiler.dataset.pixels
 import deepprofiler.dataset.utils
@@ -61,7 +62,9 @@ class ImageDataset():
 
     def get_image_paths(self, r):
         key = self.keyGen(r)
-        image = [self.root + "/" + r[ch] for ch in self.channels]
+        list_images = [r[ch] for ch in self.channels]
+        paths = [(os.path.split(r[ch]))[0] for ch in self.channels]
+        image = [list_images[ch] if os.path.isdir(paths[ch]) else self.root + "/" + list_images[ch] for ch in range(len(paths))]
         outlines = self.outlines
         if outlines is not None:
             outlines = self.outlines + r["Outlines"]
