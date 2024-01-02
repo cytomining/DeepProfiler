@@ -15,7 +15,7 @@ for the examples of configuration files and downstream analysis.
 
 Checkout our [preprint](https://doi.org/10.1101/2022.08.12.503783) on bioRxiv.
 
-# Cell Painting CNN-1
+# Cell Painting CNN
 
 <p align="center">
 <img src="figures/cell_painting_cnn.png" width="650"/>
@@ -26,7 +26,7 @@ Checkout our [preprint](https://doi.org/10.1101/2022.08.12.503783) on bioRxiv.
 We used DeepProfiler to train a feature extraction model for single cells in Cell Painting experiments. 
 The model brings state-of-the-art profiling performance for downstream analysis tasks. This model is an EfficientNet 
 trained to process the 5 channels of the Cell Painting assay and produce single-cell morphology embeddings, which can 
-be aggregated to profile treatments in large-scale experiments. Features obtained with the Cell Painting CNN-1 are more 
+be aggregated to profile treatments in large-scale experiments. Features obtained with the Cell Painting CNN are more 
 robust and improve performance.
 
 <p align="center">
