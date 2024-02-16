@@ -118,8 +118,12 @@ def get_cropping_regions(batch, config, box_size):
         boxes[:,1] = locations[X_KEY] - box_size/2
         boxes[:,2] = locations[Y_KEY] + box_size/2
         boxes[:,3] = locations[X_KEY] + box_size/2
-        boxes[:,[0,2]] /= config["dataset"]["images"]["height"]
-        boxes[:,[1,3]] /= config["dataset"]["images"]["width"]
+
+        img_shape = images[index].shape
+        assert len(img_shape) == 3, f"Images should be 3D arrays, got {img_shape=}"
+        height, width, _ = img_shape
+        boxes[:,[0,2]] /= height
+        boxes[:,[1,3]] /= width
         # Create indicators for this set of boxes, belonging to the same image
         box_ind = index * np.ones((len(locations)), np.int32)
         # Propagate the same labels to all crops
