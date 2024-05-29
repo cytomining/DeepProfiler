@@ -13,7 +13,7 @@ Please, see our [DeepProfiler Handbook](https://cytomining.github.io/DeepProfile
 to use it and [DeepProfilerExperiments repository](https://github.com/broadinstitute/DeepProfilerExperiments) 
 for the examples of configuration files and downstream analysis.
 
-Checkout our [preprint](https://doi.org/10.1101/2022.08.12.503783) on bioRxiv.
+Checkout our Nature Communications [paper](https://www.nature.com/articles/s41467-024-45999-1).
 
 # Cell Painting CNN
 
