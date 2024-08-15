@@ -332,6 +332,15 @@ class SingleImageCropGenerator(CropGenerator):
             self.input_variables["mask_ind_ph"]: mask_ind
         }
 
+        # check that all boxes overlap the image
+        ymins = boxes[:, [0, 2]].min(axis=1)
+        ymaxs = boxes[:, [0, 2]].max(axis=1)
+        xmins = boxes[:, [1, 3]].min(axis=1)
+        xmaxs = boxes[:, [1, 3]].max(axis=1)
+        if (np.any(ymins > 1) or np.any(xmins > 1) or
+            np.any(ymaxs < 0) or np.any(ymaxs < 0)):
+            print("WARNING: Some cell boxes are entirely outside the image")
+
         for i in range(num_targets):
             tname = "target_" + str(i)
             feed_dict[self.input_variables["targets_phs"][tname]] = targets[i]

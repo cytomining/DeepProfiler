@@ -82,6 +82,16 @@ class Profile(object):
         if total_crops == 0:
             print("No cells to profile:", output_file)
             return
+
+        # check image size matches config
+        if (self.config["dataset"]["images"]["width"] != image_array.shape[1] or
+            self.config["dataset"]["images"]["height"] != image_array.shape[0]):
+            config_shape = (self.config["dataset"]["images"]["width"],
+                            self.config["dataset"]["images"]["height"])
+            im_shape = (image_array.shape[1], image_array.shape[0])
+            raise ValueError("Loaded image shape WxH " + str(im_shape) +
+                             " != configured image shape WxH " + str(config_shape))
+
         repeats = self.config["train"]["model"]["crop_generator"] in ["repeat_channel_crop_generator", "individual_channel_cropgen"]
         
         # Extract features
