@@ -30,7 +30,9 @@ def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes
         #crops = (crops - mean)/std
         mini = tf.math.reduce_min(crops, axis=[1, 2], keepdims=True)
         maxi = tf.math.reduce_max(crops, axis=[1, 2], keepdims=True)
-        crops = (crops - mini) / (maxi - mini + tf.keras.backend.epsilon())
+        delta = (maxi - mini)
+        delta = tf.where(tf.less_equal(delta, 0), tf.ones_like(delta), delta)
+        crops = (crops - mini) / delta
 
         if export_masks:
             crops = tf.concat((crops[:, :, :, 0:-1], tf.expand_dims(masks, axis=-1)), axis=3)
