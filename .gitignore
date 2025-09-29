@@ -95,3 +95,6 @@ ENV/
 .ropeproject
 
 .idea
+
+# Outputs
+deepprofiler_extraction.out
