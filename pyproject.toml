@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deepprofiler"
+version = "0.3.1"
+description = "Tools for representation learning in high throughput image collections"
+license = { text = "BSD" }
+authors = [
+    { name = "Juan C. Caicedo", email = "jcaicedo@broad.mit.edu" }
+]
+keywords = []
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Topic :: Utilities",
+    "License :: OSI Approved :: BSD License",
+]
+requires-python = ">=3.12"
+dependencies = [
+    "beautifulsoup4>=4.12",
+    "click>=8.0",
+    "comet-ml>=3.31",
+    "imagecodecs>=2024.1",
+    "lxml>=5.0",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scikit-image>=0.21",
+    "scikit-learn>=1.3",
+    "scipy>=1.11",
+    "tensorflow==2.21.*",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=3.6",
+    "pytest-cov>=2.0",
+    "codecov>=2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/cytomining/DeepProfiler"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["deepprofiler*", "plugins*"]
+
+[tool.uv]
+override-dependencies = [
+    "grpcio>=1.59",
+]
+
+[tool.pytest.ini_options]
+addopts = "--cov=./ -v"

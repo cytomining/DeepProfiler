@@ -75,9 +75,6 @@ target/
 # IPython Notebook
 .ipynb_checkpoints
 
-# pyenv
-.python-version
-
 # celery beat schedule file
 celerybeat-schedule
 
@@ -87,6 +84,10 @@ celerybeat-schedule
 # virtualenv
 venv/
 ENV/
+.venv/
+
+# VS Code
+.vscode/
 
 # Spyder project settings
 .spyderproject
@@ -98,3 +99,4 @@ ENV/
 
 # Claude
 CLAUDE.md
+.claude/
