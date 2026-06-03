@@ -153,7 +153,6 @@ class ModelClass(EfficientNetMixin, DeepProfilerModel):
 
 class ModelClassV2(EfficientNetMixin, DeepProfilerModelV2):
     def __init__(self, config, dset, crop_generator, val_crop_generator, is_training):
-        tf.config.run_functions_eagerly(True)
         super(ModelClassV2, self).__init__(config, dset, crop_generator, val_crop_generator, is_training)
         self.augmentation_base = AugmentationLayerV2()
         self.feature_model, self.optimizer, self.loss = self.define_model(config, dset)

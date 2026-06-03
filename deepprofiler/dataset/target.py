@@ -4,8 +4,7 @@ class MetadataColumnTarget(object):
     def __init__(self, field_name, values):
         self.field_name = field_name
         self.index = {}
-        self.values = values
-        self.values.sort()
+        self.values = sorted(values)
         for i in range(len(self.values)):
             self.index[self.values[i]] = i
         print(self.index)

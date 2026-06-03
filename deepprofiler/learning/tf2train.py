@@ -9,7 +9,6 @@ import tensorflow as tf
 
 AUTOTUNE = tf.data.AUTOTUNE
 
-tf.config.run_functions_eagerly(True)
 
 class DeepProfilerModelV2(abc.ABC):
     def __init__(self, config, dset, generator, val_generator, is_training):  # CG and dset params to match signatures
