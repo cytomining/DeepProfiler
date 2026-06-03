@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy
 import inspect
+import efficientnet.tfkeras as efn
 
 from deepprofiler.imaging.augmentations import AugmentationLayer
 from deepprofiler.imaging.augmentations import AugmentationLayerV2
@@ -30,14 +31,14 @@ def createModelClass(base, config, dset, crop_generator, val_crop_generator, is_
         ## Define supported models
         def get_supported_models(self):
             return {
-                0: tf.keras.applications.EfficientNetB0,
-                1: tf.keras.applications.EfficientNetB1,
-                2: tf.keras.applications.EfficientNetB2,
-                3: tf.keras.applications.EfficientNetB3,
-                4: tf.keras.applications.EfficientNetB4,
-                5: tf.keras.applications.EfficientNetB5,
-                6: tf.keras.applications.EfficientNetB6,
-                7: tf.keras.applications.EfficientNetB7,
+                0: efn.EfficientNetB0,
+                1: efn.EfficientNetB1,
+                2: efn.EfficientNetB2,
+                3: efn.EfficientNetB3,
+                4: efn.EfficientNetB4,
+                5: efn.EfficientNetB5,
+                6: efn.EfficientNetB6,
+                7: efn.EfficientNetB7,
             }
 
         def get_model(self, config, input_image=None, weights=None, include_top=False):

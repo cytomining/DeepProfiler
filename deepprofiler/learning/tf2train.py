@@ -5,6 +5,7 @@ import comet_ml
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import tensorflow_addons as tfa
 
 AUTOTUNE = tf.data.AUTOTUNE
 
@@ -175,7 +176,7 @@ class DeepProfilerModelV2(abc.ABC):
             self.all_cells[split_field].isin(validation_split_values)])
 
         self.feature_model.compile(self.optimizer, self.loss, metrics=["accuracy",
-                                        tf.keras.metrics.F1Score(num_classes=self.config["num_classes"], average='macro'),
+                                        tfa.metrics.F1Score(num_classes=self.config["num_classes"], average='macro'),
                                         tf.keras.metrics.TopKCategoricalAccuracy(k=5),
                                         tf.keras.metrics.Precision()])
         print(self.feature_model.summary())
