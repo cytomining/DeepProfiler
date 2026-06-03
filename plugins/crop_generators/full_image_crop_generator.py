@@ -9,8 +9,6 @@ import deepprofiler.imaging.cropping
 import deepprofiler.dataset.pixels
 import deepprofiler.dataset.utils
 
-tf.compat.v1.disable_v2_behavior()
-tf.config.run_functions_eagerly(False)
 
 
 class GeneratorClass(deepprofiler.imaging.cropping.CropGenerator):

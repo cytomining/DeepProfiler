@@ -48,13 +48,12 @@ def test_create_metric(config, make_struct):
 
 
 def test_metric(config, make_struct):
-    with tf.compat.v1.Session(config=cpu_config) as sess:
-        name = "Dog"
-        metric = plugins.metrics.top_k.MetricClass(config, name)
-        y_true = np.array([[0,1],[1,0]])
-        y_pred = np.array([[0,1],[0,1]])
-        expected_output = 0.5
-        output = metric.metric(y_true, y_pred).eval()
-        assert output == expected_output
-        assert is_method(metric, "metric")
+    name = "Dog"
+    metric = plugins.metrics.top_k.MetricClass(config, name)
+    y_true = np.array([[0, 1], [1, 0]], dtype=np.float32)
+    y_pred = np.array([[0, 1], [0, 1]], dtype=np.float32)
+    expected_output = 0.5
+    output = float(metric.metric(y_true, y_pred).numpy())
+    assert output == expected_output
+    assert is_method(metric, "metric")
 

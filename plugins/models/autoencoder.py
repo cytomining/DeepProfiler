@@ -4,7 +4,6 @@ import tensorflow as tf
 
 from deepprofiler.learning.model import DeepProfilerModel
 
-tf.compat.v1.disable_v2_behavior()
 
 ##################################################
 # Convolutional autoencoder with alternating
@@ -67,3 +66,7 @@ class ModelClass(DeepProfilerModel):
     def __init__(self, config, dset, generator, val_generator, is_training):
         super(ModelClass, self).__init__(config, dset, generator, val_generator, is_training)
         self.feature_model, self.encoder, self.decoder, self.optimizer, self.loss = define_model(config, dset)
+
+
+def model_factory(config, dset, crop_generator, val_crop_generator, is_training):
+    return ModelClass(config, dset, crop_generator, val_crop_generator, is_training)

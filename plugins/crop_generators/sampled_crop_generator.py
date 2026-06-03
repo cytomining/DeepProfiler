@@ -6,8 +6,6 @@ import tensorflow as tf
 
 import deepprofiler.imaging.cropping
 
-tf.compat.v1.disable_v2_behavior()
-tf.config.run_functions_eagerly(False)
 
 ## Wrapper for Keras ImageDataGenerator
 ## The Keras generator is not completely useful, because it makes assumptions about

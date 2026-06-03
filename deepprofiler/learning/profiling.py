@@ -6,8 +6,6 @@ import tensorflow as tf
 
 from deepprofiler.dataset.utils import tic, toc
 
-tf.compat.v1.disable_v2_behavior()
-tf.config.run_functions_eagerly(False)
 
 class Profile(object):
     
@@ -31,10 +29,10 @@ class Profile(object):
 
         self.profile_crop_generator = self.profile_crop_generator(config, dset)
 
-    def configure(self):        
-        # Main session configuration
-        self.profile_crop_generator.start(tf.compat.v1.keras.backend.get_session())
-        
+    def configure(self):
+        # Eager mode: no TF session required
+        self.profile_crop_generator.start()
+
         # Create feature extractor
         if self.config["profile"]["checkpoint"] != "None":
             checkpoint = self.config["paths"]["checkpoints"]+"/"+self.config["profile"]["checkpoint"]
@@ -43,11 +41,11 @@ class Profile(object):
             except ValueError:
                 print("Loading weights without classifier (different number of classes)")
                 self.dpmodel.feature_model.layers[-1]._name = "classifier"
-                self.dpmodel.feature_model.load_weights(checkpoint, by_name=True)
+                self.dpmodel.feature_model.load_weights(checkpoint, skip_mismatch=True)
 
         self.dpmodel.feature_model.summary()
-        self.feat_extractor = tf.compat.v1.keras.Model(
-            self.dpmodel.feature_model.inputs, 
+        self.feat_extractor = tf.keras.Model(
+            self.dpmodel.feature_model.inputs,
             self.dpmodel.feature_model.get_layer(self.config["profile"]["feature_layer"]).output
         )
         print("Extracting output from layer:", self.config["profile"]["feature_layer"])
@@ -73,7 +71,7 @@ class Profile(object):
         batch_size = self.config["profile"]["batch_size"]
         image_key, image_names, outlines = self.dset.get_image_paths(meta)
         crop_locations = self.profile_crop_generator.prepare_image(
-                                   tf.compat.v1.keras.backend.get_session(),
+                                   None,
                                    image_array,
                                    meta,
                                    False
@@ -95,7 +93,7 @@ class Profile(object):
         repeats = self.config["train"]["model"]["crop_generator"] in ["repeat_channel_crop_generator", "individual_channel_cropgen"]
         
         # Extract features
-        crops = next(self.profile_crop_generator.generate(tf.compat.v1.keras.backend.get_session()))[0]  # single image crop generator yields one batch
+        crops = next(self.profile_crop_generator.generate(None))[0]  # single image crop generator yields one batch
         feats = self.feat_extractor.predict(crops, batch_size=batch_size)
         
         while len(feats.shape) > 2:  # 2D mean spatial pooling

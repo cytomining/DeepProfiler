@@ -10,30 +10,29 @@ import deepprofiler.dataset.utils
 import deepprofiler.imaging.augmentations
 import deepprofiler.imaging.boxes
 
-tf.compat.v1.disable_v2_behavior()
-tf.config.run_functions_eagerly(False)
 
+# Eager crop+resize operation. Takes raw image tensors and bounding boxes and
+# returns normalized crops. Works in TensorFlow 2 eager mode (no graph/session).
+def crop_graph(images, boxes, box_ind, mask_ind, box_size, mask_boxes=False, export_masks=False):
+    crop_size = tf.constant([box_size, box_size], name="crop_size")
+    images = tf.convert_to_tensor(images, dtype=tf.float32)
+    boxes = tf.convert_to_tensor(boxes, dtype=tf.float32)
+    box_ind = tf.convert_to_tensor(box_ind, dtype=tf.int32)
+    crops = tf.image.crop_and_resize(images, boxes, box_ind, crop_size)
+    if export_masks or mask_boxes:
+        mask_ind = tf.convert_to_tensor(mask_ind, dtype=tf.int32)
+        mask_ind = tf.expand_dims(tf.expand_dims(mask_ind, -1), -1)
+        mask_values = tf.ones_like(crops[:, :, :, -1], dtype=tf.float32) * tf.cast(mask_ind, dtype=tf.float32)
+        masks = tf.cast(tf.equal(crops[:, :, :, -1], mask_values), dtype=tf.float32)
+    if mask_boxes:
+        crops = crops[:, :, :, 0:-1] * tf.expand_dims(masks, -1)
 
-def crop_graph(image_ph, boxes_ph, box_ind_ph, mask_ind_ph, box_size, mask_boxes=False, export_masks=False):
-    with tf.compat.v1.variable_scope("cropping"):
-        crop_size_ph = tf.constant([box_size, box_size], name="crop_size")
-        crops = tf.image.crop_and_resize(image_ph, boxes_ph, box_ind_ph, crop_size_ph)
-        if export_masks or mask_boxes:
-            mask_ind = tf.expand_dims(tf.expand_dims(mask_ind_ph, -1), -1)
-            mask_values = tf.ones_like(crops[:, :, :, -1], dtype=tf.float32) * tf.cast(mask_ind, dtype=tf.float32)
-            masks = tf.compat.v1.to_float(tf.equal(crops[:, :, :, -1], mask_values))
-        if mask_boxes:
-            crops = crops[:, :, :, 0:-1] * tf.expand_dims(masks, -1)
+    mini = tf.math.reduce_min(crops, axis=[1, 2], keepdims=True)
+    maxi = tf.math.reduce_max(crops, axis=[1, 2], keepdims=True)
+    crops = (crops - mini) / (maxi - mini + tf.keras.backend.epsilon())
 
-        #mean = tf.math.reduce_mean(crops, axis=[1, 2], keepdims=True)
-        #std = tf.math.reduce_std(crops, axis=[1, 2], keepdims=True)
-        #crops = (crops - mean)/std
-        mini = tf.math.reduce_min(crops, axis=[1, 2], keepdims=True)
-        maxi = tf.math.reduce_max(crops, axis=[1, 2], keepdims=True)
-        crops = (crops - mini) / (maxi - mini + tf.keras.backend.epsilon())
-
-        if export_masks:
-            crops = tf.concat((crops[:, :, :, 0:-1], tf.expand_dims(masks, axis=-1)), axis=3)
+    if export_masks:
+        crops = tf.concat((crops[:, :, :, 0:-1], tf.expand_dims(masks, axis=-1)), axis=3)
 
     return crops
 
@@ -43,7 +42,7 @@ def unfold_channels(crop, mode=0):
     # Output image shape: (h, w * c)
     # Pixels are rescaled to the [0,255] interval with 8 bits encoding
     unfolded = np.reshape(np.moveaxis(crop, mode, 0), (crop.shape[mode], -1), order='F')
-    unfolded = np.floor( 
+    unfolded = np.floor(
         skimage.exposure.rescale_intensity(unfolded, in_range="image", out_range="uint8")
     ).astype(np.uint8)
     return unfolded
@@ -52,7 +51,7 @@ def unfold_channels(crop, mode=0):
 def fold_channels(crop, last_channel=-1):
     # Expected input image shape: (h, w * c), with h = w
     # Output image shape: (h, w, c), with h = w
-    output = np.reshape(crop, (crop.shape[0], crop.shape[0], -1), order="F").astype(np.float)
+    output = np.reshape(crop, (crop.shape[0], crop.shape[0], -1), order="F").astype(np.float64)
 
     if last_channel < 0:
         # Keep all channels
@@ -64,22 +63,18 @@ def fold_channels(crop, last_channel=-1):
         # Use last channel as a binary mask
         output = output[:, :, 0:-1] * (output[:, :, -1:] / 255.)
 
-    #for i in range(output.shape[-1]):
-    #    mean = np.mean(output[:, :, i])
-    #    std = np.std(output[:, :, i])
-    #    output[:, :, i] = (output[:, :, i] - mean) / std
     return output / 255.
 
 
 # TODO: implement abstract crop generator
 class CropGenerator(object):
 
-    def __init__(self, config, dset): 
+    def __init__(self, config, dset):
         self.config = config
         self.dset = dset
 
     #################################################
-    ## INPUT GRAPH DEFINITION
+    ## INPUT CONFIGURATION
     #################################################
 
     def build_input_graph(self, export_masks=False):
@@ -103,94 +98,64 @@ class CropGenerator(object):
 
         # Data shapes
         num_targets = len(self.dset.targets)
-        crop_shape = [(box_size, box_size, crop_channels)] + [()]*num_targets
-        #imgs_shape = [None, img_height, img_width, img_channels]
-        imgs_shape = [None, None, None, img_channels]
+        crop_shape = [(box_size, box_size, crop_channels)] + [()] * num_targets
+        imgs_shape = [None, img_height, img_width, img_channels]
         batch_shape = (-1, img_height, img_width, img_channels)
 
-        # Inputs to cropping graph
-        image_ph = tf.compat.v1.placeholder(tf.float32, shape=imgs_shape, name="raw_images")
-        boxes_ph = tf.compat.v1.placeholder(tf.float32, shape=[None, 4], name="cell_boxes")
-        box_ind_ph = tf.compat.v1.placeholder(tf.int32, shape=[None], name="box_indicators")
-        mask_ind_ph = tf.compat.v1.placeholder(tf.int32, shape=[None], name="mask_indicators")
-        targets_phs = {}
-        for i in range(num_targets):
-            tname = "target_" + str(i)
-            tgt = self.dset.targets[i]
-            targets_phs[tname] = tf.compat.v1.placeholder(tf.int32, shape=[None], name=tname)
-
-        # Outputs and cache of the cropping graph
-        crop_op = crop_graph(
-            image_ph,
-            boxes_ph,
-            box_ind_ph,
-            mask_ind_ph,
-            box_size,
-            mask_objects,
-            export_masks
-        )
-        labeled_crops = tf.tuple([crop_op] + [targets_phs[t] for t in targets_phs.keys()])
-
+        # No placeholders/graph in eager mode: just record the parameters that the
+        # eager cropping operation and the data pool allocation need.
+        self.export_masks = export_masks
+        self.mask_objects = mask_objects
+        self.box_size = box_size
+        self.num_targets = num_targets
         self.input_variables = {
-            "image_ph":image_ph,
-            "boxes_ph":boxes_ph,
-            "box_ind_ph":box_ind_ph,
-            "targets_phs":targets_phs,
-            "mask_ind_ph":mask_ind_ph,
-            "labeled_crops":labeled_crops,
+            "box_size": box_size,
+            "num_targets": num_targets,
+            "mask_objects": mask_objects,
+            "export_masks": export_masks,
             "shapes": {
                 "crops": crop_shape,
                 "images": imgs_shape,
-                "batch": batch_shape
+                "batch": batch_shape,
             },
         }
 
-        # Training variables
-        self.train_variables = {
-                "image_batch": self.input_variables["labeled_crops"][0],
-                "target_0": tf.one_hot(
-                    self.input_variables["labeled_crops"][1], 
-                    self.dset.targets[0].shape[1]
-                )
-        }
-
+    def crop_batch(self, batch):
+        # Build bounding boxes and labels, then crop eagerly.
+        boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
+        images = np.reshape(batch["images"], self.input_variables["shapes"]["batch"])
+        crops = crop_graph(
+            images, boxes, box_ind, masks, self.box_size, self.mask_objects, self.export_masks
+        ).numpy()
+        labels = []
+        for i in range(len(targets)):
+            depth = self.dset.targets[i].shape[1]
+            labels.append(tf.one_hot(targets[i], depth).numpy())
+        return crops, labels
 
     #################################################
-    ## START TRAINING QUEUES
+    ## START TRAINING LOADERS
     #################################################
 
-    def training_queues(self, sess):
+    def training_queues(self):
         coord = tf.train.Coordinator()
         lock = threading.Lock()
         self.exception_occurred = False
 
         # Enqueueing threads for raw images
-        # vvv Start of thread function vvv
         def data_loading_thread():
             while not coord.should_stop():
                 try:
                     # Load images and cell boxes
                     batch = self.dset.get_train_batch(lock)
-                    if len(batch["images"]) == 0: continue
-                    images = np.reshape(batch["images"], self.input_variables["shapes"]["batch"])
-                    boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
-
-                    feed_dict = {
-                            self.input_variables["image_ph"]:images,
-                            self.input_variables["boxes_ph"]:boxes,
-                            self.input_variables["box_ind_ph"]:box_ind,
-                            self.input_variables["mask_ind_ph"]:masks
-                    }
-                    for i in range(len(targets)):
-                        tname = "target_" + str(i)
-                        feed_dict[self.input_variables["targets_phs"][tname]] = targets[i]
-
-                    output = sess.run(self.train_variables, feed_dict)
+                    if len(batch["images"]) == 0:
+                        continue
+                    crops, labels = self.crop_batch(batch)
 
                     # Find block in the pool to store data
                     lock.acquire()
                     first = self.pool_pointer
-                    records = output["image_batch"].shape[0]
+                    records = crops.shape[0]
 
                     if self.pool_pointer + records < self.image_pool.shape[0]:
                         last = self.pool_pointer + records
@@ -203,78 +168,77 @@ class CropGenerator(object):
 
                     self.dset.cache_records += records
 
-                    # Replace block (TODO:order of targets and keys may be wrong if more than one target is used)
-                    self.image_pool[first:last,...] = output["image_batch"][0:records,...]
-                    k = 0
-                    for t in output.keys():
-                        if t.startswith("target_"): 
-                            self.label_pool[k][first:last,:] = output[t][0:records,:]
-                            k += 1
+                    # Replace block in the pool
+                    self.image_pool[first:last, ...] = crops[0:records, ...]
+                    for k in range(len(labels)):
+                        self.label_pool[k][first:last, :] = labels[k][0:records, :]
                     lock.release()
 
-                except:
+                except Exception:
                     import traceback
                     traceback.print_exc()
                     print(".", end="", flush=True)
                     self.exception_occurred = True
                     return
 
-        # ^^^ End of thread function ^^^
-        
         load_threads = []
         for i in range(self.config["train"]["sampling"]["workers"]):
             lt = threading.Thread(target=data_loading_thread)
             load_threads.append(lt)
-            lt.isDaemon()
+            lt.daemon = True
             lt.start()
 
         return coord, load_threads
 
-    def start(self, session):
-        # Define input data batches
-        with tf.compat.v1.variable_scope("train_inputs"):
-            self.build_input_graph()
-            targets = [self.train_variables[t] for t in self.train_variables.keys() if t.startswith("target_")]
+    def start(self, session=None):
+        # Define input data parameters and pools
+        self.build_input_graph()
 
-            self.image_pool = np.zeros(
-                    [self.config["train"]["sampling"]["cache_size"]] + list(self.input_variables["shapes"]["crops"][0])
-            )
-            self.label_pool = [np.zeros([self.config["train"]["sampling"]["cache_size"], t.shape[1]]) for t in targets]
-            self.pool_pointer = 0
-            self.ready_to_sample = False
-            print("Waiting for data", self.image_pool.shape, [l.shape for l in self.label_pool])
-
-        self.merged_summary = tf.compat.v1.summary.merge_all()
-        self.summary_writer = tf.compat.v1.summary.FileWriter(self.config["paths"]["summaries"], session.graph)
+        self.image_pool = np.zeros(
+            [self.config["train"]["sampling"]["cache_size"]] + list(self.input_variables["shapes"]["crops"][0])
+        )
+        self.label_pool = [
+            np.zeros([self.config["train"]["sampling"]["cache_size"], t.shape[1]]) for t in self.dset.targets
+        ]
+        self.pool_pointer = 0
+        self.ready_to_sample = False
+        print("Waiting for data", self.image_pool.shape, [l.shape for l in self.label_pool])
 
         # Start data threads
-        self.coord, self.queue_threads = self.training_queues(session)
-        tf.compat.v1.train.start_queue_runners(coord=self.coord, sess=session)
+        self.coord, self.queue_threads = self.training_queues()
 
     def sample_batch(self, pool_index):
         while not self.ready_to_sample:
             time.sleep(2)
-        np.random.shuffle(pool_index) 
+        np.random.shuffle(pool_index)
         idx = pool_index[0:self.config["train"]["model"]["params"]["batch_size"]]
         # TODO: make outputs for all targets
-        data = [self.image_pool[idx,...], self.label_pool[0][idx,:], 0]
+        data = [self.image_pool[idx, ...], self.label_pool[0][idx, :], 0]
         return data
 
-    def generate(self, sess, global_step=0):
+    def generate(self, session=None, global_step=0):
         pool_index = np.arange(self.image_pool.shape[0])
         while True:
             if self.coord.should_stop():
                 break
             data = self.sample_batch(pool_index)
             # Indices of data => [0] images, [1:-1] targets, [-1] summary
-
             global_step += 1
             yield data[0], data[1:-1]
 
-    def stop(self, session):
+    def generator(self, session=None, global_step=0):
+        # Yields (crops, labels) tuples ready for Keras model.fit
+        pool_index = np.arange(self.image_pool.shape[0])
+        while True:
+            if self.coord.should_stop():
+                break
+            data = self.sample_batch(pool_index)
+            global_step += 1
+            yield data[0], data[1]
+
+    def stop(self, session=None):
         self.coord.request_stop()
         self.coord.join(self.queue_threads)
-        session.close()
         gc.collect()
 
 
@@ -284,29 +248,19 @@ class CropGenerator(object):
 # Useful for validation, predictions and profiling.
 # Important differences to the above class:
 # * No randomization is performed for crop generation
-# * A batch of crops is padded with zeros at the end
-#   for avoiding mixing of crops from different images.
-# * Only one queue is used for loading a single image
-#   and creating all crops in that image
-# * No need to stop threads.
+# * Only one image is loaded at a time and all crops in
+#   that image are created in a single batch.
 # * The generate method yields crops for a single image
 # * The generator needs to be restarted for each image.
 #########################################################
 
 class SingleImageCropGenerator(CropGenerator):
 
-    def start(self, session):
-        # Define input data batches
-        with tf.compat.v1.variable_scope("train_inputs"):
-            self.config["train"]["model"]["params"]["batch_size"] = self.config["train"]["validation"]["batch_size"]
-            self.build_input_graph()
-            # Align cells by rotating nuclei
-            #self.angles = tf.placeholder(tf.float32, shape=[None], name="nuclei_angles")
-            #rotated_imgs = tf.contrib.image.rotate(self.input_variables["labeled_crops"][0], self.angles, interpolation="BILINEAR")
-            #self.aligned_labeled = [rotated_imgs, self.input_variables["labeled_crops"][1]]
+    def start(self, session=None):
+        self.config["train"]["model"]["params"]["batch_size"] = self.config["train"]["validation"]["batch_size"]
+        self.build_input_graph()
 
     def prepare_image(self, session, image_array, meta, sample_first_crops=False):
-
         num_targets = len(self.dset.targets)
         self.batch_size = self.config["train"]["validation"]["batch_size"]
         image_key, image_names, outlines = self.dset.get_image_paths(meta)
@@ -321,16 +275,8 @@ class SingleImageCropGenerator(CropGenerator):
         if sample_first_crops and self.batch_size < len(batch["locations"][0]):
             batch["locations"][0] = batch["locations"][0].head(self.batch_size)
 
-        has_orientation = "Orientation" in batch["locations"][0].columns
         boxes, box_ind, targets, mask_ind = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
-        #batch["images"] = np.reshape(image_array, self.input_variables["shapes"]["batch"])
-        batch["images"] = image_array[np.newaxis, ...]
-        feed_dict = {
-            self.input_variables["image_ph"]: batch["images"],
-            self.input_variables["boxes_ph"]: boxes,
-            self.input_variables["box_ind_ph"]: box_ind,
-            self.input_variables["mask_ind_ph"]: mask_ind
-        }
+        images = image_array[np.newaxis, ...]
 
         # check that all boxes overlap the image
         ymins = boxes[:, [0, 2]].min(axis=1)
@@ -338,29 +284,18 @@ class SingleImageCropGenerator(CropGenerator):
         xmins = boxes[:, [1, 3]].min(axis=1)
         xmaxs = boxes[:, [1, 3]].max(axis=1)
         if (np.any(ymins > 1) or np.any(xmins > 1) or
-            np.any(ymaxs < 0) or np.any(ymaxs < 0)):
+                np.any(ymaxs < 0) or np.any(ymaxs < 0)):
             print("WARNING: Some cell boxes are entirely outside the image")
 
-        for i in range(num_targets):
-            tname = "target_" + str(i)
-            feed_dict[self.input_variables["targets_phs"][tname]] = targets[i]
+        crops = crop_graph(
+            images, boxes, box_ind, mask_ind, self.box_size, self.mask_objects, self.export_masks
+        ).numpy()
 
-        total_crops = len(batch["locations"][0])
-
-        #if has_orientation:
-        #    # Align cells by rotating to the major axis of nuclei
-        #    feed_dict[self.angles] = (batch["locations"][0]["Orientation"]*deepprofiler.dataset.utils.PI)/180.
-        #    output = session.run(self.aligned_labeled, feed_dict)
-        #else:
-        output = session.run(self.input_variables["labeled_crops"], feed_dict)
-        output = {"image_batch": output[0], "target_0": output[1]}
-
-        self.image_pool = output["image_batch"]
+        self.image_pool = crops
         num_classes = self.dset.targets[0].shape[1]
-        self.label_pool = tf.compat.v1.keras.utils.to_categorical(output["target_0"], num_classes=num_classes)
+        self.label_pool = tf.keras.utils.to_categorical(targets[0], num_classes=num_classes)
 
-        return batch["locations"][0] 
+        return batch["locations"][0]
 
-
-    def generate(self, session, global_step=0):
+    def generate(self, session=None, global_step=0):
         yield [self.image_pool, self.label_pool]

@@ -1,15 +1,14 @@
 import os
 import abc
+import math
 
 import comet_ml
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import tensorflow_addons as tfa
 
 AUTOTUNE = tf.data.AUTOTUNE
 
-tf.compat.v1.enable_v2_behavior()
 tf.config.run_functions_eagerly(True)
 
 class DeepProfilerModelV2(abc.ABC):
@@ -47,16 +46,16 @@ class DeepProfilerModelV2(abc.ABC):
         def configure_for_performance(ds):
             ds = ds.shuffle(buffer_size=50000)
             ds = ds.batch(batch_size)
-            ds = ds.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+            ds = ds.prefetch(buffer_size=AUTOTUNE)
             return ds
 
         filenames = single_cell_metadata["Image_Name"].tolist()
         for i in range(len(filenames)):
             filenames[i] = os.path.join(path, filenames[i])
 
-        steps = np.math.ceil(len(filenames) / batch_size)
+        steps = math.ceil(len(filenames) / batch_size)
         filenames_ds = tf.data.Dataset.from_tensor_slices(filenames)
-        images_ds = filenames_ds.map(parse_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        images_ds = filenames_ds.map(parse_image, num_parallel_calls=AUTOTUNE)
         labels = tf.keras.utils.to_categorical(single_cell_metadata["Categorical"])
         labels_ds = tf.data.Dataset.from_tensor_slices(labels)
         ds = tf.data.Dataset.zip((images_ds, labels_ds))
@@ -72,13 +71,9 @@ class DeepProfilerModelV2(abc.ABC):
         callbacks.append(callback_csv)
 
         # Checkpoints
-        output_file = config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
-        period = 1
+        output_file = config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.weights.h5"
         save_best = False
-        if "checkpoint_policy" in config["train"]["model"] and isinstance(
-                config["train"]["model"]["checkpoint_policy"], int):
-            period = int(config["train"]["model"]["checkpoint_policy"])
-        elif "checkpoint_policy" in config["train"]["model"] and \
+        if "checkpoint_policy" in config["train"]["model"] and \
                 config["train"]["model"]["checkpoint_policy"] == 'best':
             save_best = True
 
@@ -86,7 +81,7 @@ class DeepProfilerModelV2(abc.ABC):
             filepath=output_file,
             save_weights_only=True,
             save_best_only=save_best,
-            period=period
+            save_freq="epoch"
         )
         callbacks.append(callback_model_checkpoint)
         epochs = config["train"]["model"]["epochs"]
@@ -147,7 +142,7 @@ class DeepProfilerModelV2(abc.ABC):
         return experiment
 
     def load_weights(self, epoch):
-        output_file = self.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.hdf5"
+        output_file = self.config["paths"]["checkpoints"] + "/checkpoint_{epoch:04d}.weights.h5"
         previous_model = output_file.format(epoch=epoch - 1)
         # Initialize all tf variables
         if epoch >= 1 and os.path.isfile(previous_model):
@@ -176,7 +171,7 @@ class DeepProfilerModelV2(abc.ABC):
             self.all_cells[split_field].isin(validation_split_values)])
 
         self.feature_model.compile(self.optimizer, self.loss, metrics=["accuracy",
-                                        tfa.metrics.F1Score(num_classes=self.config["num_classes"], average='macro'),
+                                        tf.keras.metrics.F1Score(average='macro'),
                                         tf.keras.metrics.TopKCategoricalAccuracy(k=5),
                                         tf.keras.metrics.Precision()])
         print(self.feature_model.summary())

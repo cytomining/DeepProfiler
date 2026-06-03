@@ -3,7 +3,6 @@ import tensorflow as tf
 
 from deepprofiler.learning.model import DeepProfilerModel
 
-tf.compat.v1.disable_v2_behavior()
 
 
 def define_model(config, dset):

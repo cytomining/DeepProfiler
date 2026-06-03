@@ -6,7 +6,6 @@ from deepprofiler.learning.model import DeepProfilerModel
 from deepprofiler.imaging.augmentations import AugmentationLayer
 
 
-tf.compat.v1.disable_v2_behavior()
 
 
 ##################################################
@@ -29,7 +28,7 @@ def define_model(config, dset, is_training):
 
     # Add convolutional blocks based on number specified in config, with increasing number of filters
     x = input_image
-    if is_training:
+    if is_training and config["train"]["model"].get("augmentations") is True:
         x = AugmentationLayer()(x)
     for i in range(config["train"]["model"]["params"]["conv_blocks"]):
         x = tf.compat.v1.keras.layers.Conv2D(8 * 2 ** i, (3, 3), padding="same")(x)
@@ -58,3 +57,7 @@ class ModelClass(DeepProfilerModel):
     def __init__(self, config, dset, generator, val_generator, is_training):
         super(ModelClass, self).__init__(config, dset, generator, val_generator, is_training)
         self.feature_model, self.optimizer, self.loss = define_model(config, dset, is_training)
+
+
+def model_factory(config, dset, crop_generator, val_crop_generator, is_training):
+    return ModelClass(config, dset, crop_generator, val_crop_generator, is_training)

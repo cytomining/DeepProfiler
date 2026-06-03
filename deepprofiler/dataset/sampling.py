@@ -14,16 +14,13 @@ import deepprofiler.imaging.cropping
 
 class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
 
-    def start(self, session):
+    def start(self, session=None):
         self.all_metadata = []
-        self.session = session
-        # Define input data batches
-        with tf.compat.v1.variable_scope("train_inputs"):
-            self.config["train"]["model"]["params"]["batch_size"] = self.config["train"]["validation"]["batch_size"]
-            if self.config["prepare"].get("outlines") is not None:
-                self.build_input_graph(export_masks=True)
-            else:
-                self.build_input_graph(export_masks=False)
+        self.config["train"]["model"]["params"]["batch_size"] = self.config["train"]["validation"]["batch_size"]
+        if self.config["prepare"].get("outlines") is not None:
+            self.build_input_graph(export_masks=True)
+        else:
+            self.build_input_graph(export_masks=False)
 
     def process_batch(self, batch):
         for i in range(len(batch["keys"])):
@@ -42,18 +39,11 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
 
         boxes, box_ind, targets, masks = deepprofiler.imaging.boxes.prepare_boxes(batch, self.config)
 
-        feed_dict = {
-            self.input_variables["image_ph"]: batch["images"],
-            self.input_variables["boxes_ph"]: boxes,
-            self.input_variables["box_ind_ph"]: box_ind,
-            self.input_variables["mask_ind_ph"]: masks
-        }
-        for i in range(len(targets)):
-            tname = "target_" + str(i)
-            feed_dict[self.input_variables["targets_phs"][tname]] = targets[i]
-
-        output = self.session.run(self.input_variables["labeled_crops"], feed_dict)
-        return output[0], metadata.reset_index(drop=True)
+        images = np.asarray(batch["images"], dtype=np.float32)
+        crops = deepprofiler.imaging.cropping.crop_graph(
+            images, boxes, box_ind, masks, self.box_size, self.mask_objects, self.export_masks
+        ).numpy()
+        return crops, metadata.reset_index(drop=True)
 
     def export_single_cells(self, key, image_array, meta):
         outdir = self.config["paths"]["single_cell_set"]
@@ -80,14 +70,6 @@ class SingleCellSampler(deepprofiler.imaging.cropping.CropGenerator):
         print("{}: {} single cells".format(key, crops.shape[0]))
 
 
-def start_session():
-    configuration = tf.compat.v1.ConfigProto()
-    configuration.gpu_options.allow_growth = True
-    main_session = tf.compat.v1.Session(config=configuration)
-    tf.compat.v1.keras.backend.set_session(main_session)
-    return main_session
-
-
 def is_directory_empty(outdir):
     # Verify that the output directory is empty
     os.makedirs(outdir, exist_ok=True)
@@ -111,9 +93,8 @@ def export_dataset(config, dset):
     if not is_directory_empty(outdir):
         return
 
-    session = start_session()
     cropper = SingleCellSampler(config, dset)
-    cropper.start(session)
+    cropper.start()
     dset.scan(cropper.export_single_cells, frame="all")
     df = pd.concat(cropper.all_metadata).reset_index(drop=True)
     df.to_csv(os.path.join(outdir, "sc-metadata.csv"), index=False)

@@ -48,7 +48,7 @@ def metadata(out_dir, make_struct, config):
         "B": [str(x) + ".png" for x in __rand_array()],
         "Class": ["0", "1", "2", "3", "0", "1", "2", "3", "0", "1", "2", "3"],
         "Split": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
-    }, dtype=int)
+    })
     df.to_csv(filename, index=False)
     meta = deepprofiler.dataset.metadata.Metadata(filename)
     train_rule = lambda data: data["Split"].astype(int) == 0

@@ -7,10 +7,7 @@ import tensorflow as tf
 
 def random_illumination(image):
     # Make channels independent images
-    if isinstance(image.shape[-1], int):
-        numchn = image.shape[-1]
-    else:
-        numchn = image.shape[-1].value
+    numchn = image.shape[-1]
 
     source = tf.transpose(image, [2, 1, 0])
     source = tf.expand_dims(source, -1)
@@ -41,16 +38,15 @@ def random_flips(image):
 
 
 def random_crop(image):
-    if isinstance(image.shape[-1], int):
-        w, h, c = image.shape[0], image.shape[1], image.shape[-1]
-    else:
-        w, h, c = image.shape[0].value, image.shape[1].value, image.shape[-1].value
-    if tf.less(tf.random.uniform([], minval=0, maxval=1, dtype=tf.float32), tf.cast(0.5, tf.float32)):
+    w, h, c = image.shape[0], image.shape[1], image.shape[-1]
+
+    def do_crop():
         size = tf.random.uniform([1], minval=int(w * 0.8), maxval=w, dtype=tf.int32)
-        image = tf.image.random_crop(image, [size[0], size[0], c])
-        return tf.image.resize(image, (w, h))
-    else:
-        return image
+        cropped = tf.image.random_crop(image, [size[0], size[0], c])
+        return tf.image.resize(cropped, (w, h))
+
+    flip = tf.less(tf.random.uniform([], minval=0, maxval=1, dtype=tf.float32), tf.cast(0.5, tf.float32))
+    return tf.cond(flip, do_crop, lambda: image)
 
 
 def augment(image):
@@ -61,22 +57,20 @@ def augment(image):
 
 
 def augment_multiple(crops, parallel=None):
-    return tf.map_fn(augment, crops, parallel_iterations=parallel, dtype=tf.float32)
+    return tf.map_fn(augment, crops, parallel_iterations=parallel, fn_output_signature=tf.float32)
 
 
 # A layer for GPU accelerated augmentations
-class AugmentationLayer(tf.compat.v1.keras.layers.Layer):
+class AugmentationLayer(tf.keras.layers.Layer):
     def __init__(self, **kwargs):
         super(AugmentationLayer, self).__init__(**kwargs)
 
     def build(self, input_shape):
         return
 
-    def call(self, input_tensor):
-        training = tf.compat.v1.keras.backend.learning_phase()
+    def call(self, input_tensor, training=None):
         if training:
-            input_tensor = augment_multiple(input_tensor)
-            return input_tensor
+            return augment_multiple(input_tensor)
         else:
             return input_tensor
 

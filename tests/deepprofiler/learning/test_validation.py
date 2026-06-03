@@ -9,7 +9,6 @@ import deepprofiler.imaging.cropping
 import deepprofiler.learning.training
 import deepprofiler.learning.validation
 
-tf.compat.v1.disable_v2_behavior()
 
 
 @pytest.fixture(scope="function")

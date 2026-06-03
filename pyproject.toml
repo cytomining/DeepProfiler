@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deepprofiler"
+version = "0.3.1"
+description = "Tools for representation learning in high throughput image collections"
+readme = "README.md"
+license = { text = "BSD" }
+authors = [
+    { name = "Juan C. Caicedo", email = "jcaicedo@broad.mit.edu" },
+]
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Topic :: Utilities",
+    "License :: OSI Approved :: BSD License",
+]
+dependencies = [
+    "click>=8.1",
+    "comet-ml>=3.40",
+    "imagecodecs>=2024.6",   # TIFF codec backend used by skimage/tifffile when reading microscopy TIFFs
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "scikit-image>=0.24",
+    "scipy>=1.13",
+    "tensorflow>=2.18",      # ships Keras 3
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/cytomining/DeepProfiler"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["deepprofiler*", "plugins*", "scripts*"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=./ -v"

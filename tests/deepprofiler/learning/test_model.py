@@ -58,13 +58,13 @@ def test_seed(model):
 def test_train(model, out_dir, data, make_struct, config):
     model1 = model()
     model1.train()
-    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0001.hdf5"))
-    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0002.hdf5"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0001.weights.h5"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0002.weights.h5"))
     assert os.path.exists(os.path.join(config["paths"]["logs"], "log.csv"))
     model2 = model()
     epoch = 3
     model2.config["train"]["model"]["epochs"] = 4
     model2.train(epoch)
-    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0003.hdf5"))
-    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0004.hdf5"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0003.weights.h5"))
+    assert os.path.exists(os.path.join(config["paths"]["checkpoints"], "checkpoint_0004.weights.h5"))
     assert os.path.exists(os.path.join(config["paths"]["logs"], "log.csv"))

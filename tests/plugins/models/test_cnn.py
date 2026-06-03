@@ -7,7 +7,6 @@ import deepprofiler.dataset.metadata
 import deepprofiler.dataset.target
 import plugins.models.cnn
 
-tf.compat.v1.disable_v2_behavior()
 
 
 @pytest.fixture(scope="function")
