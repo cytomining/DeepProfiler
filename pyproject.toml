@@ -20,12 +20,12 @@ classifiers = [
 dependencies = [
     "click>=8.1",
     "comet-ml>=3.40",
-    "imagecodecs>=2024.6",   # TIFF codec backend used by skimage/tifffile when reading microscopy TIFFs
+    "imagecodecs>=2024.6",
     "numpy>=2.0",
     "pandas>=2.2",
     "scikit-image>=0.24",
     "scipy>=1.13",
-    "tensorflow>=2.18",      # ships Keras 3
+    "tensorflow>=2.18",
     "tqdm>=4.66",
 ]
 
