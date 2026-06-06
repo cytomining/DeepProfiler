@@ -81,7 +81,17 @@ Extracted features are written to `project/outputs/cell_painting/features/`.
 
 ## Training your own models
 
+> **⚠️ Deprecated:** Model training functionality (the `train`, `traintf2`, and `export-sc` commands) is deprecated and will be removed in a future release. DeepProfiler is being redesigned as a dedicated feature extractor. If you are currently using training, please open an issue to discuss your use case.
+
 If you are interested in training a model on your images, please follow the [instructions in our
 documentation handbook](https://cytomining.github.io/DeepProfiler-handbook/docs/07-train.html).
+
+## Plugin system
+
+> **⚠️ Deprecated:** The plugin system for models, crop generators, and metrics is deprecated and will be removed in a future release alongside the training functionality.
+
+## CometML experiment tracking
+
+> **⚠️ Deprecated:** CometML integration is deprecated and will be removed in a future release.
 
 **Happy profiling!**
