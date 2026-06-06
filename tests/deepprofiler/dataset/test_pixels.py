@@ -1,5 +1,6 @@
 import deepprofiler.dataset.pixels
 import pytest
+import numpy
 import numpy.random
 import skimage.io
 import tempfile

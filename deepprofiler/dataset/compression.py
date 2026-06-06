@@ -1,7 +1,6 @@
 import pickle as pickle
 
 import numpy
-import scipy.stats
 import skimage.transform
 import os.path
 import skimage
@@ -85,7 +84,7 @@ class Compress():
             # Compare the 99.95 percentile of the image with the 99.99 percentile of the plate
             # Keep the smallest to compensate for saturated pixels before compression
             pmin, pmax = self.stats["lower_percentiles"][c], self.stats["upper_percentiles"][c]
-            vmin, vmax = scipy.stats.scoreatpercentile(image, (0.05, 99.95))
+            vmin, vmax = numpy.percentile(image, (0.05, 99.95))
             vmax = min(vmax, pmax)
             image = skimage.exposure.rescale_intensity(image, in_range=(vmin, vmax))
 
