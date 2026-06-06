@@ -6,7 +6,16 @@
 [![Cell Painting CNN-1 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7114558.svg)](https://doi.org/10.5281/zenodo.7114558)
 [![Example data DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7515132.svg)](https://doi.org/10.5281/zenodo.7515132)
 
-# Image-based profiling using deep learning 
+> [!IMPORTANT]
+> **DeepProfiler is undergoing a major redesign.** The package is being refocused as a
+> **lightweight, pip-installable feature extractor** for microscopy images, with native support
+> for models hosted on [HuggingFace](https://huggingface.co/) and outputs following
+> [cytotable](https://github.com/cytomining/CytoTable) standards.
+> Training, the plugin system, and CometML integration are deprecated and will be removed in a future release.
+> See [ROADMAP.md](ROADMAP.md) for the full plan. If you depend on any deprecated functionality,
+> please [open an issue](https://github.com/cytomining/DeepProfiler/issues) to let us know.
+
+# Image-based profiling using deep learning
 
 DeepProfiler is a set of tools to use deep learning for analyzing imaging data in high-throughput biological experiments.
 Please, see our [DeepProfiler Handbook](https://cytomining.github.io/DeepProfiler-handbook/) for more details about how 
