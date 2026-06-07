@@ -47,7 +47,7 @@ jobs:
         run: uv run ruff check .
 
   python-type-checks:
-    name: Python type checks
+    name: Python type checks (ty)
     strategy:
       fail-fast: false
     runs-on: ubuntu-24.04
@@ -63,8 +63,8 @@ jobs:
           cache-venv: true
           setup-uv: true
           install-deps: true
-      - name: Run mypy
-        run: uv run mypy .
+      - name: Run ty
+        run: uv run ty check .
 
   integration-test:
     name: Pytest (Python ${{ matrix.python-version }} on ${{ matrix.os }})
