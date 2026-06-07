@@ -73,9 +73,29 @@ testpaths = ["tests"]
 [tool.ruff]
 target-version = "py310"
 line-length = 100
+exclude = ["scripts/"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+# E501: line length — not enforced on legacy code pending rewrite
+# E731: lambda assignments — common pattern in legacy code
+# E722: bare except — legacy code, acceptable for now
+# E741: ambiguous variable names — legacy code
+# E701: multiple statements — legacy code
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Deprecated code — lenient linting until removal in v0.4.x
+"deepprofiler/learning/*" = ["E731", "E722", "E701", "F841", "F401"]
+"deepprofiler/imaging/*" = ["E731", "E722", "E701", "F841", "E741"]
+"deepprofiler/dataset/compression.py" = ["E731", "F841"]
+"deepprofiler/dataset/illumination_statistics.py" = ["E731"]
+"deepprofiler/dataset/image_dataset.py" = ["E731"]
+"plugins/*" = ["E731", "E722", "E701", "F841", "F401"]
+# Tests for deprecated TF-dependent code
+"tests/deepprofiler/imaging/*" = ["F841"]
+"tests/deepprofiler/learning/*" = ["F841"]
+"tests/plugins/*" = ["F841"]
 
 [tool.mypy]
 python_version = "3.10"
