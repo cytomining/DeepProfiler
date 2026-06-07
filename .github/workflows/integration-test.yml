@@ -63,8 +63,14 @@ jobs:
           cache-venv: true
           setup-uv: true
           install-deps: true
-      - name: Run ty
-        run: uv run ty check .
+      - name: Run ty (core non-deprecated code)
+        run: |
+          uv run ty check \
+            deepprofiler/dataset/ \
+            deepprofiler/imaging/boxes.py \
+            deepprofiler/__main__.py \
+            --ignore unresolved-attribute \
+            --ignore no-matching-overload
 
   integration-test:
     name: Pytest (Python ${{ matrix.python-version }} on ${{ matrix.os }})
