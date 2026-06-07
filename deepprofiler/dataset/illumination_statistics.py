@@ -73,7 +73,8 @@ class IlluminationStatistics():
         mean = np.zeros((len(self.channels)))
         lower = np.zeros((len(self.channels)))
         upper = np.zeros((len(self.channels)))
-        self.mean_image /= self.count
+        if self.mean_image is not None:
+            self.mean_image /= self.count
 
         # Compute percentiles and histogram
         for i in range(len(self.channels)):

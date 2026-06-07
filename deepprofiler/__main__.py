@@ -22,7 +22,7 @@ import deepprofiler.learning.training
 @click.group()
 @click.option("--root", prompt="Root directory for DeepProfiler experiment",
               help="Root directory for DeepProfiler experiment",
-              type=click.Path("r"))
+              type=click.Path(exists=True))
 @click.option("--config", default=None,
               help="Path to existing config file (filename in project_root/inputs/config/)",
               type=click.STRING)
