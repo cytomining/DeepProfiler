@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=68", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "deepprofiler"
@@ -67,8 +67,9 @@ Documentation = "https://cytomining.github.io/DeepProfiler-handbook/"
 [project.scripts]
 deepprofiler = "deepprofiler.__main__:cli"
 
-[tool.hatch.build.targets.wheel]
-packages = ["deepprofiler", "plugins"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["deepprofiler*", "plugins*"]
 
 [tool.pytest.ini_options]
 addopts = "--cov=deepprofiler -v"
