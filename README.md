@@ -7,7 +7,7 @@
 [![Example data DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7515132.svg)](https://doi.org/10.5281/zenodo.7515132)
 
 > [!IMPORTANT]
-> **DeepProfiler is undergoing a major redesign.** The package is being refocused as a
+> **DeepProfiler is undergoing changes to support wider use.** The package is being refocused as a
 > **lightweight, pip-installable feature extractor** for microscopy images, with native support
 > for models hosted on [HuggingFace](https://huggingface.co/) and outputs following
 > [cytotable](https://github.com/cytomining/CytoTable) standards.
