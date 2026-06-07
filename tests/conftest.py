@@ -1,13 +1,16 @@
-import pytest
 import json
 import os
 import random
-import skimage.io
+
 import numpy as np
 import pandas as pd
+import pytest
+import skimage.io
+
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.metadata
 import deepprofiler.dataset.target
+
 
 def __rand_array():
     return np.array(random.sample(range(100), 12))
@@ -51,8 +54,8 @@ def metadata(out_dir, make_struct, config):
     }, dtype=int)
     df.to_csv(filename, index=False)
     meta = deepprofiler.dataset.metadata.Metadata(filename)
-    train_rule = lambda data: data["Split"].astype(int) == 0
-    val_rule = lambda data: data["Split"].astype(int) == 1
+    def train_rule(data): return data["Split"].astype(int) == 0
+    def val_rule(data): return data["Split"].astype(int) == 1
     meta.splitMetadata(train_rule, val_rule)
     return meta
 
@@ -75,7 +78,7 @@ def locations(out_dir, metadata, config, make_struct):
 
 @pytest.fixture(scope="function")
 def dataset(metadata, config, make_struct, locations):
-    keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
+    def keygen(r): return "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     dataset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, "Class", ["R", "G", "B"], config["paths"]["root_dir"],
                                                     keygen, config)
     target = deepprofiler.dataset.target.MetadataColumnTarget("Class", metadata.data["Class"].unique())
