@@ -1,10 +1,11 @@
 import os
 import random
 
-import deepprofiler.dataset.metadata
 import numpy as np
 import pandas as pd
 import pytest
+
+import deepprofiler.dataset.metadata
 
 
 def __rand_array():
@@ -87,7 +88,7 @@ def test_load_multiple(metadata, dataframe, out_dir):
 
 def test_filter_records(metadata, dataframe, out_dir):
     metadata.loadSingle(os.path.join(out_dir, "test.csv"), "default", int)
-    rule = lambda data: map(lambda row: any(row % 2 == 0), data.values)
+    def rule(data): return map(lambda row: any(row % 2 == 0), data.values)
     metadata.filterRecords(rule)
     filtered = dataframe.loc[rule(dataframe), :]
     pd.testing.assert_frame_equal(metadata.data, filtered)
@@ -95,8 +96,8 @@ def test_filter_records(metadata, dataframe, out_dir):
 
 def test_split_metadata(metadata, dataframe, out_dir):
     metadata.loadSingle(os.path.join(out_dir, "test.csv"), "default", int)
-    train_rule = lambda data: data["Metadata_Plate"] < 50
-    val_rule = lambda data: data["Metadata_Plate"] >= 50
+    def train_rule(data): return data["Metadata_Plate"] < 50
+    def val_rule(data): return data["Metadata_Plate"] >= 50
     metadata.splitMetadata(train_rule, val_rule)
     assert len(metadata.train) + len(metadata.val) == len(metadata.data)
 

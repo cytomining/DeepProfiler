@@ -1,11 +1,12 @@
+import inspect
+import json
+import os
+
+import numpy as np
 import pytest
+import tensorflow as tf
 
 import plugins.metrics.top_k
-import inspect
-import os
-import numpy as np
-import tensorflow as tf
-import json
 
 cpu_config = tf.compat.v1.ConfigProto(
     device_count = {'GPU': 0}

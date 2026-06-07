@@ -1,15 +1,11 @@
+import abc
 import gc
 import os
 import random
-import abc
 
 import comet_ml
 import numpy as np
 import tensorflow as tf
-
-import deepprofiler.dataset.utils
-import deepprofiler.imaging.cropping
-import deepprofiler.learning.validation
 
 tf.compat.v1.disable_v2_behavior()
 tf.config.run_functions_eagerly(False)

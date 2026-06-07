@@ -1,5 +1,6 @@
 import abc
 
+
 class Metric(abc.ABC):
 
     def __init__(self, config, name):

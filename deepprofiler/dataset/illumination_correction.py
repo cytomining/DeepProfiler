@@ -1,7 +1,7 @@
-import skimage.transform
+import numpy as np
 import skimage.filters
 import skimage.morphology
-import numpy as np
+import skimage.transform
 
 #################################################
 ## ILLUMINATION CORRECTION FUNCTION

@@ -1,12 +1,11 @@
 import pytest
 import tensorflow as tf
 
-import deepprofiler.imaging.cropping
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.metadata
 import deepprofiler.dataset.target
+import deepprofiler.imaging.cropping
 import plugins.models.autoencoder
-
 
 tf.compat.v1.disable_v2_behavior()
 

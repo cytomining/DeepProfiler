@@ -1,8 +1,9 @@
 import os
-import deepprofiler.learning.training
+
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.metadata
 import deepprofiler.dataset.target
+import deepprofiler.learning.training
 
 
 def test_learn_model(config, dataset, data, locations, out_dir, make_struct):

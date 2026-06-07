@@ -1,11 +1,9 @@
-import pandas as pd
-import numpy as np
-import skimage.io
-import threading
-import tqdm
 import os
 import shutil
 
+import numpy as np
+import pandas as pd
+import skimage.io
 import tensorflow as tf
 
 import deepprofiler.imaging.boxes

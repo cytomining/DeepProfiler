@@ -1,8 +1,9 @@
-import deepprofiler.dataset.illumination_correction
 import numpy
-import numpy.testing
 import numpy.random
+import numpy.testing
 import pytest
+
+import deepprofiler.dataset.illumination_correction
 
 
 @pytest.fixture(scope="function")

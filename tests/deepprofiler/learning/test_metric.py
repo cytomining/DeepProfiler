@@ -1,5 +1,6 @@
-import deepprofiler.learning.metric
 import inspect
+
+import deepprofiler.learning.metric
 
 
 def is_method(obj, name):

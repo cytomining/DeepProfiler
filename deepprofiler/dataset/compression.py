@@ -1,15 +1,16 @@
+import os.path
 import pickle as pickle
 
 import numpy
-import skimage.transform
-import os.path
 import skimage
-import skimage.io
 import skimage.exposure
+import skimage.io
+import skimage.transform
 
-import deepprofiler.dataset.utils
 import deepprofiler.dataset.illumination_statistics
 import deepprofiler.dataset.image_dataset
+import deepprofiler.dataset.utils
+
 
 def png_dir(output_dir, plate_name):
     return os.path.join(output_dir, plate_name)

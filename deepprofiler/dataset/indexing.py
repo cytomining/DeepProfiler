@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 ## Split a metadata file in a number of parts
 def split_index(config, parts):
     index = pd.read_csv(config["paths"]["metadata"] + "/index.csv")

@@ -1,11 +1,12 @@
-import numpy as np
-import pandas as pd
 import os
 
-import deepprofiler.dataset.pixels
-import deepprofiler.dataset.utils
+import numpy as np
+import pandas as pd
+
 import deepprofiler.dataset.metadata
+import deepprofiler.dataset.pixels
 import deepprofiler.dataset.target
+import deepprofiler.dataset.utils
 import deepprofiler.imaging.boxes
 
 

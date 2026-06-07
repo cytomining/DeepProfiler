@@ -1,5 +1,5 @@
-import os
 import abc
+import os
 
 import comet_ml
 import numpy as np
