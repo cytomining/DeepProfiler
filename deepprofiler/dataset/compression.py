@@ -85,7 +85,7 @@ class Compress():
             # Compare the 99.95 percentile of the image with the 99.99 percentile of the plate
             # Keep the smallest to compensate for saturated pixels before compression
             pmin, pmax = self.stats["lower_percentiles"][c], self.stats["upper_percentiles"][c]
-            vmin, vmax = numpy.percentile(image, (0.05, 99.95))
+            vmin, vmax = numpy.percentile(image, (0.05, 99.95))  # replaces deprecated scipy.stats.scoreatpercentile
             vmax = min(vmax, pmax)
             image = skimage.exposure.rescale_intensity(image, in_range=(vmin, vmax))
 
