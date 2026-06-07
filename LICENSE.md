@@ -1,6 +1,8 @@
 BSD 3-Clause License
 
-Copyright (c) 2024, Cytomining
+Copyright (c) 2018, Broad Institute, Inc.
+Copyright (c) 2026, Cytomining
+
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

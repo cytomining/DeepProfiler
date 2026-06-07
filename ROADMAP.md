@@ -1,7 +1,6 @@
 # DeepProfiler Roadmap
 
-DeepProfiler is being redesigned from a training-and-profiling framework into a
-**lean, pip-installable feature extractor** for microscopy images.
+DeepProfiler is being redesigned from a training-and-profiling framework into a **lean, pip-installable feature extractor** for microscopy images.
 This document describes where the project is heading and what will be removed along the way.
 
 ## Vision
@@ -10,10 +9,7 @@ DeepProfiler's new focus is a single, well-defined job:
 
 > **Take microscopy images (with optional cell masks) → extract deep learning features → output cytotable-compatible Parquet files.**
 
-The package will be a thin layer over deep learning models, with seamless integration
-with models hosted on [HuggingFace](https://huggingface.co/), and outputs that follow
-[cytotable](https://github.com/cytomining/CytoTable) standards for downstream compatibility
-with [pycytominer](https://github.com/cytomining/pycytominer) and the broader cytomining ecosystem.
+The package will be a thin layer over deep learning models, with seamless integration with models hosted on [HuggingFace](https://huggingface.co/), and outputs that follow [cytotable](https://github.com/cytomining/CytoTable) standards for downstream compatibility with [pycytominer](https://github.com/cytomining/pycytominer) and the broader cytomining ecosystem.
 
 ---
 
@@ -57,34 +53,55 @@ with [pycytominer](https://github.com/cytomining/pycytominer) and the broader cy
 
 ---
 
+## Licensing transition
+
+DeepProfiler was originally created at the Broad Institute in 2018 and is distributed under the BSD 3-Clause License.
+Ongoing development and stewardship has moved to the Cytomining community.
+
+### Current state (v0.3.x)
+
+The v0.3.x release still contains substantial amounts of code originating from the Broad Institute.
+The BSD 3-Clause License requires that the original copyright notice be retained for any distribution that includes that code.
+Accordingly, the current license lists both copyright holders:
+
+```
+Copyright (c) 2018, Broad Institute, Inc.
+Copyright (c) 2026, Cytomining
+```
+
+This is not a dual license — it is a single BSD 3-Clause license with two copyright holders, which is standard practice when a project changes institutional stewardship.
+
+### Planned transition (v0.4.x)
+
+The v0.4.x rewrite will replace the original Broad Institute code in its entirety with a new PyTorch-based implementation authored under Cytomining's stewardship.
+Once that original code is no longer distributed, the obligation to retain the Broad Institute copyright notice ends.
+At that point the license will be updated to:
+
+```
+Copyright (c) 2026, Cytomining
+```
+
+This transition respects the origins of the project while giving Cytomining full stewardship of the new codebase going forward.
+
+---
+
 ## Development philosophy: agentic AI infrastructure
 
-This project is developed with the help of agentic AI tools — specifically
-[Claude Code](https://claude.ai/code) — as a core part of the development workflow.
-This is not about using AI to generate boilerplate. It is about having a capable collaborator
-that understands the codebase, remembers decisions across sessions, and can execute
-multi-step tasks (refactoring, writing tests, reviewing PRs) with human oversight at each step.
+This project is developed with the help of agentic AI tools — specifically [Claude Code](https://claude.ai/code) — as a core part of the development workflow.
+This is not about using AI to generate boilerplate.
+It is about having a capable collaborator that understands the codebase, remembers decisions across sessions, and can execute multi-step tasks (refactoring, writing tests, reviewing PRs) with human oversight at each step.
 
 ### Why this matters for contributors
 
-Scientific software in biology is often maintained by small teams with limited engineering
-bandwidth. Agentic AI infrastructure helps close that gap — allowing researchers to move
-faster without sacrificing code quality or community standards.
+Scientific software in biology is often maintained by small teams with limited engineering bandwidth.
+Agentic AI infrastructure helps close that gap — allowing researchers to move faster without sacrificing code quality or community standards.
 
 Concretely, this means:
 
-- **Reusable skills** — repeatable, reviewable AI tasks are encoded as
-  [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/skills), so things
-  like "review this PR", "run the test suite and summarize failures", or "check for
-  deprecated API usage" can be invoked consistently by any maintainer.
-- **Memory across sessions** — project context (decisions made, patterns to follow,
-  known issues) is stored in structured memory files so the AI collaborator does not
-  need to re-derive everything from scratch each session.
-- **Hooks and automation** — routine tasks (linting before commit, updating changelogs,
-  flagging deprecations) are automated via Claude Code hooks wired into the development
-  environment, reducing the cognitive load on maintainers.
-- **Transparent, reviewable output** — all AI-assisted changes go through the same
-  PR review process as human contributions. The AI proposes; humans approve.
+- **Reusable skills** — repeatable, reviewable AI tasks are encoded as [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/skills), so things like "review this PR", "run the test suite and summarize failures", or "check for deprecated API usage" can be invoked consistently by any maintainer.
+- **Memory across sessions** — project context (decisions made, patterns to follow, known issues) is stored in structured memory files so the AI collaborator does not need to re-derive everything from scratch each session.
+- **Hooks and automation** — routine tasks (linting before commit, updating changelogs, flagging deprecations) are automated via Claude Code hooks wired into the development environment, reducing the cognitive load on maintainers.
+- **Transparent, reviewable output** — all AI-assisted changes go through the same PR review process as human contributions. The AI proposes; humans approve.
 
 ### Current setup
 
@@ -109,47 +126,30 @@ As the codebase matures, we plan to add project-specific skills for:
 
 ## DeepProfiler as an agent-accessible tool
 
-Beyond using AI to help *build* DeepProfiler, we want DeepProfiler itself to be
-**usable by AI agents** — not just by humans at a command line.
+Beyond using AI to help *build* DeepProfiler, we want DeepProfiler itself to be **usable by AI agents** — not just by humans at a command line.
 
 ### The problem it solves
 
-Image-based profiling pipelines are long and multi-step: images come in, get
-preprocessed, features get extracted, features get normalized, and results get
-interpreted. Today, each of these steps requires a human to run a command, check the
-output, and decide what to do next. This is slow and does not scale to the volume of
-experiments modern biology demands.
+Image-based profiling pipelines are long and multi-step: images come in, get preprocessed, features get extracted, features get normalized, and results get interpreted.
+Today, each of these steps requires a human to run a command, check the output, and decide what to do next.
+This is slow and does not scale to the volume of experiments modern biology demands.
 
-AI agents can change this. An agent that can orchestrate a full profiling pipeline —
-calling DeepProfiler to extract features, passing them to
-[pycytominer](https://github.com/cytomining/pycytominer) for normalization, querying
-[CytoTable](https://github.com/cytomining/CytoTable) for data transformation, and
-surfacing a summary to a human for review — compresses days of work into minutes,
-while keeping a human in the loop for decisions that matter.
+AI agents can change this.
+An agent that can orchestrate a full profiling pipeline — calling DeepProfiler to extract features, passing them to [pycytominer](https://github.com/cytomining/pycytominer) for normalization, querying [CytoTable](https://github.com/cytomining/CytoTable) for data transformation, and surfacing a summary to a human for review — compresses days of work into minutes, while keeping a human in the loop for decisions that matter.
 
 ### What we are building toward
 
-For DeepProfiler to be useful to an AI agent, it needs to be more than just a
-command-line tool. It needs:
+For DeepProfiler to be useful to an AI agent, it needs to be more than just a command-line tool.
+It needs:
 
-- **A clean Python API** — so an agent can call `dp.profile(...)` programmatically
-  without shelling out to a subprocess. This is a core goal of the v0.4.x rewrite.
-- **Structured, predictable output** — cytotable-compatible Parquet files with a
-  consistent schema mean an agent always knows what it is getting back, without
-  needing to parse or guess.
-- **A reusable skill** — we plan to publish a DeepProfiler skill that any AI agent
-  can load and invoke. A skill is a self-contained, versioned description of how to
-  use a tool: what inputs it expects, what it does, and what it returns. Skills are
-  model-agnostic — the same skill definition can be used by Claude, and other agents
-  that adopt the same skill standard. This means DeepProfiler becomes callable by an
-  agent the same way a human calls a function: with clear inputs, clear outputs, and
-  no ambiguity about what happened.
+- **A clean Python API** — so an agent can call `dp.profile(...)` programmatically without shelling out to a subprocess. This is a core goal of the v0.4.x rewrite.
+- **Structured, predictable output** — cytotable-compatible Parquet files with a consistent schema mean an agent always knows what it is getting back, without needing to parse or guess.
+- **A reusable skill** — we plan to publish a DeepProfiler skill that any AI agent can load and invoke. A skill is a self-contained, versioned description of how to use a tool: what inputs it expects, what it does, and what it returns. Skills are model-agnostic — the same skill definition can be used by Claude, and other agents that adopt the same skill standard. This means DeepProfiler becomes callable by an agent the same way a human calls a function: with clear inputs, clear outputs, and no ambiguity about what happened.
 
 ### The cytomining agent ecosystem
 
-DeepProfiler is one piece of a larger cytomining toolchain. The long-term vision is
-an agent that can orchestrate the full image-based profiling pipeline by invoking each
-tool through its skill interface:
+DeepProfiler is one piece of a larger cytomining toolchain.
+The long-term vision is an agent that can orchestrate the full image-based profiling pipeline by invoking each tool through its skill interface:
 
 ```
 Images
@@ -159,24 +159,19 @@ Images
   → Human review        (interpret results, approve next steps)
 ```
 
-Each step produces structured output that the next tool consumes. The human stays in
-the loop at meaningful decision points — not at every file conversion or parameter
-choice. This is the difference between automation that replaces judgment and automation
-that amplifies it.
+Each step produces structured output that the next tool consumes.
+The human stays in the loop at meaningful decision points — not at every file conversion or parameter choice.
+This is the difference between automation that replaces judgment and automation that amplifies it.
 
 ### Human feedback as a first-class requirement
 
-Automated pipelines in biology carry real risk: a silent error in feature extraction
-can propagate into downstream conclusions without anyone noticing. We are designing
-the agent interface with explicit human checkpoints — points where an agent pauses,
-surfaces a summary of what it did and what it found, and waits for a human to confirm
-before proceeding. This is not an afterthought; it is a design constraint we are
-building in from the start.
+Automated pipelines in biology carry real risk: a silent error in feature extraction can propagate into downstream conclusions without anyone noticing.
+We are designing the agent interface with explicit human checkpoints — points where an agent pauses, surfaces a summary of what it did and what it found, and waits for a human to confirm before proceeding.
+This is not an afterthought; it is a design constraint we are building in from the start.
 
 ---
 
 ## Feedback
 
-If you depend on any functionality listed as deprecated, please
-[open an issue](https://github.com/cytomining/DeepProfiler/issues) to let us know.
+If you depend on any functionality listed as deprecated, please [open an issue](https://github.com/cytomining/DeepProfiler/issues) to let us know.
 We want to understand active use cases before removing anything.
