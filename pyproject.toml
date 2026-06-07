@@ -24,6 +24,10 @@ authors = [
     { name = "Fernanda Fossa", email = "fefossa@gmail.com" },
     { name = "Thouis Jones", email = "thouis@broadinstitute.org" },
 ]
+maintainers = [
+    { name = "Gregory Way", email = "gregory.way@gmail.com" },
+    { name = "Dave Bunten", email = "dave.bunten@cuanschutz.edu" },
+]
 keywords = ["deep learning", "image-based profiling", "microscopy", "cell painting"]
 classifiers = [
     "Development Status :: 4 - Beta",
