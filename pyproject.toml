@@ -27,6 +27,7 @@ dependencies = [
     "scipy>=1.13",
     "tensorflow>=2.18",
     "tqdm>=4.66",
+    "typer>=0.12",
 ]
 
 [project.optional-dependencies]
@@ -38,9 +39,12 @@ test = [
 [project.urls]
 Homepage = "https://github.com/cytomining/DeepProfiler"
 
+[project.scripts]
+dp-pipe = "orchestrator.app:main"
+
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["deepprofiler*", "plugins*", "scripts*"]
+include = ["deepprofiler*", "plugins*", "scripts*", "orchestrator*"]
 
 [tool.pytest.ini_options]
 addopts = "--cov=./ -v"
