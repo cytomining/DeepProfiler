@@ -27,7 +27,6 @@ dependencies = [
     "scipy>=1.13",
     "tensorflow>=2.18",
     "tqdm>=4.66",
-    "typer>=0.12",
 ]
 
 [project.optional-dependencies]
