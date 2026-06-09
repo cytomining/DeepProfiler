@@ -1,8 +1,11 @@
-import deepprofiler.dataset.pixels
-import pytest
+import tempfile
+
+import numpy
 import numpy.random
 import skimage.io
-import tempfile
+
+import deepprofiler.dataset.pixels
+
 
 def test_openImage():
     numpy.random.seed(11)

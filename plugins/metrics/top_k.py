@@ -1,4 +1,5 @@
 import tensorflow as tf
+
 from deepprofiler.learning.metric import Metric
 
 tf.compat.v1.disable_v2_behavior()

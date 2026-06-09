@@ -1,20 +1,20 @@
-import json
 import os
 import random
 import threading
 
-import deepprofiler.dataset.image_dataset
-import deepprofiler.dataset.metadata
-import deepprofiler.dataset.target
 import numpy as np
 import pandas as pd
 import skimage.io
+
+import deepprofiler.dataset.image_dataset
+import deepprofiler.dataset.metadata
+import deepprofiler.dataset.target
 
 
 def test_init(metadata, out_dir, dataset, config, make_struct):
     sampling_field = config["dataset"]["metadata"]["label_field"]
     channels = config["dataset"]["images"]["channels"]
-    keygen = lambda r: "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
+    def keygen(r): return "{}/{}-{}".format(r["Metadata_Plate"], r["Metadata_Well"], r["Metadata_Site"])
     dset = deepprofiler.dataset.image_dataset.ImageDataset(metadata, sampling_field, channels, config["paths"]["root_dir"], keygen, config)
     assert dset.meta == metadata
     assert dset.sampling_field == sampling_field

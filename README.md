@@ -1,12 +1,21 @@
 ![DeepProfiler](figures/logo/banner.png)
 -----------------
-[![Python 3.6+](https://img.shields.io/badge/python-3.6%2B-blue)](https://www.python.org/downloads/release/python-360/)
-[![Tensorflow 2.5+](https://img.shields.io/badge/tensorflow-2.5%2B-brightgreen)](https://www.tensorflow.org/install/pip)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
+[![CI](https://github.com/cytomining/DeepProfiler/actions/workflows/integration-test.yml/badge.svg)](https://github.com/cytomining/DeepProfiler/actions/workflows/integration-test.yml)
+[![codecov](https://codecov.io/gh/cytomining/DeepProfiler/branch/main/graph/badge.svg)](https://codecov.io/gh/cytomining/DeepProfiler)
 [![Cell Painting CNN-1 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7114558.svg)](https://doi.org/10.5281/zenodo.7114558)
 [![Example data DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7515132.svg)](https://doi.org/10.5281/zenodo.7515132)
-[![CometML](https://img.shields.io/badge/comet.ml-track-brightgreen.svg)](https://www.comet.ml)
 
-# Image-based profiling using deep learning 
+> [!IMPORTANT]
+> **DeepProfiler is undergoing changes to support wider use.** The package is being refocused as a
+> **lightweight, pip-installable feature extractor** for microscopy images, with native support
+> for models hosted on [HuggingFace](https://huggingface.co/) and outputs following
+> [cytotable](https://github.com/cytomining/CytoTable) standards.
+> Training, the plugin system, and CometML integration are deprecated and will be removed in a future release.
+> See [ROADMAP.md](ROADMAP.md) for the full plan. If you depend on any deprecated functionality,
+> please [open an issue](https://github.com/cytomining/DeepProfiler/issues) to let us know.
+
+# Image-based profiling using deep learning
 
 DeepProfiler is a set of tools to use deep learning for analyzing imaging data in high-throughput biological experiments.
 Please, see our [DeepProfiler Handbook](https://cytomining.github.io/DeepProfiler-handbook/) for more details about how 
@@ -37,90 +46,67 @@ robust and improve performance.
 
 ## System requirements
 
-DeepProfiler works best with Linux operating systems (Ubuntu 18+).
-- Python 3.6+ is required.
-- Tensorflow 2.5.3 (tested). 
-- For GPU-acceleration a CUDA-compatible (CUDA 11.2) graphic card is required. 
-  Also see [Tensorflow-CUDA-Python compatibility table](https://www.tensorflow.org/install/source#gpu). 
+- Python 3.10+ is required.
+- Linux (Ubuntu 20.04+) or macOS.
+- For GPU acceleration, a CUDA-compatible GPU is recommended.
 
-## Clone and install DeepProfiler
+## Install
 
-First, clone or fork this repository with example data (example data is stored with `git-lfs`):
 ```
-git clone https://github.com/broadinstitute/DeepProfiler.git
-```
-Alternativly, you can [download example data from Zenodo](https://doi.org/10.5281/zenodo.7515132). 
-
-If you don't need example data, you can clone without it:
-```
-GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/broadinstitute/DeepProfiler.git
+pip install deepprofiler
 ```
 
-Then [install](https://cytomining.github.io/DeepProfiler-handbook/docs/01-install.html) it using:
+Or run directly without any environment setup using [uvx](https://docs.astral.sh/uv/guides/tools/) — it handles installation automatically in an isolated environment:
+
 ```
-pip install -e .
+uvx deepprofiler --root=/path/to/project --config=config.json profile
 ```
+
+For contributing, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Download example data
 
-This repository contains example data, which is already structured as a DeepProfiler project. 
-To do this, unpack `example_data.tar.gz` with the command:
+This repository contains example data structured as a DeepProfiler project.
+Unpack it with:
 ```
 tar -xzf example_data.tar.gz
 ```
-Profiling of the example data with GPU-acceleration is expected to take ~1 minute. 
-Single-cell export and training are expected to take 5-10 minutes. 
 
 ## Profiling with the Cell Painting CNN-1
 
-To profile experimental data, just an experiment folder, for example, `cell_painting` in `example_data/outputs/` and 
-then `checkpoint` folder inside the created experiment folder. Copy model file `Cell_Painting_CNN_v1.hdf5` into `checkpoint` folder.
-
-[Download an example configuration file](https://github.com/broadinstitute/DeepProfilerExperiments/blob/master/resources/config/cell_painting_cnn_profiling_example.json) 
-and put it in `example_data/inputs/config/`.
-
-Now you can start profiling the example data:
+Initialize your project directory structure:
 ```
-python3 deepprofiler --root=/your_path/example_data/ --config=cell_painting_cnn_profiling_example.json –-exp=cell_painting –-gpu=0 profile
+deepprofiler --root=/path/to/project --config=config.json setup
 ```
 
-The extracted features should be available in `example_data/outputs/cell_painting/features/`.
+Place your images, metadata CSV, and cell locations in the created directories
+(see the [handbook](https://cytomining.github.io/DeepProfiler-handbook/docs/02-structure.html) for layout details).
+[Download an example configuration file](https://github.com/broadinstitute/DeepProfilerExperiments/blob/master/resources/config/cell_painting_cnn_profiling_example.json)
+and put it in `project/inputs/config/`.
 
-### Profiling with the Cell Painting CNN-1 with your data
+Copy the model weights (`Cell_Painting_CNN_v1.hdf5`,
+[available on Zenodo](https://doi.org/10.5281/zenodo.7114558)) into `project/outputs/cell_painting/checkpoint/`.
 
-When running DeepProfiler you usually need to specify a root directory where your data is stored and a command that you 
-want to run. For instance, to [initialize](https://cytomining.github.io/DeepProfiler-handbook/docs/02-structure.html) 
-your project, you can use:
-
+Run feature extraction:
 ```
-python deepprofiler --root=/home/ubuntu/project --config=config.json setup
-```
-
-In the created directories, you can organize your input files, including [images](https://cytomining.github.io/DeepProfiler-handbook/docs/03-images.html), 
-[metadata and single-cell locations](https://cytomining.github.io/DeepProfiler-handbook/docs/04-metadata.html). You can 
-also refer to example data regarding the project organization and format of files. 
-
-
-[Download an example configuration file](https://github.com/broadinstitute/DeepProfilerExperiments/blob/master/resources/config/cell_painting_cnn_profiling_example.json) 
-and put it in your `project/inputs/config/`. Adjust the configuration for your project: more details about configuration 
-files are available in the corresponding [handbook chapter](https://cytomining.github.io/DeepProfiler-handbook/docs/05-config.html) 
-and [profiling section](https://cytomining.github.io/DeepProfiler-handbook/docs/06-profiling.html#profiling-with-cell-painting-cnn-model). 
-Also, you can find other examples in the [DeepProfilerExperiment repository](https://github.com/broadinstitute/DeepProfilerExperiments).
-
-After you organize your project, create an experiment folder (for example `cell_painting`) in `project/outputs/` and then 
-a `checkpoint` folder inside the created experiment folder. Copy the model (`Cell_Painting_CNN_v1.hdf5`) into the `checkpoint` folder.
-
-If images are in `project/inputs/images/`, set `implement:false` in the `compression` config section.
-
-
-After the project is organized, feature extraction can be started:
-```
-python3 deepprofiler --root=/project/ --config=cell_painting_cnn.json –-exp=cell_painting –-gpu=0 profile
+deepprofiler --root=/path/to/project --config=cell_painting_cnn.json --exp=cell_painting --gpu=0 profile
 ```
 
-## Training of your models
+Extracted features are written to `project/outputs/cell_painting/features/`.
 
-If you are interested in training a model on your images, please follow the [instructions in our 
-documentation handbook](https://cytomining.github.io/DeepProfiler-handbook/docs/07-train.html). 
+## Training your own models
+
+> **⚠️ Deprecated:** Model training functionality (the `train`, `traintf2`, and `export-sc` commands) is deprecated and will be removed in a future release. DeepProfiler is being redesigned as a dedicated feature extractor. If you are currently using training, please open an issue to discuss your use case.
+
+If you are interested in training a model on your images, please follow the [instructions in our
+documentation handbook](https://cytomining.github.io/DeepProfiler-handbook/docs/07-train.html).
+
+## Plugin system
+
+> **⚠️ Deprecated:** The plugin system for models, crop generators, and metrics is deprecated and will be removed in a future release alongside the training functionality.
+
+## CometML experiment tracking
+
+> **⚠️ Deprecated:** CometML integration is deprecated and will be removed in a future release.
 
 **Happy profiling!**

@@ -1,8 +1,8 @@
+import logging
+import multiprocessing
 import os
 import sys
 import time
-import logging
-import multiprocessing
 
 PI = 3.1415926539
 

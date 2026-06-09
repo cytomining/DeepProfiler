@@ -1,13 +1,12 @@
 import os
+
 import numpy as np
 import pandas as pd
-import skimage.io
 import tensorflow as tf
-import multiprocessing
 
-import deepprofiler.imaging.cropping
 import deepprofiler.dataset.pixels
 import deepprofiler.dataset.utils
+import deepprofiler.imaging.cropping
 
 tf.compat.v1.disable_v2_behavior()
 tf.config.run_functions_eagerly(False)

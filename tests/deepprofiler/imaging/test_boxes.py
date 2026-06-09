@@ -1,10 +1,11 @@
-import numpy as np
-import pandas as pd
 import os
 
-import deepprofiler.imaging.boxes
+import numpy as np
+import pandas as pd
+
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.metadata
+import deepprofiler.imaging.boxes
 
 
 def test_get_locations(config, make_struct):
@@ -20,7 +21,7 @@ def test_get_locations(config, make_struct):
     expected_output = pd.DataFrame(columns=["Nuclei_Location_Center_X", "Nuclei_Location_Center_Y"])
     expected_output.to_csv(test_locations_path)
     expected_output = pd.read_csv(test_locations_path)
-    assert os.path.exists(test_locations_path) == True
+    assert os.path.exists(test_locations_path)
     test_output = deepprofiler.imaging.boxes.get_locations(test_image_key, config)
     assert test_output.equals(expected_output)
     

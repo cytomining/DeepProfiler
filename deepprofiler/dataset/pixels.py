@@ -2,7 +2,6 @@ import numpy as np
 import skimage.io
 import skimage.measure
 
-
 #################################################
 ## COMMON IMAGE HANDLING OPPERATIONS
 #################################################

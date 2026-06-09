@@ -1,29 +1,28 @@
-import comet_ml
-
-import tensorflow as tf
+import copy
 import json
 import os
-import copy
+
 import click
+import comet_ml  # noqa: F401 — deprecated, retained until v0.4.x removal
+import tensorflow as tf  # noqa: F401 — deprecated, retained until v0.4.x removal
 
 import deepprofiler.dataset.compression
+import deepprofiler.dataset.illumination_statistics
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.indexing
-import deepprofiler.dataset.illumination_statistics
 import deepprofiler.dataset.metadata
-import deepprofiler.dataset.utils
-import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.sampling
-import deepprofiler.learning.training
-import deepprofiler.learning.tf2train
+import deepprofiler.dataset.utils
 import deepprofiler.learning.profiling
+import deepprofiler.learning.tf2train
+import deepprofiler.learning.training
 
 
 # Main interaction point
 @click.group()
 @click.option("--root", prompt="Root directory for DeepProfiler experiment",
               help="Root directory for DeepProfiler experiment",
-              type=click.Path("r"))
+              type=click.Path(exists=True))
 @click.option("--config", default=None,
               help="Path to existing config file (filename in project_root/inputs/config/)",
               type=click.STRING)

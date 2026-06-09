@@ -95,3 +95,7 @@ ENV/
 .ropeproject
 
 .idea
+
+# uv
+.venv/
+uv.lock

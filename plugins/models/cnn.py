@@ -1,10 +1,10 @@
-from comet_ml import Experiment
-
 import tensorflow as tf
+from comet_ml import (
+    Experiment,  # noqa: F401 — deprecated, must be imported before TF; retained until v0.4.x
+)
 
-from deepprofiler.learning.model import DeepProfilerModel
 from deepprofiler.imaging.augmentations import AugmentationLayer
-
+from deepprofiler.learning.model import DeepProfilerModel
 
 tf.compat.v1.disable_v2_behavior()
 

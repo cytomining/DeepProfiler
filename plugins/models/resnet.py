@@ -1,12 +1,11 @@
-import numpy as np
-import tensorflow as tf
 import inspect
 
+import numpy as np
+import tensorflow as tf
+
+from deepprofiler.imaging.augmentations import AugmentationLayer, AugmentationLayerV2
 from deepprofiler.learning.model import DeepProfilerModel
 from deepprofiler.learning.tf2train import DeepProfilerModelV2
-from deepprofiler.imaging.augmentations import AugmentationLayer
-from deepprofiler.imaging.augmentations import AugmentationLayerV2
-
 
 ##################################################
 # ResNet architecture as defined in "Identity Mappings

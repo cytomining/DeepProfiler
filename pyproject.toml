@@ -1,0 +1,103 @@
+[build-system]
+requires = ["setuptools>=68", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deepprofiler"
+version = "0.3.1"
+description = "Tools for representation learning in high throughput image collections"
+readme = "README.md"
+license = { file = "LICENSE.md" }
+authors = [
+    { name = "Juan C. Caicedo", email = "jccaicedo@gmail.com" },
+    { name = "Nikita Moshkov", email = "nikitam851@gmail.com" },
+    { name = "Shantanu Singh", email = "shsingh@broadinstitute.org" },
+    { name = "Santiago Benoit", email = "santib27@gmail.com" },
+    { name = "Matthew Smith", email = "msmith16.ma@gmail.com" },
+    { name = "Peter Goldsborough", email = "peter@goldsborough.me" },
+    { name = "John Arevalo", email = "johnarevalo@gmail.com" },
+    { name = "Marzieh Haghighi", email = "marzieh.haghighi@gmail.com" },
+    { name = "Michael Bornholdt", email = "michael.bornholdt@outlook.com" },
+    { name = "Gregory Way", email = "gregory.way@gmail.com" },
+    { name = "Gideon Mendels", email = "gidim@users.noreply.github.com" },
+    { name = "Frances Hubis", email = "frances.hubis@gmail.com" },
+    { name = "Fernanda Fossa", email = "fefossa@gmail.com" },
+    { name = "Thouis Jones", email = "thouis@broadinstitute.org" },
+]
+maintainers = [
+    { name = "Gregory Way", email = "gregory.way@gmail.com" },
+    { name = "Dave Bunten", email = "dave.bunten@cuanschutz.edu" },
+]
+keywords = ["deep learning", "image-based profiling", "microscopy", "cell painting"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.0",
+    "comet-ml>=3.1.6",
+    "efficientnet==1.1.1",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scikit-image>=0.21",
+    "scipy>=1.10",
+    "tensorflow>=2.5",
+    "tqdm>=4.62",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.4",
+    "ty>=0.0.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/cytomining/DeepProfiler"
+Repository = "https://github.com/cytomining/DeepProfiler"
+Documentation = "https://cytomining.github.io/DeepProfiler-handbook/"
+
+[project.scripts]
+deepprofiler = "deepprofiler.__main__:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["deepprofiler*", "plugins*"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=deepprofiler -v"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+exclude = ["scripts/"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+# E501: line length — not enforced on legacy code pending rewrite
+# E731: lambda assignments — common pattern in legacy code
+# E722: bare except — legacy code, acceptable for now
+# E741: ambiguous variable names — legacy code
+# E701: multiple statements — legacy code
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Deprecated code — lenient linting until removal in v0.4.x
+"deepprofiler/learning/*" = ["E731", "E722", "E701", "F841", "F401"]
+"deepprofiler/imaging/*" = ["E731", "E722", "E701", "F841", "E741"]
+"deepprofiler/dataset/compression.py" = ["E731", "F841"]
+"deepprofiler/dataset/illumination_statistics.py" = ["E731"]
+"deepprofiler/dataset/image_dataset.py" = ["E731"]
+"plugins/*" = ["E731", "E722", "E701", "F841", "F401"]
+# Tests for deprecated TF-dependent code
+"tests/deepprofiler/imaging/*" = ["F841"]
+"tests/deepprofiler/learning/*" = ["F841"]
+"tests/plugins/*" = ["F841"]

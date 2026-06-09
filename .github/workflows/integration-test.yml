@@ -1,0 +1,150 @@
+name: Integration Workflow
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["*"]
+  workflow_dispatch:
+    inputs:
+      pytest_addopts:
+        description: Extra options for pytest; use -vv for full details; see
+          https://docs.pytest.org/en/latest/example/simple.html#how-to-change-command-line-options-defaults
+        required: false
+        default: ""
+
+env:
+  LANG: "en_US.utf-8"
+  LC_ALL: "en_US.utf-8"
+  PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
+  PYTEST_ADDOPTS: ${{ github.event.inputs.pytest_addopts }}
+  PYTHONIOENCODING: "UTF-8"
+  TARGET_PYTHON_VERSION: "3.10"
+  UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
+
+jobs:
+  quality-test:
+    name: Lint checks
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Setup python and environment
+        uses: ./.github/actions/setup-env
+        with:
+          python-version: ${{ env.TARGET_PYTHON_VERSION }}
+          cache-pre-commit: false
+          cache-venv: true
+          setup-uv: true
+          install-deps: true
+      - name: Lint with ruff
+        run: uv run ruff check .
+
+  python-type-checks:
+    name: Python type checks (ty)
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Setup python and environment
+        uses: ./.github/actions/setup-env
+        with:
+          python-version: ${{ env.TARGET_PYTHON_VERSION }}
+          cache-pre-commit: false
+          cache-venv: true
+          setup-uv: true
+          install-deps: true
+      - name: Run ty (core non-deprecated code)
+        run: |
+          uv run ty check \
+            deepprofiler/dataset/ \
+            deepprofiler/imaging/boxes.py \
+            deepprofiler/__main__.py \
+            --ignore unresolved-attribute \
+            --ignore no-matching-overload
+
+  integration-test:
+    name: Pytest (Python ${{ matrix.python-version }} on ${{ matrix.os }})
+    needs: quality-test
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-24.04
+        python-version: ["3.10", "3.11"]
+    runs-on: ${{ matrix.os }}
+    env:
+      OS: ${{ matrix.os }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Setup python and environment
+        uses: ./.github/actions/setup-env
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache-pre-commit: false
+          cache-venv: true
+          setup-uv: true
+          install-deps: false
+      - name: Install dev dependencies
+        env:
+          UV_PYTHON: ${{ matrix.python-version }}
+        run: uv sync --frozen --all-extras --group dev
+      - name: Run pytest and generate coverage report
+        if: (matrix.os == 'ubuntu-24.04') && (matrix.python-version == env.TARGET_PYTHON_VERSION)
+        run: uv run pytest --cov=deepprofiler --cov-report=xml ${{ github.event.inputs.pytest_addopts }}
+      - name: Upload coverage to Codecov
+        if: (matrix.os == 'ubuntu-24.04') && (matrix.python-version == env.TARGET_PYTHON_VERSION)
+        uses: codecov/codecov-action@v4
+        env:
+          OS: ${{ matrix.os }}
+          PYTHON: ${{ matrix.python-version }}
+        with:
+          files: ./coverage.xml
+          env_vars: OS,PYTHON
+          fail_ci_if_error: true
+          flags: unittests
+          name: deepprofiler
+          # See https://docs.codecov.com/docs/adding-the-codecov-token
+          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Run pytest
+        if: (matrix.os != 'ubuntu-24.04') || (matrix.python-version != env.TARGET_PYTHON_VERSION)
+        run: uv run pytest ${{ github.event.inputs.pytest_addopts }}
+
+  build:
+    name: Build versioned package
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup python and environment
+        uses: ./.github/actions/setup-env
+        with:
+          python-version: ${{ env.TARGET_PYTHON_VERSION }}
+          cache-pre-commit: false
+          cache-venv: true
+          setup-uv: true
+          install-deps: true
+      - name: Build
+        run: uv build
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel
+          path: dist/*.whl
+          if-no-files-found: error
+          retention-days: 90
+      - name: Upload sdist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 90

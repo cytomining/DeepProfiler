@@ -1,13 +1,14 @@
 import importlib
 import os
+
+import numpy as np
 import pytest
 import tensorflow as tf
-import numpy as np
 
-import deepprofiler.learning.profiling
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.metadata
 import deepprofiler.dataset.target
+import deepprofiler.learning.profiling
 
 tf.compat.v1.disable_v2_behavior()
 

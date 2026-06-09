@@ -1,0 +1,44 @@
+# GitHub Dependabot configuration
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuring-dependabot-version-updates
+
+version: 2
+updates:
+  # GitHub Actions checks
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Custom composite actions
+  - package-ecosystem: "github-actions"
+    directory: "/.github/actions/setup-env"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 7
+    groups:
+      setup-env-actions:
+        patterns:
+          - "*"
+
+  # Python uv environment
+  # https://docs.astral.sh/uv/guides/integration/dependabot/
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
+    groups:
+      python-packages:
+        patterns:
+          - "*"
