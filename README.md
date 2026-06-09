@@ -56,6 +56,12 @@ robust and improve performance.
 pip install deepprofiler
 ```
 
+Or run directly without any environment setup using [uvx](https://docs.astral.sh/uv/guides/tools/) — it handles installation automatically in an isolated environment:
+
+```
+uvx deepprofiler --root=/path/to/project --config=config.json profile
+```
+
 For contributing, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Download example data
