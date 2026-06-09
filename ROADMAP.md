@@ -58,30 +58,12 @@ The package will be a thin layer over deep learning models, with seamless integr
 DeepProfiler was originally created at the Broad Institute in 2018 and is distributed under the BSD 3-Clause License.
 Ongoing development and stewardship has moved to the Cytomining community.
 
-### Current state (v0.3.x)
-
-The v0.3.x release still contains substantial amounts of code originating from the Broad Institute.
-The BSD 3-Clause License requires that the original copyright notice be retained for any distribution that includes that code.
-Accordingly, the current license lists both copyright holders:
+The project is distributed under a single BSD 3-Clause License with two copyright holders, reflecting its origins and ongoing stewardship:
 
 ```
 Copyright (c) 2018, Broad Institute, Inc.
 Copyright (c) 2026, Cytomining
 ```
-
-This is not a dual license — it is a single BSD 3-Clause license with two copyright holders, which is standard practice when a project changes institutional stewardship.
-
-### Planned transition (v0.4.x)
-
-The v0.4.x rewrite will replace the original Broad Institute code in its entirety with a new PyTorch-based implementation authored under Cytomining's stewardship.
-Once that original code is no longer distributed, the obligation to retain the Broad Institute copyright notice ends.
-At that point the license will be updated to:
-
-```
-Copyright (c) 2026, Cytomining
-```
-
-This transition respects the origins of the project while giving Cytomining full stewardship of the new codebase going forward.
 
 ---
 
