@@ -31,9 +31,6 @@ identifiers:
   - description: Cell Painting CNN weights DOI
     type: doi
     value: "10.5281/zenodo.7114558"
-  - description: Example data DOI
-    type: doi
-    value: "10.5281/zenodo.7515132"
 abstract: >-
   DeepProfiler is a set of tools for representation learning in high-throughput
   image-based profiling experiments. It supports feature extraction from
