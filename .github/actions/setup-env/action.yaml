@@ -59,6 +59,7 @@ runs:
       uses: astral-sh/setup-uv@v5
       with:
         python-version: ${{ inputs.python-version }}
+        activate-environment: false
     - name: Install dependencies with uv
       shell: bash
       if: ${{ inputs.install-deps == 'true' }}
