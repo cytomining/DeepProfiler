@@ -51,7 +51,7 @@ def print_progress (iteration, total, prefix="Progress", suffix="Complete", deci
 
 def check_path(filename):
     path = "/".join( filename.split("/")[0:-1] )
-    os.system("mkdir -p " + path)
+    os.makedirs(path, exist_ok=True)
 
 ################################################################################
 ## Timing utilities

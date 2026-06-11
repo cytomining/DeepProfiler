@@ -6,6 +6,7 @@ import skimage
 import skimage.exposure
 import skimage.io
 import skimage.transform
+import skimage.util
 
 import deepprofiler.dataset.illumination_statistics
 import deepprofiler.dataset.image_dataset
@@ -90,7 +91,7 @@ class Compress():
             image = skimage.exposure.rescale_intensity(image, in_range=(vmin, vmax))
 
             # Save resulting image in 8-bits PNG format
-            image = skimage.img_as_ubyte(image)
+            image = skimage.util.img_as_ubyte(image)
             if self.metadata_control_filter(meta):
                 self.controls_distribution[c] += numpy.histogram(image, bins=256)[0]
             skimage.io.imsave(self.target_path(meta[self.channels[c]]), image)
