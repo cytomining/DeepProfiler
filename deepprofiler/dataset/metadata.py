@@ -5,7 +5,7 @@ import deepprofiler.dataset.utils
 
 def parse_delimiter(delimiter):
     if delimiter == "blanks":
-        return "\s+"
+        return r"\s+"
     elif delimiter == "tabs":
         return "\t"
     else:
