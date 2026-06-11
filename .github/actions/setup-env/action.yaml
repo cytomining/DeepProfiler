@@ -56,10 +56,9 @@ runs:
           hashFiles('uv.lock') }}
     - name: Setup uv
       if: ${{ inputs.setup-uv == 'true' }}
-      uses: astral-sh/setup-uv@v5
+      uses: astral-sh/setup-uv@v8
       with:
         python-version: ${{ inputs.python-version }}
-        activate-environment: false
     - name: Install dependencies with uv
       shell: bash
       if: ${{ inputs.install-deps == 'true' }}
