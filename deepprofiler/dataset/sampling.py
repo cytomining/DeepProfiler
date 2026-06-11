@@ -82,7 +82,7 @@ def start_session():
     configuration = tf.compat.v1.ConfigProto()
     configuration.gpu_options.allow_growth = True
     main_session = tf.compat.v1.Session(config=configuration)
-    tf.compat.v1.keras.backend.set_session(main_session)  # ty: ignore
+    tf.compat.v1.keras.backend.set_session(main_session)
     return main_session
 
 

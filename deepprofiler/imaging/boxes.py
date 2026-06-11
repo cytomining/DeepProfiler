@@ -41,7 +41,7 @@ def get_single_cell_locations(image_key, config, random_sample=None, seed=None):
             return locations
     else:
         # If the file does not exist return an empty dataframe
-        return pd.DataFrame(columns=[X_KEY, Y_KEY])
+        return pd.DataFrame(columns=pd.Index([X_KEY, Y_KEY]))
 
 
 #################################################
@@ -77,7 +77,7 @@ def get_full_image_locations(image_key, config, random_sample, seed):
             data = [[rows_pos[i], cols_pos[i]] for i in range(len(cols_pos))]
 
 
-    return pd.DataFrame(data=data, columns=[X_KEY, Y_KEY])
+    return pd.DataFrame(data=data, columns=pd.Index([X_KEY, Y_KEY]))
 
 
 
