@@ -15,14 +15,14 @@ The package will be a thin layer over deep learning models, with seamless integr
 
 ## Milestones
 
-### ✅ v0.3.x — Software gardening (current)
+### ✅ v0.5.1 — Software gardening (current)
 - Migrate to `pyproject.toml` and `uv`
 - Publish to PyPI
 - Add CI/CD via GitHub Actions
 - Adopt cytomining community standards (CONTRIBUTING, CODE_OF_CONDUCT, CITATION.cff)
 - Deprecation notices for functionality to be removed
 
-### 🔜 v0.4.x — PyTorch rewrite (featurizer)
+### 🔜 v0.6.x — PyTorch rewrite (featurizer)
 - Full rewrite in PyTorch (drop TensorFlow)
 - Clean public API: `DeepProfiler.from_pretrained(...)` → `.profile(...)`
 - Native HuggingFace model support (`transformers`, `timm`)
@@ -30,7 +30,7 @@ The package will be a thin layer over deep learning models, with seamless integr
 - Cytotable-compatible Parquet output (`Metadata_*` + feature columns)
 - Optimized inference: `torch.compile`, mixed precision (`torch.autocast`), multi-worker DataLoader
 
-### 🔜 v0.5.x — Input flexibility
+### 🔜 v0.7.x — Input flexibility
 - Multiple input sources: numpy arrays, file paths, metadata CSVs, Parquet manifests
 - Streaming large datasets without loading into memory
 
@@ -45,11 +45,11 @@ The package will be a thin layer over deep learning models, with seamless integr
 
 | Functionality | Status | Removed in |
 |---|---|---|
-| Model training (`train`, `traintf2` commands) | ⚠️ Deprecated | v0.4.x |
-| Single-cell export for training (`export-sc` command) | ⚠️ Deprecated | v0.4.x |
-| Plugin system (models, crop generators, metrics) | ⚠️ Deprecated | v0.4.x |
-| CometML experiment tracking | ⚠️ Deprecated | v0.4.x |
-| TensorFlow backend | ⚠️ Deprecated | v0.4.x |
+| Model training (`train`, `traintf2` commands) | ⚠️ Deprecated | v0.6.x |
+| Single-cell export for training (`export-sc` command) | ⚠️ Deprecated | v0.6.x |
+| Plugin system (models, crop generators, metrics) | ⚠️ Deprecated | v0.6.x |
+| CometML experiment tracking | ⚠️ Deprecated | v0.6.x |
+| TensorFlow backend | ⚠️ Deprecated | v0.6.x |
 
 ---
 
