@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deepprofiler"
-version = "0.3.1"
+dynamic = ["version"]
 description = "Tools for representation learning in high throughput image collections"
 readme = "README.md"
 license = { file = "LICENSE.md" }
@@ -67,6 +67,8 @@ Documentation = "https://cytomining.github.io/DeepProfiler-handbook/"
 
 [project.scripts]
 deepprofiler = "deepprofiler.__main__:cli"
+
+[tool.setuptools_scm]
 
 [tool.setuptools.packages.find]
 where = ["."]
