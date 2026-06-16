@@ -115,8 +115,8 @@ jobs:
         if: (matrix.os != 'ubuntu-24.04') || (matrix.python-version != env.TARGET_PYTHON_VERSION)
         run: uv run pytest ${{ github.event.inputs.pytest_addopts }}
 
-  zenodo-integration-test:
-    name: Zenodo integration test (checkpoint download)
+  zenodo-model-download-and-usage-integration-test:
+    name: Zenodo model download and usage integration test
     needs: integration-test
     runs-on: ubuntu-24.04
     steps:
@@ -134,7 +134,7 @@ jobs:
         env:
           UV_PYTHON: ${{ env.TARGET_PYTHON_VERSION }}
         run: uv sync --frozen --all-extras --group dev
-      - name: Run Zenodo integration tests
+      - name: Run Zenodo model download and usage integration tests
         run: uv run pytest -m integration -v --override-ini="addopts="
 
   build:

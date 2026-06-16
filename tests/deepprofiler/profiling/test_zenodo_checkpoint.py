@@ -1,5 +1,6 @@
-"""Integration test: download and run the Cell Painting CNN v1 checkpoint from Zenodo.
+"""Zenodo model download and usage integration test.
 
+Downloads and runs the Cell Painting CNN v1 checkpoint from Zenodo.
 Marked with @pytest.mark.integration — skipped by default.
 Run with: uv run pytest -m integration
 """
