@@ -7,7 +7,6 @@ import skimage.exposure
 import tensorflow as tf
 
 import deepprofiler.dataset.utils
-import deepprofiler.imaging.augmentations
 import deepprofiler.imaging.boxes
 
 tf.compat.v1.disable_v2_behavior()
