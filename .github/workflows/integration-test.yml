@@ -115,6 +115,28 @@ jobs:
         if: (matrix.os != 'ubuntu-24.04') || (matrix.python-version != env.TARGET_PYTHON_VERSION)
         run: uv run pytest ${{ github.event.inputs.pytest_addopts }}
 
+  zenodo-integration-test:
+    name: Zenodo integration test (checkpoint download)
+    needs: integration-test
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Setup python and environment
+        uses: ./.github/actions/setup-env
+        with:
+          python-version: ${{ env.TARGET_PYTHON_VERSION }}
+          cache-pre-commit: false
+          cache-venv: true
+          setup-uv: true
+          install-deps: false
+      - name: Install dev dependencies
+        env:
+          UV_PYTHON: ${{ env.TARGET_PYTHON_VERSION }}
+        run: uv sync --frozen --all-extras --group dev
+      - name: Run Zenodo integration tests
+        run: uv run pytest -m integration -v
+
   build:
     name: Build versioned package
     runs-on: ubuntu-24.04
