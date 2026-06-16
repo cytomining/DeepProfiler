@@ -1,19 +1,19 @@
 ![DeepProfiler](figures/logo/banner.png)
 -----------------
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
+[![Python 3.10–3.11](https://img.shields.io/badge/python-3.10%20|%203.11-blue)](https://www.python.org/downloads/)
 [![CI](https://github.com/cytomining/DeepProfiler/actions/workflows/integration-test.yml/badge.svg)](https://github.com/cytomining/DeepProfiler/actions/workflows/integration-test.yml)
 [![codecov](https://codecov.io/gh/cytomining/DeepProfiler/branch/main/graph/badge.svg)](https://codecov.io/gh/cytomining/DeepProfiler)
 [![Cell Painting CNN-1 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7114558.svg)](https://doi.org/10.5281/zenodo.7114558)
 [![Example data DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7515132.svg)](https://doi.org/10.5281/zenodo.7515132)
 
 > [!IMPORTANT]
-> **DeepProfiler is undergoing changes to support wider use.** The package is being refocused as a
-> **lightweight, pip-installable feature extractor** for microscopy images, with native support
-> for models hosted on [HuggingFace](https://huggingface.co/) and outputs following
-> [cytotable](https://github.com/cytomining/CytoTable) standards.
-> Training, the plugin system, and CometML integration are deprecated and will be removed in a future release.
-> See [ROADMAP.md](ROADMAP.md) for the full plan. If you depend on any deprecated functionality,
-> please [open an issue](https://github.com/cytomining/DeepProfiler/issues) to let us know.
+> **v0.5.1 is a focused maintenance release.** Model training, the plugin system, and CometML
+> integration have been removed. The only supported use case is **feature extraction using the
+> [Cell Painting CNN v1 checkpoint](https://doi.org/10.5281/zenodo.7114558)** (EfficientNet B0).
+> This release requires **Python 3.10–3.11** and **TensorFlow 2.10–2.15**. If you need training
+> or used the plugin system, please use the [`v0.3.0` tag](https://github.com/cytomining/DeepProfiler/tree/v0.3.0)
+> and [open an issue](https://github.com/cytomining/DeepProfiler/issues) to let us know your use case.
+> See [ROADMAP.md](ROADMAP.md) for the full plan.
 
 # Image-based profiling using deep learning
 
@@ -46,9 +46,10 @@ robust and improve performance.
 
 ## System requirements
 
-- Python 3.10+ is required.
-- Linux (Ubuntu 20.04+) or macOS.
-- For GPU acceleration, a CUDA-compatible GPU is recommended.
+- Python 3.10 or 3.11 (Python 3.12+ is not yet supported — see [ROADMAP.md](ROADMAP.md))
+- TensorFlow 2.10–2.15 (TF 2.16+ ships with Keras 3 which is not yet compatible)
+- Linux (Ubuntu 20.04+) recommended; macOS arm64 (Apple Silicon) is not supported for this release due to TensorFlow version constraints
+- For GPU acceleration, a CUDA-compatible GPU is recommended
 
 ## Install
 
@@ -74,6 +75,19 @@ tar -xzf example_data.tar.gz
 
 ## Profiling with the Cell Painting CNN-1
 
+The only supported use case in v0.5.1 is feature extraction using the [Cell Painting CNN v1](https://doi.org/10.5281/zenodo.7114558) checkpoint — an EfficientNet B0 trained on 5-channel Cell Painting images (DNA, ER, RNA, AGP, Mito).
+
+**How inference works:**
+
+1. DeepProfiler reads a metadata CSV listing your images and a locations CSV with per-image cell coordinates (e.g. from CellProfiler nucleus segmentation).
+2. For each image, it crops a fixed-size patch around each cell centroid.
+3. The crops are passed through the EfficientNet B0 backbone; the `GlobalAveragePooling2D` layer (`pool5`) produces a 1280-dimensional embedding per cell.
+4. Embeddings are written to `.npz` files (one per image) containing a `features` array of shape `(num_cells, 1280)` alongside metadata and crop coordinates.
+
+These per-cell `.npz` files can be aggregated with [pycytominer](https://github.com/cytomining/pycytominer) for downstream analysis.
+
+**Setup:**
+
 Initialize your project directory structure:
 ```
 deepprofiler --root=/path/to/project --config=config.json setup
@@ -94,19 +108,32 @@ deepprofiler --root=/path/to/project --config=cell_painting_cnn.json --exp=cell_
 
 Extracted features are written to `project/outputs/cell_painting/features/`.
 
+## Verifying your installation
+
+After installing, you can verify that the Cell Painting CNN checkpoint loads and produces features by running the integration test suite.
+This downloads the checkpoint from Zenodo (~80 MB) and runs a full end-to-end profiling pipeline on synthetic data:
+
+```
+uv run pytest -m integration -v
+```
+
+The integration tests check three things:
+1. The Zenodo checkpoint loads into the EfficientNet B0 architecture without error.
+2. The loaded model produces non-trivial feature vectors for random input crops.
+3. The full `Profile` pipeline (checkpoint load → crop generation → feature extraction) writes a valid `.npz` output file.
+
+Integration tests are excluded from the default test run (`uv run pytest`) to avoid network access in CI.
+
 ## Training your own models
 
-> **⚠️ Deprecated:** Model training functionality (the `train`, `traintf2`, and `export-sc` commands) is deprecated and will be removed in a future release. DeepProfiler is being redesigned as a dedicated feature extractor. If you are currently using training, please open an issue to discuss your use case.
-
-If you are interested in training a model on your images, please follow the [instructions in our
-documentation handbook](https://cytomining.github.io/DeepProfiler-handbook/docs/07-train.html).
+> **🚫 Removed in v0.5.1:** Model training (`train`, `traintf2`, `export-sc` commands) has been removed. If you need training, use the [`v0.3.0` tag](https://github.com/cytomining/DeepProfiler/tree/v0.3.0). A PyTorch-based training pipeline is planned for v0.6.x.
 
 ## Plugin system
 
-> **⚠️ Deprecated:** The plugin system for models, crop generators, and metrics is deprecated and will be removed in a future release alongside the training functionality.
+> **🚫 Removed in v0.5.1:** The plugin system for models, crop generators, and metrics has been removed.
 
 ## CometML experiment tracking
 
-> **⚠️ Deprecated:** CometML integration is deprecated and will be removed in a future release.
+> **🚫 Removed in v0.5.1:** CometML integration has been removed.
 
 **Happy profiling!**
