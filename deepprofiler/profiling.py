@@ -38,7 +38,7 @@ def build_model(config):
     num = config["train"]["model"]["params"]["conv_blocks"]
     assert num in _EFFICIENTNET_MODELS, f"{num} not in supported EfficientNet variants: {list(_EFFICIENTNET_MODELS)}"
 
-    if "use_pretrained_input_size" in config["profile"]:
+    if config["profile"].get("use_pretrained_input_size"):
         size = config["profile"]["use_pretrained_input_size"]
         inp = tf.keras.layers.Input((size, size, 3), name="input")
         return _EFFICIENTNET_MODELS[num](input_tensor=inp, include_top=True, weights="imagenet")

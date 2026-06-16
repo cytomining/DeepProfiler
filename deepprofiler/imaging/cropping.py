@@ -128,7 +128,7 @@ class CropGenerator(object):
 
         num_targets = len(self.dset.targets)
         crop_shape = [(box_size, box_size, crop_channels)] + [()]*num_targets
-        imgs_shape = [None, None, None, img_channels]
+        imgs_shape = [None, img_height, img_width, img_channels]
         batch_shape = (-1, img_height, img_width, img_channels)
 
         image_ph = tf.compat.v1.placeholder(tf.float32, shape=imgs_shape, name="raw_images")
