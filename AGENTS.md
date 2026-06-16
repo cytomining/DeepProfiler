@@ -17,7 +17,7 @@ Always work within the uv-managed environment.
 
 - Install dependencies: `uv sync --group dev`
 - Run tests: `uv run pytest`
-- Run integration tests (downloads Zenodo checkpoint, requires network): `uv run pytest -m integration --override-ini="addopts="`
+- Run integration tests (downloads Zenodo checkpoint and cpg0000 images, requires network): `uv run pytest -m integration --override-ini="addopts="`
 - Run lint: `uv run ruff check .`
 - Build package: `uv build`
 - Run without environment setup: `uvx deepprofiler`
