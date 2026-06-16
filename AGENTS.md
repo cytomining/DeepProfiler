@@ -17,19 +17,26 @@ Always work within the uv-managed environment.
 
 - Install dependencies: `uv sync --group dev`
 - Run tests: `uv run pytest`
+- Run integration tests (downloads Zenodo checkpoint, requires network): `uv run pytest -m integration --override-ini="addopts="`
 - Run lint: `uv run ruff check .`
 - Run type checks (core non-deprecated code only): `uv run ty check deepprofiler/dataset/ deepprofiler/imaging/boxes.py deepprofiler/__main__.py --ignore unresolved-attribute --ignore no-matching-overload`
 - Build package: `uv build`
 - Run without environment setup: `uvx deepprofiler`
 
+### Code conventions
+
+- **Docstrings:** Google convention (use `Args:` / `Returns:` style), enforced by ruff `D` rules.
+  Docstrings are not required in tests or in the legacy `deepprofiler/imaging/` and `deepprofiler/dataset/` files listed under `[tool.ruff.lint.per-file-ignores]` in `pyproject.toml`.
+- **Formatting:** ruff with `line-length = 100`.
+- **Imports:** isort via ruff `I` rules.
+
 ### Scope expectations
 
-- **Do not modify deprecated code** unless fixing a bug that affects the current release.
-  Deprecated paths are: `deepprofiler/learning/`, `deepprofiler/imaging/augmentations.py`, `deepprofiler/imaging/cropping.py`, `deepprofiler/dataset/sampling.py`, `plugins/`.
-- **Do not anticipate the v0.6.x PyTorch rewrite** in v0.5.1 changes.
+- **Do not modify legacy TF1 imaging code** unless fixing a bug that affects the current v0.5.1 release.
+  Legacy paths still present are: `deepprofiler/imaging/` (except `boxes.py`), `deepprofiler/dataset/compression.py`, `deepprofiler/dataset/illumination_statistics.py`, `deepprofiler/dataset/image_dataset.py`.
+  These will be removed in the PyTorch rewrite.
+- **Do not anticipate the PyTorch rewrite** in v0.5.1 changes.
   Changes to non-deprecated code should be minimal and surgical.
-- Type checking runs only on non-deprecated core code.
-  Do not expand the `ty check` scope without discussion.
 - All changes go through a pull request.
   The AI proposes; humans approve.
 
@@ -55,7 +62,7 @@ For DeepProfiler to be useful to an AI agent, it needs to be more than just a co
 It needs:
 
 - **A clean Python API** — so an agent can call `dp.profile(...)` programmatically without shelling out to a subprocess.
-  This is a core goal of the v0.6.x PyTorch rewrite (`DeepProfiler.from_pretrained(...).profile(...)`).
+  This is a core goal of the PyTorch rewrite (`DeepProfiler.from_pretrained(...).profile(...)`).
 - **Structured, predictable output** — cytotable-compatible Parquet files with a consistent schema mean an agent always knows what it is getting back, without needing to parse or guess.
 - **A reusable skill** — we plan to publish a DeepProfiler skill that any AI agent can load and invoke.
   A skill is a self-contained, versioned description of how to use a tool: what inputs it expects, what it does, and what it returns.

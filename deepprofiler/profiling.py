@@ -38,7 +38,8 @@ def build_model(config):
     useful for fine-tuning experiments.
     """
     num = config["train"]["model"]["params"]["conv_blocks"]
-    assert num in _EFFICIENTNET_MODELS, f"{num} not in supported EfficientNet variants: {list(_EFFICIENTNET_MODELS)}"
+    if num not in _EFFICIENTNET_MODELS:
+        raise ValueError(f"{num} not in supported EfficientNet variants: {list(_EFFICIENTNET_MODELS)}")
 
     if config["profile"].get("use_pretrained_input_size"):
         size = config["profile"]["use_pretrained_input_size"]

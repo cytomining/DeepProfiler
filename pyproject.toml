@@ -85,7 +85,7 @@ line-length = 100
 exclude = ["scripts/"]
 
 [tool.ruff.lint]
-select = ["D", "E", "F", "I"]
+select = ["D", "E", "F", "I", "S"]
 # E501: line length — not enforced on legacy code pending rewrite
 # E731: lambda assignments — common pattern in legacy code
 # E722: bare except — legacy code, acceptable for now
@@ -98,9 +98,9 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 # Legacy TF1 imaging code — lenient linting until rewrite
-"deepprofiler/imaging/*" = ["D", "E731", "E722", "E701", "F841", "E741"]
-"deepprofiler/dataset/compression.py" = ["D", "E731", "F841"]
+"deepprofiler/imaging/*" = ["D", "E731", "E722", "E701", "F841", "E741", "S101"]
+"deepprofiler/dataset/compression.py" = ["D", "E731", "F841", "S301"]
 "deepprofiler/dataset/illumination_statistics.py" = ["D", "E731"]
 "deepprofiler/dataset/image_dataset.py" = ["D", "E731"]
-# Tests — docstrings not required
-"tests/*" = ["D", "F841"]
+# Tests — assert is idiomatic pytest; /tmp paths and urlretrieve are intentional in fixtures
+"tests/*" = ["D", "F841", "S101", "S108", "S310"]
