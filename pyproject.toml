@@ -72,7 +72,7 @@ deepprofiler = "deepprofiler.__main__:cli"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["deepprofiler*", "plugins*"]
+include = ["deepprofiler*"]
 
 [tool.pytest.ini_options]
 addopts = "--cov=deepprofiler -v"

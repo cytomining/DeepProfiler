@@ -13,7 +13,7 @@ import deepprofiler.dataset.indexing
 import deepprofiler.dataset.metadata
 import deepprofiler.dataset.sampling
 import deepprofiler.dataset.utils
-import deepprofiler.learning.profiling
+import deepprofiler.profiling
 
 
 # Main interaction point
@@ -165,7 +165,7 @@ def profile(context, part):
         partfile = "index-{0:03d}.csv".format(part)
         config["paths"]["index"] = context.obj["config"]["paths"]["index"].replace("index.csv", partfile)
     dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='profile')
-    deepprofiler.learning.profiling.profile(context.obj["config"], dset)
+    deepprofiler.profiling.profile(context.obj["config"], dset)
 
 
 # Auxiliary tool: Split index in multiple parts
