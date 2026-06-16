@@ -23,6 +23,18 @@ _EFFICIENTNET_MODELS = {
 
 
 def build_model(config):
+    """Build the EfficientNet feature extraction model from config.
+
+    In standard profiling mode the model is built with the number of channels
+    specified in the dataset config (e.g. 5 for Cell Painting) and no ImageNet
+    weights.  The final layers are GlobalAveragePooling2D (named ``pool5``) and
+    a softmax Dense head (named ``ClassProb``).  Weights are loaded separately
+    via :meth:`Profile.configure`.
+
+    If ``config["profile"]["use_pretrained_input_size"]`` is set, builds a
+    3-channel ImageNet-pretrained model at that spatial resolution instead —
+    useful for fine-tuning experiments.
+    """
     num = config["train"]["model"]["params"]["conv_blocks"]
     assert num in _EFFICIENTNET_MODELS, f"{num} not in supported EfficientNet variants: {list(_EFFICIENTNET_MODELS)}"
 
@@ -41,8 +53,39 @@ def build_model(config):
 
 
 class Profile(object):
+    """Extract per-cell deep learning features from microscopy images.
+
+    This class implements the full profiling pipeline:
+
+    1. Build an EfficientNet model matching the dataset channel count.
+    2. Load pre-trained weights from a checkpoint (e.g. Cell Painting CNN v1).
+    3. For each image, crop patches around cell centroids and run them through
+       the network, collecting the activations at a named intermediate layer.
+    4. Write per-image ``.npz`` files containing a ``features`` array of shape
+       ``(num_cells, feature_dim)``.
+
+    Typical usage::
+
+        dset = deepprofiler.dataset.image_dataset.read_dataset(config)
+        deepprofiler.profiling.profile(config, dset)
+
+    Or step-by-step (e.g. in tests)::
+
+        prof = Profile(config, dset)
+        prof.configure()
+        prof.extract_features(key, image_array, meta)
+    """
 
     def __init__(self, config, dset):
+        """Initialise the profiler and build the model graph.
+
+        Args:
+            config: Experiment configuration dict.  Must include
+                ``dataset``, ``train``, ``profile``, ``paths``, and
+                ``num_classes`` keys.
+            dset: :class:`~deepprofiler.dataset.image_dataset.ImageDataset`
+                with at least one target added via ``add_target``.
+        """
         self.config = config
         self.dset = dset
         self.num_channels = len(self.config["dataset"]["images"]["channels"])
@@ -57,6 +100,17 @@ class Profile(object):
         self.profile_crop_generator = self.profile_crop_generator(config, dset)
 
     def configure(self):
+        """Start the crop generator and load checkpoint weights.
+
+        Loads weights from ``config["paths"]["checkpoints"] / config["profile"]["checkpoint"]``.
+        If the checkpoint head has a different number of classes (e.g. loading
+        Cell Painting CNN v1 with a custom class count), the classifier layer is
+        renamed and weights are matched by layer name instead.
+
+        After loading, builds ``self.feat_extractor``: a sub-model whose output
+        is the activation of ``config["profile"]["feature_layer"]`` (e.g.
+        ``"pool5"`` for the 1280-d GlobalAveragePooling2D embedding).
+        """
         self.profile_crop_generator.start(tf.compat.v1.keras.backend.get_session())
 
         if self.config["profile"]["checkpoint"] != "None":
@@ -76,6 +130,15 @@ class Profile(object):
         print("Extracting output from layer:", self.config["profile"]["feature_layer"])
 
     def check(self, meta):
+        """Return True if this image still needs to be profiled.
+
+        Skips images whose output ``.npz`` already exists, enabling resumable
+        profiling runs.
+
+        Args:
+            meta: A row from the metadata DataFrame (Pandas Series or dict-like)
+                with ``Metadata_Plate``, ``Metadata_Well``, and ``Metadata_Site``.
+        """
         output_file = self.config["paths"]["features"] + "/{}/{}/{}.npz"
         output_file = output_file.format(meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
         if os.path.isfile(output_file):
@@ -84,6 +147,26 @@ class Profile(object):
         return True
 
     def extract_features(self, key, image_array, meta):
+        """Extract and save features for a single image.
+
+        Crops cell patches from ``image_array`` using the pre-loaded crop
+        generator, runs them through ``self.feat_extractor``, and writes the
+        result to a compressed ``.npz`` file.
+
+        Output path: ``{paths.features}/{Plate}/{Well}/{Site}.npz``
+
+        The ``.npz`` file contains:
+        - ``features``: float array of shape ``(num_cells, feature_dim)``
+        - ``metadata``: dict of metadata fields plus ``Metadata_Model``
+        - ``locations``: cell centroid coordinates from the locations CSV
+
+        Args:
+            key: Image key (index into the dataset); may be ``None`` when
+                called directly.
+            image_array: numpy array of shape ``(H, W, C)`` where C matches
+                the configured channel count.
+            meta: Metadata row (Pandas Series) for this image.
+        """
         start = tic()
         output_file = self.config["paths"]["features"] + "/{}/{}/{}.npz"
         output_file = output_file.format(meta["Metadata_Plate"], meta["Metadata_Well"], meta["Metadata_Site"])
