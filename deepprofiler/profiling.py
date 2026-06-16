@@ -28,21 +28,16 @@ def build_model(config):
 
     if "use_pretrained_input_size" in config["profile"]:
         size = config["profile"]["use_pretrained_input_size"]
-        inp = tf.compat.v1.keras.layers.Input((size, size, 3), name="input")
+        inp = tf.keras.layers.Input((size, size, 3), name="input")
         return _EFFICIENTNET_MODELS[num](input_tensor=inp, include_top=True, weights="imagenet")
 
     h = w = config["dataset"]["locations"]["box_size"]
     c = len(config["dataset"]["images"]["channels"])
-    inp = tf.compat.v1.keras.layers.Input((h, w, c))
+    inp = tf.keras.layers.Input((h, w, c))
     base = _EFFICIENTNET_MODELS[num](input_tensor=inp, include_top=False, weights=None)
-    features = tf.compat.v1.keras.layers.GlobalAveragePooling2D(name="pool5")(base.layers[-1].output)
-    y = tf.compat.v1.keras.layers.Dense(config["num_classes"], activation="softmax", name="ClassProb")(features)
-    model = tf.compat.v1.keras.models.Model(inputs=inp, outputs=[y])
-    regularizer = tf.compat.v1.keras.regularizers.l2(0.00001)
-    for layer in model.layers:
-        if hasattr(layer, "kernel_regularizer"):
-            setattr(layer, "kernel_regularizer", regularizer)
-    return tf.compat.v1.keras.models.model_from_json(model.to_json())
+    features = tf.keras.layers.GlobalAveragePooling2D(name="pool5")(base.layers[-1].output)
+    y = tf.keras.layers.Dense(config["num_classes"], activation="softmax", name="ClassProb")(features)
+    return tf.keras.Model(inputs=inp, outputs=[y])
 
 
 class Profile(object):
@@ -55,7 +50,6 @@ class Profile(object):
         crop_gen_module = importlib.import_module(
             "deepprofiler.crop_generators.{}".format(config["train"]["model"]["crop_generator"])
         )
-        self.crop_generator = crop_gen_module.GeneratorClass
         self.profile_crop_generator = crop_gen_module.SingleImageGeneratorClass
 
         self.config["num_classes"] = self.dset.targets[0].shape[1]
