@@ -1,4 +1,3 @@
-import importlib
 import os
 
 import efficientnet.tfkeras as efn
@@ -6,6 +5,7 @@ import numpy as np
 import tensorflow as tf
 
 from deepprofiler.dataset.utils import tic, toc
+from deepprofiler.imaging.cropping import SingleImageCropGenerator
 
 tf.compat.v1.disable_v2_behavior()
 tf.config.run_functions_eagerly(False)
@@ -90,14 +90,9 @@ class Profile(object):
         self.dset = dset
         self.num_channels = len(self.config["dataset"]["images"]["channels"])
 
-        crop_gen_module = importlib.import_module(
-            "deepprofiler.crop_generators.{}".format(config["train"]["model"]["crop_generator"])
-        )
-        self.profile_crop_generator = crop_gen_module.SingleImageGeneratorClass
-
         self.config["num_classes"] = self.dset.targets[0].shape[1]
         self.feature_model = build_model(self.config)
-        self.profile_crop_generator = self.profile_crop_generator(config, dset)
+        self.profile_crop_generator = SingleImageCropGenerator(config, dset)
 
     def configure(self):
         """Start the crop generator and load checkpoint weights.
@@ -192,19 +187,11 @@ class Profile(object):
             raise ValueError("Loaded image shape WxH " + str(im_shape) +
                              " != configured image shape WxH " + str(config_shape))
 
-        repeats = self.config["train"]["model"]["crop_generator"] in [
-            "repeat_channel_crop_generator", "individual_channel_cropgen"
-        ]
-
         crops = next(self.profile_crop_generator.generate(tf.compat.v1.keras.backend.get_session()))[0]
         feats = self.feat_extractor.predict(crops, batch_size=batch_size)
 
         while len(feats.shape) > 2:
             feats = np.mean(feats, axis=1)
-
-        if repeats:
-            feats = np.reshape(feats, (self.num_channels, total_crops, -1))
-            feats = np.concatenate(feats, axis=-1)
 
         key_values = {k: meta[k] for k in meta.keys()}
         key_values["Metadata_Model"] = "efficientnet"

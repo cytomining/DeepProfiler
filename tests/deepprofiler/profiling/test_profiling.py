@@ -1,4 +1,3 @@
-import importlib
 import os
 
 import numpy as np
@@ -6,6 +5,7 @@ import pytest
 import tensorflow as tf
 
 import deepprofiler.dataset.image_dataset
+import deepprofiler.imaging.cropping
 import deepprofiler.profiling
 
 tf.compat.v1.disable_v2_behavior()
@@ -32,9 +32,7 @@ def test_init(config, dataset, locations):
     assert prof.config == config
     assert prof.dset.config == dataset.config
     assert prof.num_channels == len(config["dataset"]["images"]["channels"])
-    assert isinstance(prof.profile_crop_generator, importlib.import_module(
-        "deepprofiler.crop_generators.{}".format(config["train"]["model"]["crop_generator"])
-    ).SingleImageGeneratorClass)
+    assert isinstance(prof.profile_crop_generator, deepprofiler.imaging.cropping.SingleImageCropGenerator)
     assert prof.feature_model is not None
 
 
