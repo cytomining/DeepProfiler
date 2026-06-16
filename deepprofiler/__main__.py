@@ -14,8 +14,6 @@ import deepprofiler.dataset.metadata
 import deepprofiler.dataset.sampling
 import deepprofiler.dataset.utils
 import deepprofiler.learning.profiling
-import deepprofiler.learning.tf2train
-import deepprofiler.learning.training
 
 
 # Main interaction point
@@ -152,31 +150,7 @@ def export_sc(context):
     print("Single-cell sampling complete.")
 
 
-# Third tool: Train a network
-@cli.command(help='train a model')
-@click.option("--epoch", default=1)
-@click.option("--seed", default=None)
-@click.pass_context
-def train(context, epoch, seed):
-    if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-        context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
-
-    if context.parent.obj["config"]["train"]["model"]["crop_generator"] == 'crop_generator':
-        dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"], mode='train')
-        deepprofiler.learning.training.learn_model(context.obj["config"], dset, epoch, seed)
-    else:
-        deepprofiler.learning.training.learn_model(context.obj["config"], None, epoch, seed)
-
-
-# Third tool (b): Train a network with TF dataset
-@cli.command(help='train a model with TensorFlow 2 dataset')
-@click.option("--epoch", default=1)
-@click.pass_context
-def traintf2(context, epoch):
-    deepprofiler.learning.training.learn_model_v2(context.obj["config"], epoch)
-
-
-# Fourth tool: Profile cells and extract features
+# Third tool: Profile cells and extract features
 @cli.command(help='run feature extraction')
 @click.pass_context
 @click.option("--part",
