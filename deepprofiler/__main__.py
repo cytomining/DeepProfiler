@@ -54,6 +54,7 @@ import deepprofiler.profiling
               type=click.STRING)
 @click.pass_context
 def cli(context, root, config, exp, cores, gpu, metadata):
+    """Configure paths and load the experiment config, then dispatch to a subcommand."""
     dirs = {
         "root": root,
         "locations": root + "/inputs/locations/",  # TODO: use os.path.join()
@@ -109,6 +110,7 @@ def cli(context, root, config, exp, cores, gpu, metadata):
 @cli.command(help='initialize folder structure of DeepProfiler project')
 @click.pass_context
 def setup(context):
+    """Create the project directory tree under the configured root."""
     for path in context.obj["dirs"].values():
         if not os.path.isdir(path):
             print("Creating directory: ", path)
@@ -123,6 +125,7 @@ def setup(context):
 @cli.command(help='Run illumination correction and compression')
 @click.pass_context
 def prepare(context):
+    """Compute per-plate illumination statistics and compress images to 8-bit PNG."""
     metadata = deepprofiler.dataset.metadata.read_plates(context.obj["config"]["paths"]["index"])
     process = deepprofiler.dataset.utils.Parallel(context.obj["config"], numProcs=context.obj["cores"])
     process.compute(deepprofiler.dataset.illumination_statistics.calculate_statistics, metadata)
@@ -141,6 +144,7 @@ def prepare(context):
               default=-1,
               type=click.INT)
 def profile(context, part):
+    """Extract per-cell deep learning features and write .npz files."""
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     config = context.obj["config"]
@@ -158,6 +162,7 @@ def profile(context, part):
               help="Number of parts to split the index",
               type=click.INT)
 def split(context, parts):
+    """Split the metadata index into N parts for parallel profiling jobs."""
     if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
         context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
     deepprofiler.dataset.indexing.split_index(context.obj["config"], parts)

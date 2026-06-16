@@ -1,3 +1,5 @@
+"""EfficientNet-based feature extraction pipeline for microscopy images."""
+
 import os
 
 import efficientnet.tfkeras as efn
@@ -195,6 +197,7 @@ class Profile(object):
 
 
 def profile(config, dset):
+    """Run the full profiling pipeline: configure, scan all images, write .npz files."""
     p = Profile(config, dset)
     p.configure()
     dset.scan(p.extract_features, frame="all", check=p.check)

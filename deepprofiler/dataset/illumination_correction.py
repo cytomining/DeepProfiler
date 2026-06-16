@@ -34,6 +34,7 @@ class IlluminationCorrection(object):
     """
 
     def __init__(self, stats, channels, target_dim):
+        """Initialise correction arrays from plate statistics."""
         self.stats = stats
         self.channels = channels
         self.target_dim = (target_dim[0], target_dim[1])

@@ -24,6 +24,7 @@ class MetadataColumnTarget(object):
     """
 
     def __init__(self, field_name, values):
+        """Build the sorted index from all unique values in the target column."""
         self.field_name = field_name
         self.index = {}
         self.values = values

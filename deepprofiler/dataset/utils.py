@@ -90,6 +90,7 @@ class Parallel():
     """
 
     def __init__(self, fixed_args, numProcs=None):
+        """Create the worker pool with up to ``numProcs`` processes."""
         self.fixed_args = fixed_args
         cpus = multiprocessing.cpu_count()
         if numProcs is None or numProcs > cpus or numProcs < 1:
@@ -123,6 +124,7 @@ class Logger():
     """
 
     def __init__(self):
+        """Configure the root logger with an INFO-level stdout handler."""
         self.root = logging.getLogger()
         self.root.setLevel(logging.INFO)
         ch = logging.StreamHandler(sys.stdout)

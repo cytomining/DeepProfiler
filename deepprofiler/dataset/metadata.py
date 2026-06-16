@@ -77,6 +77,7 @@ class Metadata():
     """
 
     def __init__(self, filename=None, csvMode="single", delimiter="default", dtype=object):
+        """Load metadata from a CSV file or list of CSV files."""
         if filename is not None:
             if csvMode == "single":
                 self.loadSingle(filename, delimiter, dtype)
