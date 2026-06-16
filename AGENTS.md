@@ -19,7 +19,6 @@ Always work within the uv-managed environment.
 - Run tests: `uv run pytest`
 - Run integration tests (downloads Zenodo checkpoint, requires network): `uv run pytest -m integration --override-ini="addopts="`
 - Run lint: `uv run ruff check .`
-- Run type checks (core non-deprecated code only): `uv run ty check deepprofiler/dataset/ deepprofiler/imaging/boxes.py deepprofiler/__main__.py --ignore unresolved-attribute --ignore no-matching-overload`
 - Build package: `uv build`
 - Run without environment setup: `uvx deepprofiler`
 

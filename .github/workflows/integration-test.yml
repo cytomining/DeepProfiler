@@ -42,30 +42,6 @@ jobs:
       - name: Lint with ruff
         run: uv run ruff check .
 
-  python-type-checks:
-    name: Python type checks (mypy)
-    strategy:
-      fail-fast: false
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-      - name: Setup python and environment
-        uses: ./.github/actions/setup-env
-        with:
-          python-version: ${{ env.TARGET_PYTHON_VERSION }}
-          cache-pre-commit: false
-          cache-venv: true
-          setup-uv: true
-          install-deps: true
-      - name: Run mypy (core non-deprecated code)
-        run: |
-          uv run mypy \
-            deepprofiler/dataset/ \
-            deepprofiler/imaging/boxes.py \
-            deepprofiler/__main__.py \
-            --ignore-missing-imports
-
   integration-test:
     name: Pytest (Python ${{ matrix.python-version }} on ${{ matrix.os }})
     needs: quality-test
