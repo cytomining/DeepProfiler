@@ -74,8 +74,9 @@ where = ["."]
 include = ["deepprofiler*"]
 
 [tool.pytest.ini_options]
-addopts = "--cov=deepprofiler -v"
+addopts = "--cov=deepprofiler -v -m 'not integration'"
 testpaths = ["tests"]
+markers = ["integration: requires network access and downloads large files (run with -m integration)"]
 
 [tool.ruff]
 target-version = "py310"
