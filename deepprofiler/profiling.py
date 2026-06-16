@@ -98,9 +98,8 @@ class Profile(object):
         """Start the crop generator and load checkpoint weights.
 
         Loads weights from ``config["paths"]["checkpoints"] / config["profile"]["checkpoint"]``.
-        If the checkpoint head has a different number of classes (e.g. loading
-        Cell Painting CNN v1 with a custom class count), the classifier layer is
-        renamed and weights are matched by layer name instead.
+        The classifier head is always renamed before loading so that the
+        checkpoint's Dense head is skipped and only backbone weights are loaded.
 
         After loading, builds ``self.feat_extractor``: a sub-model whose output
         is the activation of ``config["profile"]["feature_layer"]`` (e.g.
@@ -110,12 +109,8 @@ class Profile(object):
 
         if self.config["profile"]["checkpoint"] != "None":
             checkpoint = self.config["paths"]["checkpoints"] + "/" + self.config["profile"]["checkpoint"]
-            try:
-                self.feature_model.load_weights(checkpoint)
-            except ValueError:
-                print("Loading weights without classifier (different number of classes)")
-                self.feature_model.layers[-1]._name = "classifier"
-                self.feature_model.load_weights(checkpoint, by_name=True)
+            self.feature_model.layers[-1]._name = "classifier"
+            self.feature_model.load_weights(checkpoint, by_name=True)
 
         self.feature_model.summary()
         self.feat_extractor = tf.compat.v1.keras.Model(
