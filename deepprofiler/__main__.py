@@ -1,17 +1,33 @@
+"""Command-line interface for DeepProfiler.
+
+Four subcommands are available, intended to be run in order:
+
+1. ``setup``   — create the project directory structure under ``--root``.
+2. ``prepare`` — compute per-plate illumination statistics and compress images
+                 to 8-bit PNG (optional but recommended for large datasets).
+3. ``profile`` — extract per-cell deep learning features using the Cell
+                 Painting CNN v1 checkpoint and write ``.npz`` files.
+4. ``split``   — split the metadata index into N parts for parallel profiling
+                 across multiple machines or jobs.
+
+Typical usage::
+
+    deepprofiler --root=/data/project --config=config.json --exp=run1 profile
+
+See README.md and the DeepProfiler Handbook for full configuration details.
+"""
+
 import copy
 import json
 import os
 
 import click
-import comet_ml  # noqa: F401 — deprecated, retained until v0.4.x removal
-import tensorflow as tf  # noqa: F401 — deprecated, retained until v0.4.x removal
 
 import deepprofiler.dataset.compression
 import deepprofiler.dataset.illumination_statistics
 import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.indexing
 import deepprofiler.dataset.metadata
-import deepprofiler.dataset.sampling
 import deepprofiler.dataset.utils
 import deepprofiler.profiling
 
@@ -33,20 +49,11 @@ import deepprofiler.profiling
 @click.option("--exp", default="results",
               help="Name of experiment, this folder will be created in project_root/outputs/",
               type=click.STRING)
-@click.option("--single-cells", default="single-cells",
-              help="Name of the folder with single-cell dataset (output for export-sc command, "
-                   "input for training with sampled crop generator or online labels crop generator)",
-              type=click.STRING)
 @click.option("--metadata", default='index.csv',
-              help="data filename, for exporting or profiling it is a filename for project_root/inputs/metadata/, "
-                   "for training with sampled crop generator or online labels crop generator "
-                   "the filename in project_root/outputs/<single-cell-dataset>/",
-              type=click.STRING)
-@click.option("--logging", default=None,
-              help="Path to file with comet.ml API key (filename in project_root/inputs/config/)",
+              help="Metadata index filename in project_root/inputs/metadata/",
               type=click.STRING)
 @click.pass_context
-def cli(context, root, config, exp, cores, gpu, single_cells, metadata, logging):
+def cli(context, root, config, exp, cores, gpu, metadata):
     dirs = {
         "root": root,
         "locations": root + "/inputs/locations/",  # TODO: use os.path.join()
@@ -55,7 +62,6 @@ def cli(context, root, config, exp, cores, gpu, single_cells, metadata, logging)
         "metadata": root + "/inputs/metadata/",
         "intensities": root + "/outputs/intensities/",
         "compressed_images": root + "/outputs/compressed/images/",
-        "single_cell_set": root + "/outputs/" + single_cells + "/",
         "results": root + "/outputs/" + exp + "/",
         "checkpoints": root + "/outputs/" + exp + "/checkpoint/",
         "logs": root + "/outputs/" + exp + "/logs/",
@@ -92,18 +98,7 @@ def cli(context, root, config, exp, cores, gpu, single_cells, metadata, logging)
         # Update references
         params["experiment_name"] = exp
         params["paths"]["index"] = params["paths"]["metadata"] + metadata
-        if metadata != 'index.csv':
-            params["paths"]["sc_index"] = os.path.join(params["paths"]["single_cell_set"], metadata)
-        else:
-            params["paths"]["sc_index"] = os.path.join(params["paths"]["single_cell_set"], 'sc-metadata.csv')
         context.obj["config"] = params
-        if logging:
-            with open(os.path.join(dirs["config"], logging), "r") as f:
-                logging_params = json.load(f)
-                if logging_params["log_type"] == "comet_ml":
-                    context.obj["config"]["train"]["comet_ml"] = {}
-                    context.obj["config"]["train"]["comet_ml"]["api_key"] = logging_params["api_key"]
-                    context.obj["config"]["train"]["comet_ml"]["project_name"] = logging_params["project_name"]
     else:
         raise Exception("Config does not exists; make sure that the file exists in /inputs/config/")
 
@@ -138,19 +133,7 @@ def prepare(context):
     print("Compression complete!")
 
 
-# Second tool: Export single cells for training
-@cli.command(help='export crops of single-cells for training')
-@click.pass_context
-def export_sc(context):
-    os.environ["CUDA_VISIBLE_DEVICES"] = ""
-    if context.parent.obj["config"]["prepare"]["compression"]["implement"]:
-        context.parent.obj["config"]["paths"]["images"] = context.obj["config"]["paths"]["compressed_images"]
-    dset = deepprofiler.dataset.image_dataset.read_dataset(context.obj["config"])
-    deepprofiler.dataset.sampling.export_dataset(context.obj["config"], dset)
-    print("Single-cell sampling complete.")
-
-
-# Third tool: Profile cells and extract features
+# Second tool: Profile cells and extract features
 @cli.command(help='run feature extraction')
 @click.pass_context
 @click.option("--part",
