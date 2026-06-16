@@ -7,20 +7,17 @@
 [![Example data DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7515132.svg)](https://doi.org/10.5281/zenodo.7515132)
 
 > [!IMPORTANT]
-> **v0.5.1 is a focused maintenance release.** Model training, the plugin system, and CometML
-> integration have been removed. The only supported use case is **feature extraction using the
-> [Cell Painting CNN v1 checkpoint](https://doi.org/10.5281/zenodo.7114558)** (EfficientNet B0).
-> This release requires **Python 3.10–3.11** and **TensorFlow 2.10–2.15**. If you need training
-> or used the plugin system, please use the [`v0.3.0` tag](https://github.com/cytomining/DeepProfiler/tree/v0.3.0)
-> and [open an issue](https://github.com/cytomining/DeepProfiler/issues) to let us know your use case.
+> **v0.5.1 is a focused maintenance release.**
+> Model training, the plugin system, and CometML integration have been removed.
+> The only supported use case is **feature extraction using the [Cell Painting CNN v1 checkpoint](https://doi.org/10.5281/zenodo.7114558)** (EfficientNet B0).
+> This release requires **Python 3.10–3.11** and **TensorFlow 2.10–2.15**.
+> If you need training or used the plugin system, please use the [`v0.3.0` tag](https://github.com/cytomining/DeepProfiler/tree/v0.3.0) and [open an issue](https://github.com/cytomining/DeepProfiler/issues) to let us know your use case.
 > See [ROADMAP.md](ROADMAP.md) for the full plan.
 
 # Image-based profiling using deep learning
 
 DeepProfiler is a set of tools to use deep learning for analyzing imaging data in high-throughput biological experiments.
-Please, see our [DeepProfiler Handbook](https://cytomining.github.io/DeepProfiler-handbook/) for more details about how 
-to use it and [DeepProfilerExperiments repository](https://github.com/broadinstitute/DeepProfilerExperiments) 
-for the examples of configuration files and downstream analysis.
+Please see our [DeepProfiler Handbook](https://cytomining.github.io/DeepProfiler-handbook/) for more details about how to use it and [DeepProfilerExperiments repository](https://github.com/broadinstitute/DeepProfilerExperiments) for examples of configuration files and downstream analysis.
 
 Checkout our Nature Communications [paper](https://www.nature.com/articles/s41467-024-45999-1).
 
@@ -32,11 +29,10 @@ Checkout our Nature Communications [paper](https://www.nature.com/articles/s4146
 
 [_**Cell Painting CNN weights are available on Zenodo.**_](https://doi.org/10.5281/zenodo.7114558)
 
-We used DeepProfiler to train a feature extraction model for single cells in Cell Painting experiments. 
-The model brings state-of-the-art profiling performance for downstream analysis tasks. This model is an EfficientNet 
-trained to process the 5 channels of the Cell Painting assay and produce single-cell morphology embeddings, which can 
-be aggregated to profile treatments in large-scale experiments. Features obtained with the Cell Painting CNN are more 
-robust and improve performance.
+We used DeepProfiler to train a feature extraction model for single cells in Cell Painting experiments.
+The model brings state-of-the-art profiling performance for downstream analysis tasks.
+This model is an EfficientNet trained to process the 5 channels of the Cell Painting assay and produce single-cell morphology embeddings, which can be aggregated to profile treatments in large-scale experiments.
+Features obtained with the Cell Painting CNN are more robust and improve performance.
 
 <p align="center">
 <img src="figures/cell_painting_cnn_perf.png" width="350"/>
@@ -46,9 +42,9 @@ robust and improve performance.
 
 ## System requirements
 
-- Python 3.10 or 3.11 (Python 3.12+ is not yet supported — see [ROADMAP.md](ROADMAP.md))
-- TensorFlow 2.10–2.15 (TF 2.16+ ships with Keras 3 which is not yet compatible)
-- Linux (Ubuntu 20.04+) recommended; macOS arm64 (Apple Silicon) is not supported for this release due to TensorFlow version constraints
+- Python 3.10 or 3.11
+- TensorFlow 2.10–2.15 
+- Linux (Ubuntu 20.04+) recommended
 - For GPU acceleration, a CUDA-compatible GPU is recommended
 
 ## Install
@@ -93,13 +89,10 @@ Initialize your project directory structure:
 deepprofiler --root=/path/to/project --config=config.json setup
 ```
 
-Place your images, metadata CSV, and cell locations in the created directories
-(see the [handbook](https://cytomining.github.io/DeepProfiler-handbook/docs/02-structure.html) for layout details).
-[Download an example configuration file](https://github.com/broadinstitute/DeepProfilerExperiments/blob/master/resources/config/cell_painting_cnn_profiling_example.json)
-and put it in `project/inputs/config/`.
+Place your images, metadata CSV, and cell locations in the created directories (see the [handbook](https://cytomining.github.io/DeepProfiler-handbook/docs/02-structure.html) for layout details).
+[Download an example configuration file](https://github.com/broadinstitute/DeepProfilerExperiments/blob/master/resources/config/cell_painting_cnn_profiling_example.json) and put it in `project/inputs/config/`.
 
-Copy the model weights (`Cell_Painting_CNN_v1.hdf5`,
-[available on Zenodo](https://doi.org/10.5281/zenodo.7114558)) into `project/outputs/cell_painting/checkpoint/`.
+Copy the model weights (`Cell_Painting_CNN_v1.hdf5`, [available on Zenodo](https://doi.org/10.5281/zenodo.7114558)) into `project/outputs/cell_painting/checkpoint/`.
 
 Run feature extraction:
 ```
@@ -107,6 +100,73 @@ deepprofiler --root=/path/to/project --config=cell_painting_cnn.json --exp=cell_
 ```
 
 Extracted features are written to `project/outputs/cell_painting/features/`.
+
+## Image preparation (optional but recommended)
+
+Raw microscopy images often have uneven illumination — the centre of the field is brighter than the edges due to the optical path.
+DeepProfiler can correct for this and compress images to 8-bit PNG before profiling.
+Both steps are optional: you can profile directly from raw TIFFs, but preparation improves feature quality and speeds up repeated runs on the same dataset.
+
+**What `prepare` does:**
+
+1. **Illumination statistics** — for each plate, DeepProfiler scans every image and builds a per-channel pixel histogram and a mean image.
+   It then fits a smooth illumination correction function (a median-filtered version of the mean image, following [Singh et al. 2014](https://doi.org/10.1371/journal.pone.0110550)) and saves it to `project/outputs/intensities/`.
+
+2. **Compression** — each raw image is divided by the correction function, histogram-stretched to 8-bit, downscaled (optional), and saved as PNG to `project/outputs/compressed/images/`.
+   The config then points profiling at these PNGs instead of the raw TIFFs.
+
+**When to use it:**
+
+- **Recommended** for large experiments (hundreds of plates) where illumination variation between plates or within plates is substantial, or where disk I/O is a bottleneck.
+- **Skip it** for small pilot experiments or when your images have already been illumination-corrected upstream (e.g. by CellProfiler's `CorrectIlluminationApply` module).
+
+**Running preparation:**
+
+```
+deepprofiler --root=/path/to/project --config=config.json --cores=8 prepare
+```
+
+`--cores` controls the number of parallel worker processes (default: all CPUs).
+Preparation is CPU-bound and benefits from parallelism — one worker processes one plate at a time.
+
+In your config, set `prepare.compression.implement` to `true` to enable compression and point profiling at the compressed images automatically:
+
+```json
+"prepare": {
+    "illumination_correction": {
+        "down_scale_factor": 4,
+        "median_filter_size": 24
+    },
+    "compression": {
+        "implement": true,
+        "scaling_factor": 1.0
+    }
+}
+```
+
+`down_scale_factor` controls the resolution at which the mean image is computed (4 = quarter resolution, which is sufficient to capture the illumination gradient).
+`median_filter_size` is the diameter of the smoothing disk in pixels — larger values produce a smoother correction at the cost of computation time.
+`scaling_factor` controls spatial downscaling of the output PNGs (1.0 = no downscaling).
+
+## Large-scale profiling across multiple jobs
+
+For very large datasets, the metadata index can be split into parts and profiled in parallel across multiple machines or jobs:
+
+```
+deepprofiler --root=/path/to/project --config=config.json split --parts=10
+```
+
+This writes `index-000.csv` through `index-009.csv` alongside the original `index.csv`.
+Each part is then profiled independently:
+
+```
+deepprofiler --root=/path/to/project --config=config.json --exp=cell_painting --gpu=0 profile --part=0
+deepprofiler --root=/path/to/project --config=config.json --exp=cell_painting --gpu=1 profile --part=1
+...
+```
+
+Parts are split by plate/well, so each job processes a contiguous group of wells.
+Already-profiled images are skipped automatically (resumable runs), so parts can be restarted without re-processing completed images.
 
 ## Verifying your installation
 
@@ -126,7 +186,9 @@ Integration tests are excluded from the default test run (`uv run pytest`) to av
 
 ## Training your own models
 
-> **🚫 Removed in v0.5.1:** Model training (`train`, `traintf2`, `export-sc` commands) has been removed. If you need training, use the [`v0.3.0` tag](https://github.com/cytomining/DeepProfiler/tree/v0.3.0). A PyTorch-based training pipeline is planned for v0.6.x.
+> **🚫 Removed in v0.5.1:** Model training (`train`, `traintf2`, `export-sc` commands) has been removed.
+> If you need training, use the [`v0.3.0` tag](https://github.com/cytomining/DeepProfiler/tree/v0.3.0).
+> A PyTorch-based training pipeline is planned for v0.6.x.
 
 ## Plugin system
 

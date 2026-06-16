@@ -148,3 +148,4 @@ We use [semantic versioning](https://en.wikipedia.org/wiki/Software_versioning#S
 
 Portions of this contribution guide were adapted from [CytoTable](https://github.com/cytomining/CytoTable/blob/main/docs/source/contributing.md).
 Many thanks go to the developers and contributors of that repository.
+
