@@ -75,6 +75,7 @@ def zenodo_config(tmp_path_factory, checkpoint_path):
                 "params": {"conv_blocks": 0, "batch_size": 2, "learning_rate": 0.0001, "label_smoothing": 0.0},
             },
             "sampling": {"workers": 1, "cache_size": 1, "factor": 1.0, "alpha": 0.2},
+            "validation": {"batch_size": 2},
             "partition": {
                 "targets": ["Class"],
                 "split_field": "Split",
@@ -87,7 +88,7 @@ def zenodo_config(tmp_path_factory, checkpoint_path):
             "checkpoint": CHECKPOINT_FILENAME,
             "batch_size": 2,
         },
-        "num_classes": 2,
+        "num_classes": 490,
         "paths": {
             "checkpoints": str(checkpoints_dir),
             "features": str(features_dir),
@@ -174,8 +175,7 @@ def test_checkpoint_produces_features(zenodo_config):
     crops = np.random.rand(2, BOX_SIZE, BOX_SIZE, len(CHANNELS)).astype(np.float32)
     features = feat_extractor.predict(crops)
 
-    assert features.shape[0] == 2
-    assert features.ndim == 2
+    assert features.shape == (2, 1280)
     assert not np.all(features == 0)
 
 
