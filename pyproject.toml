@@ -35,11 +35,10 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Topic :: Scientific/Engineering :: Image Processing",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.12"
 dependencies = [
     "click>=8.0",
     "comet-ml>=3.1.6",
@@ -48,7 +47,7 @@ dependencies = [
     "pandas>=2.0",
     "scikit-image>=0.21",
     "scipy>=1.10",
-    "tensorflow>=2.5",
+    "tensorflow>=2.10,<2.16",
     "tqdm>=4.62",
 ]
 

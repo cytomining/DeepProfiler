@@ -19,7 +19,7 @@ env:
   PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
   PYTEST_ADDOPTS: ${{ github.event.inputs.pytest_addopts }}
   PYTHONIOENCODING: "UTF-8"
-  TARGET_PYTHON_VERSION: "3.12"
+  TARGET_PYTHON_VERSION: "3.11"
   UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
 
 jobs:
@@ -75,7 +75,7 @@ jobs:
         os:
           - macos-latest
           - ubuntu-24.04
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11"]
     runs-on: ${{ matrix.os }}
     env:
       OS: ${{ matrix.os }}
