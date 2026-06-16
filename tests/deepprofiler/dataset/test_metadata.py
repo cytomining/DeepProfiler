@@ -34,7 +34,7 @@ def metadata():
 
 
 def test_parse_delimiter():
-    assert deepprofiler.dataset.metadata.parse_delimiter("blanks") == "\s+"
+    assert deepprofiler.dataset.metadata.parse_delimiter("blanks") == r"\s+"
     assert deepprofiler.dataset.metadata.parse_delimiter("tabs") == "\t"
     assert deepprofiler.dataset.metadata.parse_delimiter("default") == ","
 
