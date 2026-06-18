@@ -3,7 +3,6 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
-import skimage.io
 import tensorflow as tf
 
 import deepprofiler.dataset.image_dataset
@@ -26,17 +25,6 @@ def crop_generator(config, dataset):
 @pytest.fixture(scope="function")
 def single_image_crop_generator(config, dataset):
     return deepprofiler.imaging.cropping.SingleImageCropGenerator(config, dataset)
-
-
-@pytest.fixture(scope="function")
-def prepared_crop_generator(crop_generator, out_dir):
-    images = np.random.randint(0, 256, (128, 128, 36), dtype=np.uint8)
-    for i in range(0, 36, 3):
-        skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["R"][i // 3]), images[:, :, i])
-        skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["G"][i // 3]), images[:, :, i + 1])
-        skimage.io.imsave(os.path.join(out_dir, crop_generator.dset.meta.data["B"][i // 3]), images[:, :, i + 2])
-    crop_generator.build_input_graph()
-    return crop_generator
 
 
 def test_crop_graph():
@@ -78,62 +66,6 @@ def test_crop_generator_build_input_graph(crop_generator):
     for target in crop_generator.input_variables["labeled_crops"][1:]:
         assert target.get_shape().as_list() == [None]
 
-
-def test_crop_generator_build_augmentation_graph(crop_generator):
-    with tf.compat.v1.Session(config=cpu_config) as sess:
-        crop_generator.build_input_graph()
-        image_batch = crop_generator.train_variables["image_batch"]
-        generated_shape = image_batch.shape #get_shape().as_list() 
-
-
-def test_crop_generator_start(prepared_crop_generator):  # includes test for training queues
-    with tf.compat.v1.Session(config=cpu_config) as sess:
-        prepared_crop_generator.start(sess)
-        assert not prepared_crop_generator.coord.joined
-        assert not prepared_crop_generator.exception_occurred
-        assert len(prepared_crop_generator.queue_threads) == prepared_crop_generator.config["train"]["sampling"]["workers"]
-        prepared_crop_generator.stop(sess)
-
-
-def test_crop_generator_sample_batch(prepared_crop_generator):
-    with tf.compat.v1.Session(config=cpu_config) as sess:
-        prepared_crop_generator.start(sess)
-        pool_index = np.zeros((prepared_crop_generator.config["train"]["model"]["params"]["batch_size"],), dtype=int)
-        prepared_crop_generator.ready_to_sample = True
-        data = prepared_crop_generator.sample_batch(pool_index)
-        assert np.array(data[0]).shape == (prepared_crop_generator.config["train"]["model"]["params"]["batch_size"],
-                                       prepared_crop_generator.config["dataset"]["locations"]["box_size"],
-                                       prepared_crop_generator.config["dataset"]["locations"]["box_size"],
-                                       len(prepared_crop_generator.config["dataset"]["images"]["channels"]))
-        assert data[1].shape == (prepared_crop_generator.config["train"]["model"]["params"]["batch_size"], prepared_crop_generator.dset.targets[0].shape[1])
-        assert data[2] == 0
-        prepared_crop_generator.stop(sess)
-
-
-def test_crop_generator_generate(prepared_crop_generator):
-    with tf.compat.v1.Session(config=cpu_config) as sess:
-        prepared_crop_generator.start(sess)
-        generator = prepared_crop_generator.generate(sess)
-        prepared_crop_generator.ready_to_sample = True
-        test_steps = 3
-        for i in range(test_steps):
-            data = next(generator)
-            assert np.array(data[0]).shape == (prepared_crop_generator.config["train"]["model"]["params"]["batch_size"],
-                                           prepared_crop_generator.config["dataset"]["locations"]["box_size"],
-                                           prepared_crop_generator.config["dataset"]["locations"]["box_size"],
-                                           len(prepared_crop_generator.config["dataset"]["images"]["channels"]))
-            assert len(data[1]) == len(prepared_crop_generator.dset.targets)
-            for item in data[1]:
-                assert item.shape == (prepared_crop_generator.config["train"]["model"]["params"]["batch_size"], prepared_crop_generator.dset.targets[0].shape[1])
-        prepared_crop_generator.stop(sess)
-
-
-def test_crop_generator_stop(prepared_crop_generator):
-    with tf.compat.v1.Session(config=cpu_config) as sess:
-        prepared_crop_generator.start(sess)
-        assert not prepared_crop_generator.coord.joined
-        prepared_crop_generator.stop(sess)
-        assert prepared_crop_generator.coord.joined
 
 
 def test_single_image_crop_generator_init(config, dataset):

@@ -1,3 +1,22 @@
+"""Dataset abstraction over a metadata index and per-channel image files.
+
+:class:`ImageDataset` is the central data container used throughout
+DeepProfiler.  It wraps a :class:`~deepprofiler.dataset.metadata.Metadata`
+object and provides two key interfaces:
+
+- :meth:`ImageDataset.get_image_paths` — resolve per-channel file paths for
+  one metadata record.
+- :meth:`ImageDataset.scan` — iterate over images and call a processing
+  function (used by :func:`~deepprofiler.profiling.profile` to drive feature
+  extraction).
+
+:func:`read_dataset` is the standard factory that reads a config dict and
+returns a fully initialised :class:`ImageDataset`.
+
+:class:`ImageLocations` is a helper used internally to load all cell centroid
+CSVs in parallel before training — it is not used during profiling.
+"""
+
 import os
 
 import numpy as np
@@ -11,6 +30,19 @@ import deepprofiler.imaging.boxes
 
 
 class ImageLocations(object):
+    """Pre-load cell locations for a set of images in parallel.
+
+    Collects image keys, paths, and target labels from a metadata DataFrame,
+    then uses :class:`~deepprofiler.dataset.utils.Parallel` to read all
+    location CSVs concurrently.  Used by
+    :meth:`ImageDataset.prepare_training_locations`.
+
+    Args:
+        metadata_training: DataFrame slice (e.g. ``Metadata.train``) to index.
+        getImagePaths: Callable ``(row) -> (key, paths, outlines)``.
+        targets: List of
+            :class:`~deepprofiler.dataset.target.MetadataColumnTarget` objects.
+    """
 
     def __init__(self, metadata_training, getImagePaths, targets):
         self.keys = []
@@ -25,9 +57,17 @@ class ImageLocations(object):
             self.outlines.append(outl)
         print("Reading single-cell locations")
 
-
     def load_loc(self, params):
-        # Load cell locations for one image
+        """Load the locations CSV for one image (worker function for Parallel).
+
+        Args:
+            params: ``[index, config]`` as passed by
+                :class:`~deepprofiler.dataset.utils.Parallel`.
+
+        Returns:
+            DataFrame with centroid coordinates plus ``ID``, ``ImageKey``,
+            ``ImagePaths``, ``Target``, and ``Outlines`` columns appended.
+        """
         i, config = params
         loc = deepprofiler.imaging.boxes.get_locations(self.keys[i], config)
         loc["ID"] = loc.index
@@ -38,9 +78,16 @@ class ImageLocations(object):
         print("Image", i, ":", len(loc), "cells", end="\r")
         return loc
 
-
     def load_locations(self, config):
-        # Use parallel tools to read all cells as quickly as possible
+        """Load all location CSVs in parallel and return a list of DataFrames.
+
+        Args:
+            config: Experiment configuration dict (used for worker count and
+                passed through to :func:`~deepprofiler.imaging.boxes.get_locations`).
+
+        Returns:
+            List of DataFrames, one per image.
+        """
         process = deepprofiler.dataset.utils.Parallel(config, numProcs=config["train"]["sampling"]["workers"])
         data = process.compute(self.load_loc, [x for x in range(len(self.keys))])
         process.close()
@@ -48,20 +95,52 @@ class ImageLocations(object):
 
 
 class ImageDataset():
+    """Container for a metadata index and its associated image files.
+
+    Provides path resolution, per-image scanning, and (for the training path)
+    location pre-loading and batch sampling.  During profiling only
+    :meth:`get_image_paths`, :meth:`scan`, :meth:`add_target`, and
+    :meth:`number_of_records` are used.
+
+    Args:
+        metadata: :class:`~deepprofiler.dataset.metadata.Metadata` object.
+        sampling_field: Metadata column used as the classification label
+            (e.g. ``"Class"``).
+        channels: List of metadata column names, one per imaging channel,
+            whose values are filenames relative to ``dataRoot``.
+        dataRoot: Root directory containing image files.
+        keyGen: Callable ``(row) -> str`` that produces the image key used to
+            look up location CSVs (typically
+            ``"{Metadata_Plate}/{Metadata_Well}-{Metadata_Site}"``).
+        config: Full experiment configuration dict.
+    """
 
     def __init__(self, metadata, sampling_field, channels, dataRoot, keyGen, config):
-        self.meta = metadata      # Metadata object with a valid dataframe
-        self.channels = channels  # List of column names corresponding to each channel file
-        self.root = dataRoot      # Path to the directory of images
-        self.keyGen = keyGen      # Function that returns the image key given its record in the metadata
-        self.sampling_field = sampling_field # Field in the metadata used to sample images evenly
+        self.meta = metadata
+        self.channels = channels
+        self.root = dataRoot
+        self.keyGen = keyGen
+        self.sampling_field = sampling_field
         self.sampling_values = metadata.data[sampling_field].unique()
-        self.targets = []         # Array of tasks in a multi-task setting (only one task supported)
-        self.outlines = None      # Use of outlines if available
-        self.config = config      # The configuration file
-
+        self.targets = []
+        self.outlines = None
+        self.config = config
 
     def get_image_paths(self, r):
+        """Resolve per-channel file paths and the image key for one metadata row.
+
+        If a channel value is already an absolute directory path it is used
+        as-is; otherwise the filename is joined to ``self.root``.
+
+        Args:
+            r: A row from ``self.meta.data`` (Pandas Series or dict-like).
+
+        Returns:
+            Tuple ``(key, image_paths, outlines)`` where ``key`` is the string
+            identifier (e.g. ``"Plate1/A01-1"``), ``image_paths`` is a list
+            of resolved file paths (one per channel), and ``outlines`` is
+            either ``None`` or the path to the outline image for this site.
+        """
         key = self.keyGen(r)
         list_images = [r[ch] for ch in self.channels]
         paths = [(os.path.split(r[ch]))[0] for ch in self.channels]
@@ -170,6 +249,24 @@ class ImageDataset():
         return batch
 
     def scan(self, f, frame="train", check=lambda k: True):
+        """Iterate over images and call ``f`` for each one that passes ``check``.
+
+        This is the primary driver for both profiling and compression.  Images
+        are loaded sequentially (not in parallel) using
+        :func:`~deepprofiler.dataset.pixels.openImage`.
+
+        Args:
+            f: Callable ``(index, image_array, meta_row)`` invoked for each
+                image.  ``image_array`` is a ``(H, W, C)`` numpy array.
+            frame: Which subset to iterate: ``"all"`` for the full metadata,
+                ``"val"`` for the validation split, or ``"train"`` (default)
+                for the training split.
+            check: Optional predicate ``(meta_row) -> bool``.  Images for
+                which ``check`` returns ``False`` are skipped.  Defaults to
+                always returning ``True``.  Used by
+                :meth:`~deepprofiler.profiling.Profile.check` to skip
+                already-profiled images.
+        """
         if frame == "all":
             frame = self.meta.data.iterrows()
         elif frame == "val":
@@ -179,7 +276,6 @@ class ImageDataset():
 
         images = [(i, self.get_image_paths(r), r) for i, r in frame]
         for img in images:
-            # img => [0] index key, [1] => [0:key, 1:paths, 2:outlines], [2] => metadata
             index = img[0]
             meta = img[2]
             if check(meta):
@@ -188,6 +284,14 @@ class ImageDataset():
         return
 
     def number_of_records(self, dataset):
+        """Return the number of rows in the requested split.
+
+        Args:
+            dataset: ``"all"``, ``"train"``, or ``"val"``.
+
+        Returns:
+            Integer row count, or 0 for an unrecognised ``dataset`` value.
+        """
         if dataset == "all":
             return len(self.meta.data)
         elif dataset == "val":
@@ -198,10 +302,28 @@ class ImageDataset():
             return 0
 
     def add_target(self, new_target):
+        """Append a :class:`~deepprofiler.dataset.target.MetadataColumnTarget` to ``self.targets``."""
         self.targets.append(new_target)
 
-def read_dataset(config, mode = 'train'):
-    # Read metadata and split dataset in training and validation
+
+def read_dataset(config, mode='train'):
+    """Build an :class:`ImageDataset` from a config dict.
+
+    Reads the metadata index CSV, optionally replaces ``.tif``/``.tiff``
+    extensions with ``.png`` if image compression was applied, merges outline
+    CSVs if specified, adds classification targets, and (for the training path)
+    pre-loads all cell locations.
+
+    Args:
+        config: Experiment configuration dict.  Must contain at minimum
+            ``paths.index``, ``dataset``, ``train.partition``, and
+            ``prepare.compression`` sections.
+        mode: ``"train"`` to split metadata and pre-load locations, or any
+            other value (e.g. ``"profile"``) to skip those steps.
+
+    Returns:
+        Fully initialised :class:`ImageDataset`.
+    """
     metadata = deepprofiler.dataset.metadata.Metadata(config["paths"]["index"], dtype=None)
     if config["prepare"]["compression"]["implement"]:
         metadata.data.replace({'.tiff': '.png', '.tif': '.png'}, inplace=True, regex=True)

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deepprofiler"
-version = "0.3.1"
+dynamic = ["version"]
 description = "Tools for representation learning in high throughput image collections"
 readme = "README.md"
 license = { file = "LICENSE.md" }
@@ -38,25 +38,26 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Topic :: Scientific/Engineering :: Image Processing",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.12"
 dependencies = [
     "click>=8.0",
     "comet-ml>=3.1.6",
     "efficientnet==1.1.1",
-    "numpy>=1.24",
+    "numpy>=1.24,<2.0",
     "pandas>=2.0",
     "scikit-image>=0.21",
     "scipy>=1.10",
-    "tensorflow>=2.5",
+    "tensorflow>=2.10,<2.16",
+    "tensorflow-macos>=2.10,<2.16; sys_platform == 'darwin' and platform_machine == 'arm64'",
     "tqdm>=4.62",
 ]
 
 [dependency-groups]
 dev = [
+    "imagecodecs>=2025.3.30",
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "ruff>=0.4",
-    "ty>=0.0.1",
 ]
 
 [project.urls]
@@ -67,13 +68,16 @@ Documentation = "https://cytomining.github.io/DeepProfiler-handbook/"
 [project.scripts]
 deepprofiler = "deepprofiler.__main__:cli"
 
+[tool.setuptools_scm]
+
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["deepprofiler*", "plugins*"]
+include = ["deepprofiler*"]
 
 [tool.pytest.ini_options]
-addopts = "--cov=deepprofiler -v"
+addopts = "--cov=deepprofiler -v -m 'not integration'"
 testpaths = ["tests"]
+markers = ["integration: requires network access and downloads large files (run with -m integration)"]
 
 [tool.ruff]
 target-version = "py310"
@@ -81,7 +85,7 @@ line-length = 100
 exclude = ["scripts/"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]
+select = ["D", "E", "F", "I", "S"]
 # E501: line length — not enforced on legacy code pending rewrite
 # E731: lambda assignments — common pattern in legacy code
 # E722: bare except — legacy code, acceptable for now
@@ -89,15 +93,14 @@ select = ["E", "F", "I"]
 # E701: multiple statements — legacy code
 ignore = ["E501"]
 
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
 [tool.ruff.lint.per-file-ignores]
-# Deprecated code — lenient linting until removal in v0.4.x
-"deepprofiler/learning/*" = ["E731", "E722", "E701", "F841", "F401"]
-"deepprofiler/imaging/*" = ["E731", "E722", "E701", "F841", "E741"]
-"deepprofiler/dataset/compression.py" = ["E731", "F841"]
-"deepprofiler/dataset/illumination_statistics.py" = ["E731"]
-"deepprofiler/dataset/image_dataset.py" = ["E731"]
-"plugins/*" = ["E731", "E722", "E701", "F841", "F401"]
-# Tests for deprecated TF-dependent code
-"tests/deepprofiler/imaging/*" = ["F841"]
-"tests/deepprofiler/learning/*" = ["F841"]
-"tests/plugins/*" = ["F841"]
+# Legacy TF1 imaging code — lenient linting until rewrite
+"deepprofiler/imaging/*" = ["D", "E731", "E722", "E701", "F841", "E741", "S101"]
+"deepprofiler/dataset/compression.py" = ["D", "E731", "F841", "S301"]
+"deepprofiler/dataset/illumination_statistics.py" = ["D", "E731"]
+"deepprofiler/dataset/image_dataset.py" = ["D", "E731"]
+# Tests — assert is idiomatic pytest; /tmp paths and urlretrieve are intentional in fixtures
+"tests/*" = ["D", "F841", "S101", "S108", "S310"]

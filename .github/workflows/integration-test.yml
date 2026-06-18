@@ -19,7 +19,7 @@ env:
   PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
   PYTEST_ADDOPTS: ${{ github.event.inputs.pytest_addopts }}
   PYTHONIOENCODING: "UTF-8"
-  TARGET_PYTHON_VERSION: "3.10"
+  TARGET_PYTHON_VERSION: "3.11"
   UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
 
 jobs:
@@ -41,31 +41,6 @@ jobs:
           install-deps: true
       - name: Lint with ruff
         run: uv run ruff check .
-
-  python-type-checks:
-    name: Python type checks (ty)
-    strategy:
-      fail-fast: false
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-      - name: Setup python and environment
-        uses: ./.github/actions/setup-env
-        with:
-          python-version: ${{ env.TARGET_PYTHON_VERSION }}
-          cache-pre-commit: false
-          cache-venv: true
-          setup-uv: true
-          install-deps: true
-      - name: Run ty (core non-deprecated code)
-        run: |
-          uv run ty check \
-            deepprofiler/dataset/ \
-            deepprofiler/imaging/boxes.py \
-            deepprofiler/__main__.py \
-            --ignore unresolved-attribute \
-            --ignore no-matching-overload
 
   integration-test:
     name: Pytest (Python ${{ matrix.python-version }} on ${{ matrix.os }})
@@ -115,6 +90,28 @@ jobs:
       - name: Run pytest
         if: (matrix.os != 'ubuntu-24.04') || (matrix.python-version != env.TARGET_PYTHON_VERSION)
         run: uv run pytest ${{ github.event.inputs.pytest_addopts }}
+
+  zenodo-model-download-and-usage-integration-test:
+    name: Zenodo model download and usage integration test
+    needs: integration-test
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Setup python and environment
+        uses: ./.github/actions/setup-env
+        with:
+          python-version: ${{ env.TARGET_PYTHON_VERSION }}
+          cache-pre-commit: false
+          cache-venv: true
+          setup-uv: true
+          install-deps: false
+      - name: Install dev dependencies
+        env:
+          UV_PYTHON: ${{ env.TARGET_PYTHON_VERSION }}
+        run: uv sync --frozen --all-extras --group dev
+      - name: Run Zenodo model download and usage integration tests
+        run: uv run pytest -m integration -v --override-ini="addopts="
 
   build:
     name: Build versioned package

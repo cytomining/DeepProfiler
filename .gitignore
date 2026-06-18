@@ -98,4 +98,3 @@ ENV/
 
 # uv
 .venv/
-uv.lock
