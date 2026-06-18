@@ -53,6 +53,9 @@ jobs:
           - ubuntu-24.04
         python-version: ["3.10", "3.11"]
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write
     env:
       OS: ${{ matrix.os }}
     steps:
@@ -88,8 +91,7 @@ jobs:
           fail_ci_if_error: true
           flags: unittests
           name: deepprofiler
-          # See https://docs.codecov.com/docs/adding-the-codecov-token
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true
       - name: Run pytest
         if: (matrix.os != 'ubuntu-24.04') || (matrix.python-version != env.TARGET_PYTHON_VERSION)
         run: uv run pytest ${{ github.event.inputs.pytest_addopts }}
