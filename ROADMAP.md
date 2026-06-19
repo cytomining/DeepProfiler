@@ -15,22 +15,31 @@ The package will be a thin layer over deep learning models, with seamless integr
 
 ## Milestones
 
-### ✅ v0.3.x — Software gardening (current)
+### ✅ v0.3.x — Software gardening
 - Migrate to `pyproject.toml` and `uv`
 - Publish to PyPI
 - Add CI/CD via GitHub Actions
 - Adopt cytomining community standards (CONTRIBUTING, CODE_OF_CONDUCT, CITATION.cff)
 - Deprecation notices for functionality to be removed
 
-### 🔜 v0.4.x — PyTorch rewrite (featurizer)
+### ✅ v0.5.1 — Maintenance release (current)
+- Remove model training, plugin system, and CometML integration
+- Simplify codebase to a single supported use case: feature extraction with the [Cell Painting CNN v1](https://doi.org/10.5281/zenodo.7114558) checkpoint
+- Migrate to `uv`, dynamic versioning, mypy, ruff
+- CI/CD with PyPI trusted publishing
+- Integration test suite: downloads the Zenodo checkpoint and validates the full profiling pipeline end-to-end (`uv run pytest -m integration`)
+- **Constraint:** requires Python 3.10–3.11 and TensorFlow 2.10–2.15 (Keras 2); see [README](README.md)
+
+### 🔜 v0.6.x — PyTorch rewrite (featurizer)
 - Full rewrite in PyTorch (drop TensorFlow)
 - Clean public API: `DeepProfiler.from_pretrained(...)` → `.profile(...)`
 - Native HuggingFace model support (`transformers`, `timm`)
 - Cell masking support: per-cell crops extracted from masks
 - Cytotable-compatible Parquet output (`Metadata_*` + feature columns)
 - Optimized inference: `torch.compile`, mixed precision (`torch.autocast`), multi-worker DataLoader
+- Python 3.12+ support
 
-### 🔜 v0.5.x — Input flexibility
+### 🔜 v0.7.x — Input flexibility
 - Multiple input sources: numpy arrays, file paths, metadata CSVs, Parquet manifests
 - Streaming large datasets without loading into memory
 
@@ -45,11 +54,11 @@ The package will be a thin layer over deep learning models, with seamless integr
 
 | Functionality | Status | Removed in |
 |---|---|---|
-| Model training (`train`, `traintf2` commands) | ⚠️ Deprecated | v0.4.x |
-| Single-cell export for training (`export-sc` command) | ⚠️ Deprecated | v0.4.x |
-| Plugin system (models, crop generators, metrics) | ⚠️ Deprecated | v0.4.x |
-| CometML experiment tracking | ⚠️ Deprecated | v0.4.x |
-| TensorFlow backend | ⚠️ Deprecated | v0.4.x |
+| Model training (`train`, `traintf2` commands) | 🚫 Removed | v0.5.1 |
+| Single-cell export for training (`export-sc` command) | 🚫 Removed | v0.5.1 |
+| Plugin system (models, crop generators, metrics) | 🚫 Removed | v0.5.1 |
+| CometML experiment tracking | 🚫 Removed | v0.5.1 |
+| TensorFlow backend | ⚠️ Deprecated | v0.6.x |
 
 ---
 
