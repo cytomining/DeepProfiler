@@ -1,11 +1,13 @@
-import deepprofiler.dataset.compression
-import numpy
-import numpy.testing
-import numpy.random
-import pytest
 import glob
 import os.path
+
+import numpy
+import numpy.random
+import numpy.testing
+import pytest
 import skimage.io
+
+import deepprofiler.dataset.compression
 
 
 @pytest.fixture(scope="function")
@@ -47,7 +49,7 @@ def test_recompute_percentile(compress):
 
 
 def test_set_control_samples_filter(compress):
-    test_filter = lambda x: True
+    def test_filter(x): return True
     control_distribution = numpy.zeros((3, 2 ** 8), dtype=numpy.float64)
 
     compress.set_control_samples_filter(test_filter)

@@ -1,8 +1,10 @@
-import pandas as pd
+import argparse
 import json
 import os
 import sys
-import argparse
+
+import pandas as pd
+
 
 def relative_paths(df, target, path, filename, root):
     df[target] = df[path].str.replace(root, "") + "/" + df[filename]

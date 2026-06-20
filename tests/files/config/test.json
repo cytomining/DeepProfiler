@@ -78,7 +78,7 @@
           }
     },
     "profile": {
-      "feature_layer": "features",
+      "feature_layer": "pool5",
       "checkpoint": "checkpoint_0003.hdf5",
       "use_pretrained_input_size": false,
       "batch_size": 2

@@ -1,8 +1,10 @@
+import os
+
+import pandas as pd
+
+import deepprofiler.dataset.image_dataset
 import deepprofiler.dataset.indexing
 import deepprofiler.dataset.metadata
-import deepprofiler.dataset.image_dataset
-import pandas as pd
-import os
 
 
 def test_split_index(config, metadata, dataset):
@@ -11,9 +13,9 @@ def test_split_index(config, metadata, dataset):
                   config["paths"]["metadata"]+"/index-001.csv",
                   config["paths"]["metadata"]+"/index-002.csv"]
     deepprofiler.dataset.indexing.split_index(config, test_parts)   
-    assert os.path.exists(test_paths[0]) == True
-    assert os.path.exists(test_paths[1]) == True
-    assert os.path.exists(test_paths[2]) == True
+    assert os.path.exists(test_paths[0])
+    assert os.path.exists(test_paths[1])
+    assert os.path.exists(test_paths[2])
     test_outputs = [pd.read_csv(config["paths"]["metadata"]+"/index-000.csv"),
                     pd.read_csv(config["paths"]["metadata"]+"/index-001.csv"),
                     pd.read_csv(config["paths"]["metadata"]+"/index-002.csv")]
