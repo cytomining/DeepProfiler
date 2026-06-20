@@ -1,9 +1,7 @@
 {
     "dataset": {
         "metadata": {
-            "label_field": "Compound_Concentration",
-            "label_composition": ["NCBIGeneID", "x_mutation_status"],
-            "control_field": "Compound_Concentration",
+            "label_field": "Class",
             "control_id": "17"
         },
         "images": {
@@ -13,7 +11,15 @@
                 "B"
               ],
             "file_format": "tif",
+            "width": 128,
+            "height": 128,
             "bits": 16
+        },
+        "locations": {
+            "mode": "single_cells",
+            "box_size": 16,
+            "view_size": 64,
+            "mask_objects": false
         }
     },
     "prepare": {
@@ -27,60 +33,54 @@
         }
     },
     "train": {
-        "pretrained": false,
-        "gpus": "0",
-        "dset": {
+        "partition": {
             "targets": [
                 "Class"
             ],
             "split_field": "Split",
-            "training_values": [0],
-            "validation_values": [1],
-            "width": 128,
-            "height": 128,
-            "mask_objects": false
+            "training": [0],
+            "validation": [1]
         },
         "model": {
             "name": "cnn",
+            "augmentations": false,
             "crop_generator": "crop_generator",
             "metrics": ["accuracy"],
-            "epochs": 3,
-            "steps": 10,
+            "epochs": 5,
+            "initialization": "random",
+            "checkpoint_policy": 1,
             "params": {
                 "learning_rate": 0.0001,
                 "batch_size": 2,
                 "conv_blocks": 1,
+                "label_smoothing": 0.0,
                 "feature_dim": 100,
                 "latent_dim": 100,
-                "epsilon_std": 1.0
+                "epsilon_std": 1.0,
+                "online_label_smoothing": 0.1,
+                "online_lambda": 0.01
+            },
+            "lr_schedule" : {
+                "epoch": [1,3,5],
+                "lr": [0.001, 0.0005, 0.0001]
             }
         },
         "sampling": {
-            "images": 12,
-            "locations": 10,
-            "locations_field": "R",
-            "box_size": 16,
-            "field": "Sampling",
+            "factor": 1.0,
+            "cache_size": 10,
+            "workers": 2,
             "alpha": 0.2
         },
-          "queueing": {
-            "queue_size": 6,
-            "loading_workers": 1
-        },
-        "comet_ml": {
-            "track": false,
-            "api_key": "",
-            "project_name": "test"
-          },
           "validation": {
-            "top_k": 1,
-            "batch_size": 2
+              "top_k": 1,
+              "batch_size": 2,
+              "sample_first_crops" : true
           }
     },
     "profile": {
-      "feature_layer": "features",
+      "feature_layer": "pool5",
       "checkpoint": "checkpoint_0003.hdf5",
-      "gpus": "0",
+      "use_pretrained_input_size": false,
       "batch_size": 2
     },
     "paths": {
@@ -89,7 +89,6 @@
         "images": "/inputs/images",
         "metadata": "/inputs/metadata",
         "preprocessed": "/inputs/preprocessed",
-        "pretrained": "/inputs/pretrained",
         "intensities": "/outputs/intensities",
         "compressed_images": "/outputs/compressed/images",
         "compressed_metadata": "/outputs/compressed/metadata",

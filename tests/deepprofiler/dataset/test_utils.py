@@ -1,10 +1,11 @@
-import deepprofiler.dataset.utils
-import pytest
-import sys
-import os
-from io import StringIO
 import multiprocessing
+import os
 import shutil
+import sys
+from io import StringIO
+
+import deepprofiler.dataset.utils
+
 
 def test_print_progress():
     # setup the environment

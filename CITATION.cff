@@ -1,0 +1,83 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+---
+cff-version: 1.2.0
+title: DeepProfiler
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Juan C.
+    family-names: Caicedo
+  - given-names: Nikita
+    family-names: Moshkov
+  - given-names: Shantanu
+    family-names: Singh
+  - given-names: Claire
+    family-names: McQuin
+  - given-names: Santiago
+    family-names: Benoit
+  - given-names: Matthew
+    family-names: Smith
+  - given-names: Peter
+    family-names: Goldsborough
+repository-code: 'https://github.com/cytomining/DeepProfiler'
+url: 'https://cytomining.github.io/DeepProfiler-handbook/'
+identifiers:
+  - description: Manuscript DOI
+    type: doi
+    value: "10.1038/s41467-024-45999-1"
+  - description: Cell Painting CNN weights DOI
+    type: doi
+    value: "10.5281/zenodo.7114558"
+abstract: >-
+  DeepProfiler is a set of tools for representation learning in high-throughput
+  image-based profiling experiments. It supports feature extraction from
+  microscopy images using deep learning models, producing single-cell morphology
+  embeddings suitable for downstream analysis.
+keywords:
+  - python
+  - deep-learning
+  - image-based-profiling
+  - microscopy
+  - cell-painting
+  - single-cell-analysis
+  - feature-extraction
+license: BSD-3-Clause
+preferred-citation:
+  type: article
+  title: "Learning representations for image-based profiling of perturbations"
+  journal: "Nature Communications"
+  volume: 15
+  year: 2024
+  doi: "10.1038/s41467-024-45999-1"
+  authors:
+    - given-names: Nikita
+      family-names: Moshkov
+    - given-names: Michael
+      family-names: Bornholdt
+    - given-names: Santiago
+      family-names: Benoit
+    - given-names: Matthew
+      family-names: Smith
+    - given-names: Claire
+      family-names: McQuin
+    - given-names: Allen
+      family-names: Goodman
+    - given-names: Rebecca A.
+      family-names: Senft
+    - given-names: Yu
+      family-names: Han
+    - given-names: Mehrtash
+      family-names: Babadi
+    - given-names: Peter
+      family-names: Horvath
+    - given-names: Beth A.
+      family-names: Cimini
+    - given-names: Anne E.
+      family-names: Carpenter
+    - given-names: Shantanu
+      family-names: Singh
+    - given-names: Juan C.
+      family-names: Caicedo
