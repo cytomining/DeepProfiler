@@ -27,7 +27,7 @@ runs:
   using: "composite"
   steps:
     - name: Set up Python ${{ inputs.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ inputs.python-version }}
     - name: Generate Cache Key PY
@@ -37,7 +37,7 @@ runs:
         $GITHUB_ENV
     - name: Cache pre-commit installation
       if: ${{ inputs.cache-pre-commit == 'true' }}
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           .cache
@@ -45,7 +45,7 @@ runs:
         key: cache|${{ runner.os }}|${{ runner.arch }}|${{ env.PY }}|${{ hashFiles('.pre-commit-config.yaml') }}
     - name: Cache venv
       if: ${{ inputs.cache-venv == 'true' }}
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           .cache
