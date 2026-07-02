@@ -38,6 +38,10 @@ updates:
       semver-major-days: 14
       semver-minor-days: 7
       semver-patch-days: 3
+    ignore:
+      # TensorFlow <2.16 is not compatible with NumPy 2.x.
+      - dependency-name: "numpy"
+        update-types: ["version-update:semver-major"]
     groups:
       python-packages:
         patterns:
