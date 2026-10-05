@@ -95,7 +95,7 @@ We use [pytest](https://docs.pytest.org/) for local testing and [GitHub Actions]
 
 ### Getting started
 
-1. [Install Python 3.10+](https://www.python.org/downloads/)
+1. [Install Python 3.11](https://www.python.org/downloads/)
 1. [Install uv](https://docs.astral.sh/uv/getting-started/installation/)
 1. Fork and clone the repository
 1. Install the project with development dependencies:
