@@ -1,6 +1,6 @@
 ![DeepProfiler](figures/logo/banner.png)
 -----------------
-[![Python 3.10–3.11](https://img.shields.io/badge/python-3.10%20|%203.11-blue)](https://www.python.org/downloads/)
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/downloads/)
 [![CI](https://github.com/cytomining/DeepProfiler/actions/workflows/integration-test.yml/badge.svg)](https://github.com/cytomining/DeepProfiler/actions/workflows/integration-test.yml)
 [![codecov](https://codecov.io/gh/cytomining/DeepProfiler/branch/main/graph/badge.svg)](https://codecov.io/gh/cytomining/DeepProfiler)
 [![Cell Painting CNN-1 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7114558.svg)](https://doi.org/10.5281/zenodo.7114558)
@@ -10,7 +10,7 @@
 > **v0.5.1 is a focused maintenance release.**
 > Model training, the plugin system, and CometML integration have been removed.
 > The only supported use case is **feature extraction using the [Cell Painting CNN v1 checkpoint](https://doi.org/10.5281/zenodo.7114558)** (EfficientNet B0).
-> This release requires **Python 3.10–3.11** and **TensorFlow 2.10–2.15**.
+> This release requires **Python 3.11** and **TensorFlow 2.10–2.15**.
 > If you need training or used the plugin system, please use the [`v0.3.0` tag](https://github.com/cytomining/DeepProfiler/tree/v0.3.0) and [open an issue](https://github.com/cytomining/DeepProfiler/issues) to let us know your use case.
 > See [ROADMAP.md](ROADMAP.md) for the full plan.
 
@@ -42,7 +42,7 @@ Features obtained with the Cell Painting CNN are more robust and improve perform
 
 ## System requirements
 
-- Python 3.10 or 3.11
+- Python 3.11
 - TensorFlow 2.10–2.15 
 - Linux (Ubuntu 20.04+) recommended
 - For GPU acceleration, a CUDA-compatible GPU is recommended

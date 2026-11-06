@@ -28,7 +28,7 @@ The package will be a thin layer over deep learning models, with seamless integr
 - Migrate to `uv`, dynamic versioning, mypy, ruff
 - CI/CD with PyPI trusted publishing
 - Integration test suite: downloads the Zenodo checkpoint and validates the full profiling pipeline end-to-end (`uv run pytest -m integration`)
-- **Constraint:** requires Python 3.10–3.11 and TensorFlow 2.10–2.15 (Keras 2); see [README](README.md)
+- **Constraint:** requires Python 3.11 and TensorFlow 2.10–2.15 (Keras 2); see [README](README.md)
 
 ### 🔜 v0.6.x — PyTorch rewrite (featurizer)
 - Full rewrite in PyTorch (drop TensorFlow)
